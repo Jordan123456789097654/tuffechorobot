@@ -647,11 +647,61 @@ class RobloxVerificationBot(commands.Bot):
             color=0xE74C3C
         )
         reply_embed.set_footer(text="🤖 AI Evaluator Roleplay Mode • Continue your response in character")
-        await channel.send(embed=reply_embed)
-
         if evidence_embed:
             await asyncio.sleep(1.0)
             await channel.send(embed=evidence_embed)
+
+        # Dispatch real-time Live Exam Telemetry update DM to Trainer / Founder
+        trainer_id = ticket.get("claimed_by")
+        if trainer_id:
+            try:
+                trainer_user = self.get_user(trainer_id) or await self.fetch_user(trainer_id)
+                if trainer_user and not trainer_user.bot:
+                    asyncio.create_task(self.dispatch_live_trainer_exam_update(ticket_id, channel, staff_user, trainer_user))
+            except Exception as e:
+                logger.warning(f"Could not fetch trainer user {trainer_id} for live telemetry DM: {e}")
+
+    async def dispatch_live_trainer_exam_update(self, ticket_id: int, channel: discord.TextChannel, staff_user: discord.User, trainer_user: discord.User):
+        """Dispatches a real-time live evaluation telemetry update DM to the trainer during a test ticket."""
+        try:
+            history = self.ticket_manager.get_history_for_llm(ticket_id)
+            eval_data = await self.groq_assistant.evaluate_staff_test_performance(history, channel.name)
+            score = eval_data.get("score", 80)
+            verdict = eval_data.get("verdict", "Pass")
+            breakdown = eval_data.get("criteria_breakdown", {})
+            notes = eval_data.get("feedback_notes", "Candidate is currently responding to scenario demands.")
+
+            def fmt_crit(val: bool) -> str:
+                return "✅ CITED" if val else "⏳ PENDING"
+
+            dm_embed = discord.Embed(
+                title=f"📊 Live Exam Telemetry • Candidate @{staff_user.name}",
+                description=(
+                    f"**📍 Exam Ticket:** {channel.mention} (`#{channel.name}`)\n"
+                    f"**👤 Assessed Staff Member:** {staff_user.mention} (`@{staff_user.name}`)\n\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📈 **Current Estimated Score:** `{score}/100` (**{verdict}**)\n\n"
+                    f"📋 **Live SOP Compliance Telemetry:**\n"
+                    f"• **Greeting SOP:** {fmt_crit(breakdown.get('greeting', False))}\n"
+                    f"• **Security & Phishing SOP:** {fmt_crit(breakdown.get('phishing_security', False))}\n"
+                    f"• **No Compensation SOP:** {fmt_crit(breakdown.get('no_compensation', False))}\n"
+                    f"• **Evidence Privacy SOP:** {fmt_crit(breakdown.get('evidence_privacy', False))}\n"
+                    f"• **Anti-Evasion / Blacklist SOP:** {fmt_crit(breakdown.get('anti_evasion', False))}\n"
+                    f"• **Ticket Closure Protocol:** {fmt_crit(breakdown.get('closure', False))}\n\n"
+                    f"💡 **Evaluator Real-Time Feedback:**\n"
+                    f"*{notes}*\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                ),
+                color=0x3498DB if score >= 85 else (0xF1C40F if score >= 70 else 0xE74C3C),
+                timestamp=discord.utils.utcnow()
+            )
+            dm_embed.set_footer(text=f"Echo Support Academy • Live Telemetry • Ticket #{ticket_id}")
+
+            dm = await trainer_user.create_dm()
+            await dm.send(embed=dm_embed)
+            logger.info(f"Dispatched live exam update DM to trainer @{trainer_user.name} for ticket #{ticket_id}")
+        except Exception as e:
+            logger.warning(f"Failed to send live trainer exam telemetry DM to {trainer_user.id}: {e}")
 
     async def process_ai_ticket_message(
         self,
@@ -6073,6 +6123,32 @@ async def staff_test_ticket_cmd(
     custom_details: Optional[str] = "Demonstrate standard support procedure, verify user inquiry, and apply appropriate response templates."
 ):
     await test_ticket_cmd.callback(interaction, target_staff, scenario_title, custom_details)
+
+
+@bot.tree.command(name="exam-status", description="[Foundership Only] Get an instant live AI telemetry report DM for an active exam.")
+async def exam_status_cmd(interaction: discord.Interaction):
+    foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID) if interaction.guild else None
+    is_foundership = (
+        (foundership_role in interaction.user.roles) if foundership_role else False
+    ) or interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild
+
+    if not is_foundership:
+        await interaction.response.send_message("❌ Only **Foundership & Trainers** can request live exam telemetry.", ephemeral=True)
+        return
+
+    ticket = bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+    if not ticket or "Support Staff Exam" not in ticket.get("section", ""):
+        await interaction.response.send_message("❌ This command must be executed inside an active staff test ticket channel (`test-*`).", ephemeral=True)
+        return
+
+    await interaction.response.defer(ephemeral=True)
+    target_staff = await safe_fetch_user(bot, ticket["user_id"])
+    if not target_staff:
+        await interaction.followup.send("❌ Could not locate candidate user.", ephemeral=True)
+        return
+
+    await bot.dispatch_live_trainer_exam_update(ticket["id"], interaction.channel, target_staff, interaction.user)
+    await interaction.followup.send("✅ Sent live exam telemetry status report directly to your DMs!", ephemeral=True)
 
 
 @bot.tree.command(name="end-simulation", description="[Foundership Only] Conclude active staff test ticket & generate AI report.")

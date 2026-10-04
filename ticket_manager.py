@@ -579,3 +579,30 @@ class TicketManager:
                 AND datetime(last_staff_reply_at, '+' || ? || ' hours') <= datetime('now');
             """, (hours,))
             return [dict(r) for r in cursor.fetchall()]
+
+    def get_ticket_analytics(self) -> Dict[str, int]:
+        """Calculates ticket metrics for system health and status reporting."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM tickets;")
+            total = cursor.fetchone()[0]
+
+            cursor.execute("SELECT COUNT(*) FROM tickets WHERE status = 'open';")
+            open_cnt = cursor.fetchone()[0]
+
+            cursor.execute("SELECT COUNT(*) FROM tickets WHERE status = 'escalated';")
+            escalated_cnt = cursor.fetchone()[0]
+
+            cursor.execute("SELECT COUNT(*) FROM tickets WHERE status = 'closed';")
+            closed_cnt = cursor.fetchone()[0]
+
+            cursor.execute("SELECT COUNT(*) FROM tickets WHERE section LIKE '%Exam%' OR section LIKE '%Gauntlet%';")
+            exam_cnt = cursor.fetchone()[0]
+
+            return {
+                "total": total,
+                "open": open_cnt,
+                "escalated": escalated_cnt,
+                "closed": closed_cnt,
+                "exams": exam_cnt
+            }

@@ -78,3 +78,10 @@ class VerificationDatabase:
             cursor.execute("DELETE FROM verifications WHERE discord_id = ?", (discord_id,))
             conn.commit()
             return cursor.rowcount > 0
+
+    def get_total_verifications_count(self) -> int:
+        """Returns total count of linked verified accounts."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM verifications;")
+            return cursor.fetchone()[0]
