@@ -1,0 +1,9 @@
+# 🛡️ ROBLOX ECHO BLACKLIST SYSTEM DIAGNOSTICS
+- **Config:** `GroupId` (Group ID for ranks), `ModeratorRank` (200+), `ProtectedRank` (200+ protection), `DataStoreName` (`EchoTech_Blacklist_v2`).
+- **Core:** `BlacklistService` manages temp/perm bans, join kicks, and DataStore sync.
+
+### 🔍 Quick Diagnostics & Troubleshooting
+1. **"User is protected"**: Target group rank >= `ProtectedRank` (200). Lower `ProtectedRank` or add `OwnerUserIds` override.
+2. **DataStore Save Failures**: Enable `API Services` in Studio Game Settings > Security.
+3. **Permission Denied**: `Config.GroupId` is `0` or rank < `ModeratorRank` (200). Update `Config.GroupId` or add user to `Config.ModeratorUserIds`.
+4. **Temp bans not expiring**: Ensure `BlacklistService.init()` runs on server startup.

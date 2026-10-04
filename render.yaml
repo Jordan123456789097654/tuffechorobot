@@ -1,0 +1,13 @@
+# Render render.yaml configuration file for background worker deployment
+services:
+  - type: worker
+    name: echo-roblox-verify-bot
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python bot.py"
+    autoDeploy: true
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
