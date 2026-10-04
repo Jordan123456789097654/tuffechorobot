@@ -161,7 +161,7 @@ class TicketControlView(ui.View):
     )
     async def escalate_button(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.defer()
-        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        ticket = self.bot.ticket_manager.get_or_recover_ticket(interaction.channel_id, channel_obj=interaction.channel)
         if not ticket:
             await interaction.followup.send("❌ No active ticket found in this channel.", ephemeral=True)
             return
@@ -185,7 +185,7 @@ class TicketControlView(ui.View):
     )
     async def claim_button(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.defer(ephemeral=False)
-        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        ticket = self.bot.ticket_manager.get_or_recover_ticket(interaction.channel_id, channel_obj=interaction.channel)
         if not ticket:
             await interaction.followup.send("❌ No active ticket found.", ephemeral=True)
             return
@@ -210,7 +210,7 @@ class TicketControlView(ui.View):
         row=0
     )
     async def toggle_ai_button(self, interaction: discord.Interaction, button: ui.Button):
-        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        ticket = self.bot.ticket_manager.get_or_recover_ticket(interaction.channel_id, channel_obj=interaction.channel)
         if not ticket:
             await interaction.response.send_message("❌ No active ticket found.", ephemeral=True)
             return
@@ -239,7 +239,7 @@ class TicketControlView(ui.View):
         row=0
     )
     async def ai_suggest_button(self, interaction: discord.Interaction, button: ui.Button):
-        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        ticket = self.bot.ticket_manager.get_or_recover_ticket(interaction.channel_id, channel_obj=interaction.channel)
         if not ticket:
             await interaction.response.send_message("❌ No active ticket found.", ephemeral=True)
             return
@@ -266,7 +266,7 @@ class TicketControlView(ui.View):
         row=0
     )
     async def close_button(self, interaction: discord.Interaction, button: ui.Button):
-        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        ticket = self.bot.ticket_manager.get_or_recover_ticket(interaction.channel_id, channel_obj=interaction.channel)
         if not ticket:
             await interaction.response.send_message("❌ No active ticket found.", ephemeral=True)
             return
@@ -282,7 +282,7 @@ class TicketControlView(ui.View):
         row=1
     )
     async def transfer_button(self, interaction: discord.Interaction, button: ui.Button):
-        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        ticket = self.bot.ticket_manager.get_or_recover_ticket(interaction.channel_id, channel_obj=interaction.channel)
         if not ticket:
             await interaction.response.send_message("❌ No active ticket found.", ephemeral=True)
             return
@@ -298,7 +298,7 @@ class TicketControlView(ui.View):
         row=1
     )
     async def internal_note_button(self, interaction: discord.Interaction, button: ui.Button):
-        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        ticket = self.bot.ticket_manager.get_or_recover_ticket(interaction.channel_id, channel_obj=interaction.channel)
         if not ticket:
             await interaction.response.send_message("❌ No active ticket found.", ephemeral=True)
             return
@@ -314,7 +314,7 @@ class TicketControlView(ui.View):
         row=1
     )
     async def canned_button(self, interaction: discord.Interaction, button: ui.Button):
-        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        ticket = self.bot.ticket_manager.get_or_recover_ticket(interaction.channel_id, channel_obj=interaction.channel)
         if not ticket:
             await interaction.response.send_message("❌ No active ticket found.", ephemeral=True)
             return
@@ -335,7 +335,7 @@ class TicketControlView(ui.View):
         row=1
     )
     async def send_template_button(self, interaction: discord.Interaction, button: ui.Button):
-        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        ticket = self.bot.ticket_manager.get_or_recover_ticket(interaction.channel_id, channel_obj=interaction.channel)
         if not ticket:
             await interaction.response.send_message("❌ No active ticket found.", ephemeral=True)
             return

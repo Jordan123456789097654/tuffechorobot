@@ -1407,7 +1407,7 @@ async def on_message(message: discord.Message):
 
 
     # Case B: Inside Ticket Channel
-    ticket = bot.ticket_manager.get_ticket_by_channel(message.channel.id)
+    ticket = bot.ticket_manager.get_or_recover_ticket(message.channel.id, channel_obj=message.channel)
     if ticket:
         ticket_id = ticket["id"]
         ticket_user_id = ticket["user_id"]

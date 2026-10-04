@@ -31,4 +31,5 @@ venv.bak/
 .env
 
 # SQLite Database (persist locally, recreate cleanly on cloud worker)
+*.db
 *.db-journal

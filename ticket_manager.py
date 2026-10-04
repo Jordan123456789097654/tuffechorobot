@@ -163,6 +163,35 @@ class TicketManager:
             row = cursor.fetchone()
             return dict(row) if row else None
 
+    def get_or_recover_ticket(self, channel_id: int, channel_obj: Optional[Any] = None) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves ticket by channel ID.
+        If missing (e.g. after a server update), automatically recovers and restores
+        the ticket record from Discord channel metadata/topic!
+        """
+        ticket = self.get_ticket_by_channel(channel_id)
+        if ticket:
+            return ticket
+
+        if channel_obj and hasattr(channel_obj, "topic") and channel_obj.topic:
+            import re
+            m_user = re.search(r'\((\d{17,20})\)', channel_obj.topic)
+            m_sec = re.search(r'\[(.*?)\]', channel_obj.topic)
+
+            if m_user:
+                try:
+                    user_id = int(m_user.group(1))
+                    section = m_sec.group(1) if m_sec else "General Support"
+                    guild_id = channel_obj.guild.id if hasattr(channel_obj, "guild") and channel_obj.guild else 0
+
+                    logger.info(f"Self-healing ticket recovery triggered for channel #{channel_obj.name} (User ID: {user_id}, Section: {section})")
+                    ticket_id = self.create_ticket(user_id, channel_id, guild_id, section=section)
+                    return self.get_ticket_by_id(ticket_id)
+                except Exception as e:
+                    logger.error(f"Error during self-healing ticket recovery: {e}")
+
+        return None
+
     def get_ticket_by_id(self, ticket_id: int) -> Optional[Dict[str, Any]]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
