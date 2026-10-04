@@ -153,7 +153,7 @@ class TicketControlView(ui.View):
         self.bot = bot
 
     @ui.button(
-        label="Escalate",
+        label="Request Supervisor",
         style=discord.ButtonStyle.danger,
         emoji="🚨",
         custom_id="ticket_ctrl_escalate_btn",
@@ -167,13 +167,13 @@ class TicketControlView(ui.View):
             return
 
         if ticket["status"] == "escalated":
-            await interaction.followup.send("ℹ️ This ticket has already been escalated.", ephemeral=True)
+            await interaction.followup.send("ℹ️ This ticket has already been escalated to supervisors.", ephemeral=True)
             return
 
         await self.bot.handle_escalation(
             ticket=ticket,
             channel=interaction.channel,
-            reason=f"Escalated via button by {interaction.user.name}"
+            reason=f"Supervisor requested by {interaction.user.name}"
         )
 
     @ui.button(
@@ -326,6 +326,23 @@ class TicketControlView(ui.View):
 
         view = CannedReplySelectView(self.bot, ticket, canned_list)
         await interaction.response.send_message("Select a canned response template to send to the member:", view=view, ephemeral=True)
+
+    @ui.button(
+        label="Send Template",
+        style=discord.ButtonStyle.primary,
+        emoji="✉️",
+        custom_id="ticket_ctrl_send_tpl_btn",
+        row=1
+    )
+    async def send_template_button(self, interaction: discord.Interaction, button: ui.Button):
+        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        if not ticket:
+            await interaction.response.send_message("❌ No active ticket found.", ephemeral=True)
+            return
+
+        from support_templates_system import SendTemplateSelectView
+        view = SendTemplateSelectView(self.bot, ticket["id"])
+        await interaction.response.send_message("Choose an official support template to dispatch directly to the member's DMs:", view=view, ephemeral=True)
 
 
 class TransferSectionSelect(ui.Select):

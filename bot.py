@@ -5345,6 +5345,112 @@ async def top_level_shop_cmd(interaction: discord.Interaction):
     await points_shop_cmd.callback(interaction)
 
 
+# ==========================================
+# 🚨 SUPERVISOR & SUPPORT TEMPLATES COMMANDS
+# ==========================================
+
+@bot.tree.command(name="supervisor-request", description="Request emergency supervisor & foundership escalation for your ticket.")
+@app_commands.describe(reason="Reason for requesting supervisor assistance")
+async def supervisor_request_cmd(interaction: discord.Interaction, reason: Optional[str] = "Requesting Foundership / Supervisor Assistance"):
+    await interaction.response.defer(ephemeral=False)
+    ticket = bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+    if not ticket:
+        await interaction.followup.send("❌ This command must be used inside an active support ticket channel.", ephemeral=True)
+        return
+
+    # Escalate ticket & disable AI
+    bot.ticket_manager.escalate_ticket(ticket["id"], reason=reason)
+    bot.ticket_manager.set_ai_enabled(ticket["id"], False)
+
+    await bot.handle_escalation(
+        ticket=ticket,
+        channel=interaction.channel,
+        reason=f"🚨 Supervisor Requested by {interaction.user.mention}: {reason}"
+    )
+    await interaction.followup.send(
+        f"🚨 **Supervisor Request Dispatched!** <@&{config.FOUNDERSHIP_ROLE_ID}> has been pinged and notified.",
+        ephemeral=False
+    )
+
+support_template_group = app_commands.Group(name="support-template", description="Manage official support team templates and SOPs.")
+
+@support_template_group.command(name="add", description="Add a new custom support template & SOP.")
+@app_commands.describe(
+    shortcut="Unique shortcut name (e.g. refund_policy)",
+    category="Category name (e.g. Billing, Verification)",
+    title="Template Title",
+    template_text="The text of the template sent to members (use {user} for mention)",
+    steps="Standard operating procedures / staff instructions"
+)
+async def tpl_add_cmd(
+    interaction: discord.Interaction,
+    shortcut: str,
+    category: str,
+    title: str,
+    template_text: str,
+    steps: Optional[str] = ""
+):
+    await interaction.response.defer(ephemeral=True)
+    from support_templates_system import add_custom_template
+    success, msg = add_custom_template(
+        shortcut=shortcut,
+        category=category,
+        title=title,
+        template_text=template_text,
+        steps=steps or "Custom staff template.",
+        created_by=interaction.user.id
+    )
+    if success:
+        embed = discord.Embed(
+            title="✅ Custom Template Added",
+            description=f"**Shortcut:** `{shortcut}`\n**Title:** {title}\n**Category:** {category}\n\n**Template:**\n```\n{template_text}\n```",
+            color=0x57F287
+        )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+    else:
+        await interaction.followup.send(f"❌ {msg}", ephemeral=True)
+
+@support_template_group.command(name="remove", description="Remove a custom support template by shortcut.")
+@app_commands.describe(shortcut="Shortcut name of custom template to remove")
+async def tpl_remove_cmd(interaction: discord.Interaction, shortcut: str):
+    await interaction.response.defer(ephemeral=True)
+    from support_templates_system import delete_custom_template
+    success, msg = delete_custom_template(shortcut)
+    if success:
+        await interaction.followup.send(f"✅ Removed custom template `{shortcut}`.", ephemeral=True)
+    else:
+        await interaction.followup.send(f"❌ {msg}", ephemeral=True)
+
+@support_template_group.command(name="list", description="List all built-in and custom support templates.")
+async def tpl_list_cmd(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    from support_templates_system import get_combined_template_list
+    tpls = get_combined_template_list()
+    embed = discord.Embed(
+        title="📚 Echo Support Templates Directory",
+        description=f"Total Templates Available: **{len(tpls)}**\n\n",
+        color=0x5865F2
+    )
+    for t in tpls[:25]:
+        embed.add_field(
+            name=f"{t.get('emoji', '💬')} {t['title']} (`{t['shortcut']}`)",
+            value=f"**Cat:** {t.get('category', 'General')}\n{t['template'][:100]}...",
+            inline=False
+        )
+    await interaction.followup.send(embed=embed, ephemeral=True)
+
+bot.tree.add_command(support_template_group)
+
+@bot.tree.command(name="setup-templates-channel", description="Initialize or refresh the #support-templates channel guide & status widget.")
+async def setup_templates_channel_cmd(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    success = await sync_support_templates_channel(bot, channel=interaction.channel)
+    if success:
+        await interaction.followup.send("✅ Support templates guide & Roblox API status widget successfully synchronized in this channel!", ephemeral=True)
+    else:
+        await interaction.followup.send("❌ Failed to synchronize support templates channel.", ephemeral=True)
+
+
 
 # ==========================================
 # 🔄 UNIFIED PERSISTENT COMPONENT LISTENER

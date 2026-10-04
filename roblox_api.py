@@ -95,3 +95,25 @@ class RobloxAPI:
             return dt
         except Exception:
             return None
+
+    async def check_roblox_system_status(self) -> Dict[str, str]:
+        """Checks real-time health status of Roblox core Web APIs."""
+        session = await self.get_session()
+        services = {
+            "Users & Verification API": "https://users.roblox.com/v1/users/1",
+            "Economy & DataStores API": "https://economy.roblox.com/v1/assets/1/details",
+            "Thumbnails API": "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=1&size=150x150&format=Png",
+            "Groups API": "https://groups.roblox.com/v2/users/1/groups/roles"
+        }
+        results = {}
+        for name, url in services.items():
+            try:
+                async with session.get(url, timeout=4.0) as resp:
+                    if resp.status in (200, 400, 404):
+                        results[name] = "🟢 Operational"
+                    else:
+                        results[name] = f"🟡 Degraded (HTTP {resp.status})"
+            except Exception:
+                results[name] = "🔴 Outage / Unreachable"
+        return results
+
