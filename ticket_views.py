@@ -184,19 +184,20 @@ class TicketControlView(ui.View):
         row=0
     )
     async def claim_button(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.defer(ephemeral=False)
         ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
         if not ticket:
-            await interaction.response.send_message("❌ No active ticket found.", ephemeral=True)
+            await interaction.followup.send("❌ No active ticket found.", ephemeral=True)
             return
 
         if ticket.get("claimed_by"):
             claimed_user = self.bot.get_user(ticket["claimed_by"]) or await self.bot.fetch_user(ticket["claimed_by"])
             name = claimed_user.name if claimed_user else ticket["claimed_by"]
-            await interaction.response.send_message(f"ℹ️ Ticket is already claimed by **@{name}**.", ephemeral=True)
+            await interaction.followup.send(f"ℹ️ Ticket is already claimed by **@{name}**.", ephemeral=True)
             return
 
         self.bot.ticket_manager.claim_ticket(ticket["id"], interaction.user.id)
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"📌 Ticket #{ticket['id']} has been claimed by {interaction.user.mention}!",
             ephemeral=False
         )
