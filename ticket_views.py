@@ -789,3 +789,202 @@ class CannedReplySelectView(ui.View):
                 await interaction.response.edit_message(content=f"✅ Canned response `/{shortcut}` dispatched to member!", view=None)
             except discord.Forbidden:
                 await interaction.response.send_message("❌ Member has DMs closed.", ephemeral=True)
+
+
+class TestTicketTrainerControlView(ui.View):
+    """Trainer / Evaluator Intervention Controls for staff test tickets."""
+
+    def __init__(self, bot, target_staff: discord.Member, scenario_title: str):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.target_staff = target_staff
+        self.scenario_title = scenario_title
+
+    @ui.button(
+        label="Inject Curveball",
+        style=discord.ButtonStyle.secondary,
+        emoji="🧪",
+        custom_id="test_ticket_curveball_btn",
+        row=0
+    )
+    async def inject_curveball(self, interaction: discord.Interaction, button: ui.Button):
+        foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID) if interaction.guild else None
+        is_foundership = (
+            (foundership_role in interaction.user.roles) if foundership_role else False
+        ) or interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild
+
+        if not is_foundership:
+            await interaction.response.send_message("❌ Only Foundership & Trainers can use evaluation controls.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        if not ticket:
+            await interaction.followup.send("❌ Ticket context not found.", ephemeral=True)
+            return
+
+        history = self.bot.ticket_manager.get_history_for_llm(ticket["id"])
+        curveball_msg = await self.bot.groq_assistant.generate_curveball_prompt(history, self.scenario_title)
+
+        self.bot.ticket_manager.add_message(ticket["id"], 0, "user", curveball_msg, sender_name="Member (Simulated)")
+        embed = discord.Embed(
+            title="⚡ Member (Surprise Curveball Question)",
+            description=curveball_msg,
+            color=0xE67E22
+        )
+        embed.set_footer(text=f"🧪 Trainer {interaction.user.name} injected a surprise policy curveball!")
+        await interaction.channel.send(embed=embed)
+        await interaction.followup.send("✅ Injected surprise curveball question into the exam!", ephemeral=True)
+
+    @ui.button(
+        label="Make Hostile",
+        style=discord.ButtonStyle.danger,
+        emoji="⚡",
+        custom_id="test_ticket_hostile_btn",
+        row=0
+    )
+    async def make_hostile(self, interaction: discord.Interaction, button: ui.Button):
+        foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID) if interaction.guild else None
+        is_foundership = (
+            (foundership_role in interaction.user.roles) if foundership_role else False
+        ) or interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild
+
+        if not is_foundership:
+            await interaction.response.send_message("❌ Only Foundership & Trainers can use evaluation controls.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        if not ticket:
+            await interaction.followup.send("❌ Ticket context not found.", ephemeral=True)
+            return
+
+        history = self.bot.ticket_manager.get_history_for_llm(ticket["id"])
+        reply_msg = await self.bot.groq_assistant.generate_test_roleplay_response(history, self.scenario_title, scenario_details="Be extremely angry, hostile, and demanding. Threaten mass-reporting and alt-account raids.")
+
+        self.bot.ticket_manager.add_message(ticket["id"], 0, "user", reply_msg, sender_name="Member (Simulated)")
+        embed = discord.Embed(
+            title="👤 Member (Hostile Escalation)",
+            description=reply_msg,
+            color=0xED4245
+        )
+        embed.set_footer(text=f"⚡ Trainer {interaction.user.name} escalated member hostility level!")
+        await interaction.channel.send(embed=embed)
+        await interaction.followup.send("✅ Escalated simulated member hostility level!", ephemeral=True)
+
+    @ui.button(
+        label="Live Scorecard",
+        style=discord.ButtonStyle.primary,
+        emoji="📋",
+        custom_id="test_ticket_scorecard_btn",
+        row=0
+    )
+    async def show_scorecard(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.defer(ephemeral=True)
+        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        if not ticket:
+            await interaction.followup.send("❌ Ticket context not found.", ephemeral=True)
+            return
+
+        history = self.bot.ticket_manager.get_history_for_llm(ticket["id"])
+        eval_data = await self.bot.groq_assistant.evaluate_staff_test_performance(history, self.scenario_title)
+
+        cb = eval_data.get("criteria_breakdown", {})
+        embed = discord.Embed(
+            title=f"📋 Live Scorecard • {self.target_staff.name}",
+            description=(
+                f"**Current Estimated Score:** `{eval_data['score']}/100` ({eval_data['verdict']})\n\n"
+                f"### 🎯 Real-Time SOP Criteria Progress\n"
+                f"• {'✅' if cb.get('greeting') else '⏳'} **Mandatory Greeting SOP:** {'Delivered' if cb.get('greeting') else 'Pending...'}\n"
+                f"• {'✅' if cb.get('phishing_security') else '⏳'} **Security & Phishing Citation:** {'Cited' if cb.get('phishing_security') else 'Pending...'}\n"
+                f"• {'✅' if cb.get('no_compensation') else '⏳'} **Refused Compensation:** {'Enforced' if cb.get('no_compensation') else 'Pending...'}\n"
+                f"• {'✅' if cb.get('evidence_privacy') else '⏳'} **Evidence Privacy SOP:** {'Cited' if cb.get('evidence_privacy') else 'Pending...'}\n"
+                f"• {'✅' if cb.get('anti_evasion') else '⏳'} **Anti-Evasion / Blacklist Warning:** {'Warned' if cb.get('anti_evasion') else 'Pending...'}\n"
+                f"• {'✅' if cb.get('closure') else '⏳'} **Ticket Closure Protocol:** {'Executed' if cb.get('closure') else 'Pending...'}"
+            ),
+            color=0x3498DB
+        )
+        embed.set_footer(text="Live SOP Evaluation • Auto-updates as staff respond")
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @ui.button(
+        label="Auto-Grade & Conclude",
+        style=discord.ButtonStyle.success,
+        emoji="🏆",
+        custom_id="test_ticket_grade_btn",
+        row=1
+    )
+    async def auto_grade_exam(self, interaction: discord.Interaction, button: ui.Button):
+        foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID) if interaction.guild else None
+        is_foundership = (
+            (foundership_role in interaction.user.roles) if foundership_role else False
+        ) or interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild
+
+        if not is_foundership:
+            await interaction.response.send_message("❌ Only Foundership & Trainers can conclude evaluations.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=False)
+        ticket = self.bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+        if not ticket:
+            await interaction.followup.send("❌ Ticket context not found.", ephemeral=True)
+            return
+
+        history = self.bot.ticket_manager.get_history_for_llm(ticket["id"])
+        eval_data_res = await self.bot.groq_assistant.evaluate_staff_test_performance(history, self.scenario_title)
+
+        score = eval_data_res["score"]
+        verdict = eval_data_res["verdict"]
+        notes = f"{eval_data_res['feedback_notes']}\n\n=== REMEDIATION & STUDY GUIDE ===\n{eval_data_res['remediation_guide']}"
+
+        from hr_system import add_staff_evaluation, build_evaluation_dm_embed, build_evaluation_log_embed
+        eval_record = add_staff_evaluation(
+            staff_id=self.target_staff.id,
+            evaluator_id=interaction.user.id,
+            guild_id=interaction.guild_id or config.GUILD_ID,
+            score=score,
+            verdict=verdict,
+            scenario=self.scenario_title,
+            feedback_notes=notes
+        )
+
+        try:
+            trainee_dm = await self.target_staff.create_dm()
+            dm_embed = build_evaluation_dm_embed(eval_record, self.target_staff, interaction.user)
+            await trainee_dm.send(embed=dm_embed)
+        except Exception:
+            pass
+
+        try:
+            trainer_dm = await interaction.user.create_dm()
+            trainer_embed = build_evaluation_dm_embed(eval_record, self.target_staff, interaction.user)
+            trainer_embed.title = f"🧾 Trainer Audit Receipt • Evaluation #{eval_record['id']}"
+            await trainer_dm.send(embed=trainer_embed)
+        except Exception:
+            pass
+
+        pub_ch = interaction.guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID) if interaction.guild else None
+        if pub_ch and isinstance(pub_ch, discord.TextChannel):
+            try:
+                log_embed = build_evaluation_log_embed(eval_record, self.target_staff, interaction.user)
+                await pub_ch.send(embed=log_embed)
+            except Exception:
+                pass
+
+        final_embed = discord.Embed(
+            title="🏆 Exam Evaluation Concluded!",
+            description=(
+                f"**Final Score:** `{score}/100` | **Verdict:** `{verdict}`\n\n"
+                f"### 📋 Feedback Summary\n{eval_data_res['feedback_notes']}\n\n"
+                f"### 📚 Remediation & Study Guide\n{eval_data_res['remediation_guide']}\n\n"
+                f"*(Dispatched official evaluation report card to {self.target_staff.mention}'s DMs. Channel closing...)*"
+            ),
+            color=0x2ECC71 if score >= 85 else 0xE74C3C
+        )
+        await interaction.followup.send(embed=final_embed)
+        self.bot.ticket_manager.close_ticket(ticket["id"], interaction.user.id, "Staff exam completed")
+        await asyncio.sleep(5.0)
+        try:
+            await interaction.channel.delete(reason="Staff exam concluded")
+        except Exception:
+            pass

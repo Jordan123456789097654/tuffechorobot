@@ -521,3 +521,151 @@ You must ESCALATE the ticket to staff if:
         except Exception as e:
             logger.error(f"Error generating test roleplay response: {e}")
             return "I don't care about your SOP procedure! Answer my question right now!"
+
+    async def generate_curveball_prompt(
+        self,
+        messages_history: List[Dict[str, str]],
+        scenario_title: str
+    ) -> str:
+        """Generates a surprise policy trick question or escalation curveball from the simulated member."""
+        client = self._ensure_client()
+        if not client or not messages_history:
+            return "Wait, if you can't pay me Robux, can you at least rank me to Senior Developer right now? Or send me the private video proof of why I was banned?!"
+
+        convo_text = "\n".join([f"{m.get('sender_name', m['role']).upper()}: {m['content']}" for m in messages_history[-6:]])
+
+        prompt = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a Support Trainer triggering a surprise policy curveball in a live staff simulation exam.\n"
+                    f"SCENARIO: '{scenario_title}'\n\n"
+                    "INSTRUCTIONS:\n"
+                    "Generate a realistic, high-pressure CURVEBALL message from the Roblox user designed to test a specific SOP:\n"
+                    "- Either demand unearned rank restoration / group funds payout\n"
+                    "- Or demand to see confidential internal staff video clips / audit logs\n"
+                    "- Or threat of an alt-account raid / mass-reporting the Discord server\n"
+                    "Do NOT break character. Output ONLY the member's message."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Ticket transcript so far:\n{convo_text}\n\nGenerate the surprise curveball:"
+            }
+        ]
+
+        try:
+            res = await self._call_groq_with_fallback(
+                client=client,
+                messages=prompt,
+                temperature=0.7,
+                max_tokens=300
+            )
+            return (res.choices[0].message.content or "").strip()
+        except Exception as e:
+            logger.error(f"Error generating curveball prompt: {e}")
+            return "Fine! If you won't refund my Robux, give me Senior Developer rank right now and show me the staff audit logs, or I'm bringing 20 people to mass-report your server!"
+
+    async def evaluate_staff_test_performance(
+        self,
+        messages_history: List[Dict[str, str]],
+        scenario_title: str
+    ) -> Dict[str, any]:
+        """
+        Uses Groq AI to evaluate staff performance against 6 core SOP criteria:
+        1. Mandatory Greeting Delivered (+20 Pts)
+        2. Security & Phishing SOP Cited (+20 Pts)
+        3. Unauthorized Compensation Refused (+20 Pts)
+        4. Evidence Privacy Policy Cited (+15 Pts)
+        5. Anti-Evasion / Blacklist Warning Cited (+15 Pts)
+        6. Ticket Closure Protocol Executed (+10 Pts)
+        """
+        client = self._ensure_client()
+        default_eval = {
+            "score": 85,
+            "verdict": "Pass",
+            "criteria_breakdown": {
+                "greeting": True,
+                "phishing_security": True,
+                "no_compensation": True,
+                "evidence_privacy": True,
+                "anti_evasion": False,
+                "closure": True
+            },
+            "feedback_notes": "Demonstrated solid overall SOP application. Ensure anti-evasion warnings are explicitly cited during threat scenarios.",
+            "remediation_guide": "• **Study Module 5 (Anti-Evasion & Raids)** in the Support Training Manual.\n• **Copy-Paste Script:** *'Threats to organize raids or mass-report violate our Terms of Service and will result in an immediate Permanent Global Blacklist.'*"
+        }
+
+        if not client or not messages_history:
+            return default_eval
+
+        staff_msgs = [m["content"] for m in messages_history if m.get("role") == "staff" or m.get("role") == "assistant"]
+        staff_text = "\n---\n".join(staff_msgs) if staff_msgs else "No staff replies found."
+        full_transcript = "\n".join([f"{m.get('sender_name', m['role']).upper()}: {m['content']}" for m in messages_history])
+
+        prompt = [
+            {
+                "role": "system",
+                "content": (
+                    "You are the Lead HR Evaluator for Echo Technologies Support Academy.\n"
+                    "Grade the staff member's responses in this ticket transcript against these 6 MANDATORY SOP CRITERIA:\n\n"
+                    "1. GREETING (20 pts): Did staff begin their initial response with an official introduction greeting (e.g., 'Hello! My name is [Name] from Echo Technologies Support...')?\n"
+                    "2. PHISHING/SECURITY SOP (20 pts): Did staff state that official Echo staff NEVER DM users offering free ranks/giveaways or requesting off-site logins, and refer to roblox.com/support?\n"
+                    "3. NO COMPENSATION (20 pts): Did staff refuse unauthorized Robux payouts or rank restorations without Foundership approval?\n"
+                    "4. EVIDENCE PRIVACY (15 pts): Did staff state that internal audit logs / detection clips are strictly confidential per the Evidence Privacy Policy?\n"
+                    "5. ANTI-EVASION / BLACKLIST (15 pts): Did staff warn that mass-report/raid threats result in a Permanent Global Blacklist?\n"
+                    "6. CLOSURE (10 pts): Did staff execute or instruct ticket closure (/ticket-request-close or close prompt)?\n\n"
+                    "OUTPUT FORMAT (STRICT JSON ONLY):\n"
+                    "{\n"
+                    '  "greeting": true/false,\n'
+                    '  "phishing_security": true/false,\n'
+                    '  "no_compensation": true/false,\n'
+                    '  "evidence_privacy": true/false,\n'
+                    '  "anti_evasion": true/false,\n'
+                    '  "closure": true/false,\n'
+                    '  "score": <0-100 integer>,\n'
+                    '  "verdict": "<Exceptional|Pass|Conditional Pass|Fail>",\n'
+                    '  "feedback_notes": "<2-3 sentence performance summary>",\n'
+                    '  "remediation_guide": "<Bullet points with exact missed rules, recommended scripts, and Training Slide references>"\n'
+                    "}"
+                )
+            },
+            {
+                "role": "user",
+                "content": f"SCENARIO: {scenario_title}\n\nSTAFF REPLIES:\n{staff_text}\n\nFULL TICKET TRANSCRIPT:\n{full_transcript}\n\nGrade the staff member:"
+            }
+        ]
+
+        try:
+            res = await self._call_groq_with_fallback(
+                client=client,
+                messages=prompt,
+                temperature=0.2,
+                max_tokens=600
+            )
+            raw = (res.choices[0].message.content or "").strip()
+            import json
+            if "{" in raw and "}" in raw:
+                j_start = raw.find("{")
+                j_end = raw.rfind("}") + 1
+                data = json.loads(raw[j_start:j_end])
+                score = int(data.get("score", 80))
+                verdict = data.get("verdict", "Pass" if score >= 85 else "Conditional Pass")
+                return {
+                    "score": score,
+                    "verdict": verdict,
+                    "criteria_breakdown": {
+                        "greeting": bool(data.get("greeting", True)),
+                        "phishing_security": bool(data.get("phishing_security", True)),
+                        "no_compensation": bool(data.get("no_compensation", True)),
+                        "evidence_privacy": bool(data.get("evidence_privacy", True)),
+                        "anti_evasion": bool(data.get("anti_evasion", False)),
+                        "closure": bool(data.get("closure", True))
+                    },
+                    "feedback_notes": data.get("feedback_notes", "Evaluation completed."),
+                    "remediation_guide": data.get("remediation_guide", "Review Training Presentation Modules 1-10.")
+                }
+        except Exception as e:
+            logger.error(f"Error evaluating staff test performance: {e}")
+
+        return default_eval

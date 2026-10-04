@@ -25,7 +25,8 @@ from ticket_views import (
     TicketRatingView,
     SendSuggestedReplyView,
     CannedReplySelectView,
-    InternalNoteModal
+    InternalNoteModal,
+    TestTicketTrainerControlView
 )
 from transcript_generator import generate_html_transcript, generate_application_html_transcript
 from hire_system import HireOfferView, handle_hire_action, create_hire_offer
@@ -469,7 +470,21 @@ class RobloxVerificationBot(commands.Bot):
         )
         test_embed.set_footer(text=f"Exam Ticket #{ticket_id} • AI Roleplay Evaluator Mode Active")
         view = TicketControlView(self)
+        trainer_view = TestTicketTrainerControlView(self, target_staff, scenario_title)
         await channel.send(content=f"{target_staff.mention} {founder.mention}", embed=test_embed, view=view)
+
+        trainer_embed = discord.Embed(
+            title="🎛️ Foundership & Trainer Intervention Console",
+            description=(
+                "Use the interactive controls below during the live simulation exam:\n"
+                "• 🧪 **Inject Curveball:** Force a surprise policy trick question\n"
+                "• ⚡ **Make Hostile:** Escalate simulated member aggression\n"
+                "• 📋 **Live Scorecard:** View real-time SOP criteria breakdown\n"
+                "• 🏆 **Auto-Grade & Conclude:** Grade out of 100, send DMs, & close exam"
+            ),
+            color=0x34495E
+        )
+        await channel.send(embed=trainer_embed, view=trainer_view)
 
         # Dispatch initial AI roleplay opening prompt
         asyncio.create_task(self.dispatch_ai_test_opening(ticket_id, channel, scenario_title, scenario_details or ""))
@@ -5827,11 +5842,12 @@ async def ticket_request_close_cmd(interaction: discord.Interaction, reason: Opt
     custom_details="Custom scenario task details or prompt"
 )
 @app_commands.choices(scenario_title=[
-    app_commands.Choice(name="Mock Roblox Verification & Bio Code Censorship", value="Mock Roblox Verification & Bio Code Censorship"),
-    app_commands.Choice(name="Mock Robux Billing & Gamepass Dispute", value="Mock Robux Billing & Gamepass Dispute"),
-    app_commands.Choice(name="Mock Game Bug & Reproduction Steps", value="Mock Game Bug & Reproduction Steps"),
-    app_commands.Choice(name="Mock Exploit & Scam Player Report", value="Mock Exploit & Scam Player Report"),
-    app_commands.Choice(name="Mock Ban Appeal & Penalty Review", value="Mock Ban Appeal & Penalty Review"),
+    app_commands.Choice(name="Master Phishing & Account Security Simulation", value="Master Phishing & Account Security Simulation"),
+    app_commands.Choice(name="Hostile Member & Threat De-Escalation Simulation", value="Hostile Member & Threat De-Escalation Simulation"),
+    app_commands.Choice(name="False Ban Appeal & Confidential Evidence Request", value="False Ban Appeal & Confidential Evidence Request"),
+    app_commands.Choice(name="Exploit Report & Player Dispute Video Verification", value="Exploit Report & Player Dispute Video Verification"),
+    app_commands.Choice(name="Rogue Mod Impersonation & Rank Restoration Fraud", value="Rogue Mod Impersonation & Rank Restoration Fraud"),
+    app_commands.Choice(name="Booster Perks Claim & Verification Fraud", value="Booster Perks Claim & Verification Fraud"),
     app_commands.Choice(name="Custom Practical Assessment Scenario", value="Custom Practical Assessment Scenario")
 ])
 async def test_ticket_cmd(
@@ -5905,11 +5921,12 @@ async def test_ticket_cmd(
     custom_details="Custom scenario task details or prompt"
 )
 @app_commands.choices(scenario_title=[
-    app_commands.Choice(name="Mock Roblox Verification & Bio Code Censorship", value="Mock Roblox Verification & Bio Code Censorship"),
-    app_commands.Choice(name="Mock Robux Billing & Gamepass Dispute", value="Mock Robux Billing & Gamepass Dispute"),
-    app_commands.Choice(name="Mock Game Bug & Reproduction Steps", value="Mock Game Bug & Reproduction Steps"),
-    app_commands.Choice(name="Mock Exploit & Scam Player Report", value="Mock Exploit & Scam Player Report"),
-    app_commands.Choice(name="Mock Ban Appeal & Penalty Review", value="Mock Ban Appeal & Penalty Review"),
+    app_commands.Choice(name="Master Phishing & Account Security Simulation", value="Master Phishing & Account Security Simulation"),
+    app_commands.Choice(name="Hostile Member & Threat De-Escalation Simulation", value="Hostile Member & Threat De-Escalation Simulation"),
+    app_commands.Choice(name="False Ban Appeal & Confidential Evidence Request", value="False Ban Appeal & Confidential Evidence Request"),
+    app_commands.Choice(name="Exploit Report & Player Dispute Video Verification", value="Exploit Report & Player Dispute Video Verification"),
+    app_commands.Choice(name="Rogue Mod Impersonation & Rank Restoration Fraud", value="Rogue Mod Impersonation & Rank Restoration Fraud"),
+    app_commands.Choice(name="Booster Perks Claim & Verification Fraud", value="Booster Perks Claim & Verification Fraud"),
     app_commands.Choice(name="Custom Practical Assessment Scenario", value="Custom Practical Assessment Scenario")
 ])
 async def ticket_test_staff_cmd(
@@ -5927,11 +5944,12 @@ async def ticket_test_staff_cmd(
     custom_details="Custom scenario task details or prompt"
 )
 @app_commands.choices(scenario_title=[
-    app_commands.Choice(name="Mock Roblox Verification & Bio Code Censorship", value="Mock Roblox Verification & Bio Code Censorship"),
-    app_commands.Choice(name="Mock Robux Billing & Gamepass Dispute", value="Mock Robux Billing & Gamepass Dispute"),
-    app_commands.Choice(name="Mock Game Bug & Reproduction Steps", value="Mock Game Bug & Reproduction Steps"),
-    app_commands.Choice(name="Mock Exploit & Scam Player Report", value="Mock Exploit & Scam Player Report"),
-    app_commands.Choice(name="Mock Ban Appeal & Penalty Review", value="Mock Ban Appeal & Penalty Review"),
+    app_commands.Choice(name="Master Phishing & Account Security Simulation", value="Master Phishing & Account Security Simulation"),
+    app_commands.Choice(name="Hostile Member & Threat De-Escalation Simulation", value="Hostile Member & Threat De-Escalation Simulation"),
+    app_commands.Choice(name="False Ban Appeal & Confidential Evidence Request", value="False Ban Appeal & Confidential Evidence Request"),
+    app_commands.Choice(name="Exploit Report & Player Dispute Video Verification", value="Exploit Report & Player Dispute Video Verification"),
+    app_commands.Choice(name="Rogue Mod Impersonation & Rank Restoration Fraud", value="Rogue Mod Impersonation & Rank Restoration Fraud"),
+    app_commands.Choice(name="Booster Perks Claim & Verification Fraud", value="Booster Perks Claim & Verification Fraud"),
     app_commands.Choice(name="Custom Practical Assessment Scenario", value="Custom Practical Assessment Scenario")
 ])
 async def staff_test_ticket_cmd(
