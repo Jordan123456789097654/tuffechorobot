@@ -443,34 +443,80 @@ class RobloxVerificationBot(commands.Bot):
             logger.error(f"Error creating staff test ticket channel: {e}")
             return None
 
-        # Register ticket in DB and force AI disabled
-        ticket_id = self.ticket_manager.create_ticket(target_staff.id, channel.id, guild.id, section="Support Staff Examination")
-        self.ticket_manager.set_ai_enabled(ticket_id, False)
+        # Register ticket in DB with AI enabled for roleplay actor mode
+        sec_label = f"Support Staff Exam: {scenario_title}"
+        ticket_id = self.ticket_manager.create_ticket(target_staff.id, channel.id, guild.id, section=sec_label)
+        self.ticket_manager.set_ai_enabled(ticket_id, True)
         self.ticket_manager.claim_ticket(ticket_id, founder.id)
 
         test_embed = discord.Embed(
-            title="🧪 Echo Technologies • Support Team Practical Assessment",
+            title="🧪 Echo Technologies • Automated AI Practical Assessment",
             description=(
-                f"Welcome {target_staff.mention} to your practical support evaluation!\n\n"
+                f"Welcome {target_staff.mention} to your live practical support evaluation!\n\n"
                 f"👤 **Assessed Staff Member:** {target_staff.mention} (`{target_staff.name}`)\n"
-                f"👑 **Exam Moderator:** {founder.mention} (`{founder.name}`)\n"
+                f"👑 **Exam Evaluator:** {founder.mention} (`{founder.name}`)\n"
                 f"🎯 **Scenario Title:** `{scenario_title}`\n\n"
-                f"📋 **Scenario Task / Prompt Instructions:**\n"
+                f"📋 **Scenario Briefing / Task:**\n"
                 f"```\n{scenario_details or 'Demonstrate standard support procedure, verify user inquiry, and apply appropriate response templates.'}\n```\n"
                 f"────────────────────────────────────────\n"
-                f"⚠️ **EXAMINATION PROTOCOL & RULES:**\n"
-                f"• **AI Assistance:** **DISABLED** (Groq AI will NOT respond in this channel).\n"
-                f"• **Channel Privacy:** **CONFIDENTIAL** (Hidden from other support team members & server users).\n"
-                f"• **Requirement:** Please reply in this channel demonstrating your SOP steps and appropriate support templates."
+                f"⚠️ **AUTOMATED AI ROLEPLAY EVALUATOR MODE:**\n"
+                f"• **Groq AI Roleplay Actor:** **ACTIVE** (The AI will act out the role of the demanding/angry Roblox user on behalf of the scenario).\n"
+                f"• **Realistic Delay:** The AI will type with realistic delays (3–6 seconds) as you reply.\n"
+                f"• **Mandatory Checklist:** Remember your **Greeting SOP**, **Evidence Privacy SOP**, **Global Blacklist Citation**, and **Ticket Closure Protocol**!"
             ),
             color=0x9B59B6,
             timestamp=discord.utils.utcnow()
         )
-        test_embed.set_footer(text=f"Exam Ticket #{ticket_id} • Foundership Practical Assessment")
+        test_embed.set_footer(text=f"Exam Ticket #{ticket_id} • AI Roleplay Evaluator Mode Active")
         view = TicketControlView(self)
         await channel.send(content=f"{target_staff.mention} {founder.mention}", embed=test_embed, view=view)
 
+        # Dispatch initial AI roleplay opening prompt
+        asyncio.create_task(self.dispatch_ai_test_opening(ticket_id, channel, scenario_title, scenario_details or ""))
+
         return channel
+
+    async def dispatch_ai_test_opening(self, ticket_id: int, channel: discord.TextChannel, scenario_title: str, scenario_details: str):
+        """Generates and dispatches initial roleplay opening message for a staff test ticket."""
+        await asyncio.sleep(2.0)
+        async with channel.typing():
+            await asyncio.sleep(3.5)
+            opening_msg = await self.groq_assistant.generate_test_opening_prompt(scenario_title, scenario_details)
+
+        self.ticket_manager.add_message(ticket_id, 0, "user", opening_msg, sender_name="Member (Simulated)")
+
+        opening_embed = discord.Embed(
+            title="👤 Member (Roleplay Inquiry)",
+            description=opening_msg,
+            color=0xE74C3C
+        )
+        opening_embed.set_footer(text="🤖 AI Evaluator Roleplay • Reply directly in this channel to respond to the member")
+        await channel.send(embed=opening_embed)
+
+    async def process_ai_test_roleplay_message(self, ticket_id: int, channel: discord.TextChannel, staff_user: discord.User, new_content: str):
+        """Processes staff member's response during a test ticket, adding realistic typing delay and acting out the member."""
+        ticket = self.ticket_manager.get_ticket_by_channel(channel.id)
+        if not ticket or ticket["status"] == "closed":
+            return
+
+        sec = ticket.get("section", "Support Staff Exam")
+        scen_title = sec.replace("Support Staff Exam: ", "") if "Support Staff Exam: " in sec else sec
+
+        await asyncio.sleep(1.5)
+        async with channel.typing():
+            await asyncio.sleep(3.5)
+            history = self.ticket_manager.get_history_for_llm(ticket_id)
+            ai_reply = await self.groq_assistant.generate_test_roleplay_response(history, scen_title)
+
+        self.ticket_manager.add_message(ticket_id, 0, "user", ai_reply, sender_name="Member (Simulated)")
+
+        reply_embed = discord.Embed(
+            title="👤 Member (Roleplay Response)",
+            description=ai_reply,
+            color=0xE74C3C
+        )
+        reply_embed.set_footer(text="🤖 AI Evaluator Roleplay Mode • Continue your response in character")
+        await channel.send(embed=reply_embed)
 
     async def process_ai_ticket_message(
         self,
@@ -1527,6 +1573,17 @@ async def on_message(message: discord.Message):
                 sender_name=message.author.display_name,
                 attachments=att_urls
             )
+
+            # Check if this is a Staff Examination / Roleplay Evaluator Ticket!
+            if "Support Staff Exam" in ticket.get("section", ""):
+                if ticket.get("status") != "closed":
+                    asyncio.create_task(bot.process_ai_test_roleplay_message(ticket_id, message.channel, message.author, message.content))
+                    try:
+                        await message.add_reaction("🧠")
+                    except Exception:
+                        pass
+                await bot.process_commands(message)
+                return
             target_user = bot.get_user(ticket_user_id)
             if not target_user:
                 try:

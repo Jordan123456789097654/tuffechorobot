@@ -436,3 +436,88 @@ You must ESCALATE the ticket to staff if:
             if kw in lower:
                 return True, reason
         return False, ""
+
+    async def generate_test_opening_prompt(self, scenario_title: str, scenario_details: str = "") -> str:
+        """Generates the initial opening roleplay message from the fake member for a test ticket."""
+        client = self._ensure_client()
+        if not client:
+            return f"WHY WAS MY ACCOUNT BANNED/DEMOTED??? Fix this right now or I am reporting your group!"
+
+        prompt = [
+            {
+                "role": "system",
+                "content": (
+                    f"You are an AI Support Staff Examiner acting out a realistic, high-stress, demanding Roblox user in a Discord support ticket.\n"
+                    f"SCENARIO TITLE: '{scenario_title}'\n"
+                    f"SCENARIO DETAILS: '{scenario_details}'\n\n"
+                    f"DIRECTIVE: Write an EXTREMELY realistic, angry, demanding, or panicked OPENING message for this scenario.\n"
+                    f"Do NOT break character. Output ONLY the message as the user."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Generate the initial opening message for scenario: {scenario_title}"
+            }
+        ]
+
+        try:
+            res = await self._call_groq_with_fallback(
+                client=client,
+                messages=prompt,
+                temperature=0.7,
+                max_tokens=300
+            )
+            return (res.choices[0].message.content or "").strip()
+        except Exception as e:
+            logger.error(f"Error generating test opening prompt: {e}")
+            return f"WHY WAS MY ACCOUNT BANNED/DEMOTED??? Fix this right now or I am reporting your group games!"
+
+    async def generate_test_roleplay_response(
+        self,
+        messages_history: List[Dict[str, str]],
+        scenario_title: str,
+        scenario_details: str = ""
+    ) -> str:
+        """Acts out the role of the challenging user during a /test-ticket simulation."""
+        client = self._ensure_client()
+        if not client or not messages_history:
+            return "I don't care about your rules! Answer my question right now or I'm reporting your group!"
+
+        convo_text = "\n".join([f"{m.get('sender_name', m['role']).upper()}: {m['content']}" for m in messages_history[-10:]])
+
+        prompt = [
+            {
+                "role": "system",
+                "content": (
+                    f"You are an AI Support Staff Examiner acting as a realistic, challenging, demanding Roblox user in a Discord support ticket simulation.\n"
+                    f"SCENARIO: '{scenario_title}' ({scenario_details})\n\n"
+                    f"ROLEPLAY DIRECTIVES:\n"
+                    f"1. Stay 100% in character as the demanding Roblox player.\n"
+                    f"2. Respond dynamically to what the staff member says. Take 4 to 5 turns to test them thoroughly.\n"
+                    f"3. Test if the staff member:\n"
+                    f"   - Used the mandatory greeting ('Hello! My name is [Name] from Echo Technologies Support...').\n"
+                    f"   - Refused unauthorized Robux/rank payouts.\n"
+                    f"   - Cited the Evidence Privacy SOP if video/detection logs were mentioned.\n"
+                    f"   - Cited the Permanent Global Blacklist penalty if alt evasion/raids were mentioned.\n"
+                    f"   - Guided you to official appeal forms or /ticket-request-close.\n"
+                    f"4. Keep responses realistic (2-5 sentences), emotional, and challenging.\n"
+                    f"5. Output ONLY your message in character as the member."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Ticket Transcript so far:\n{convo_text}\n\nRespond as the Roblox user in character:"
+            }
+        ]
+
+        try:
+            res = await self._call_groq_with_fallback(
+                client=client,
+                messages=prompt,
+                temperature=0.6,
+                max_tokens=400
+            )
+            return (res.choices[0].message.content or "").strip()
+        except Exception as e:
+            logger.error(f"Error generating test roleplay response: {e}")
+            return "I don't care about your SOP procedure! Answer my question right now!"
