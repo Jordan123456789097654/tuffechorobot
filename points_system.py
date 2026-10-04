@@ -288,17 +288,48 @@ async def evaluate_message_for_point(message: discord.Message) -> Tuple[bool, st
         '{"award": true or false, "reason": "brief 1-sentence explanation"}'
     )
 
+    models_to_try = [
+        getattr(config, "GROQ_MODEL", "llama-3.3-70b-versatile"),
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "llama3-70b-8192"
+    ]
+    # Remove duplicates preserving order
+    unique_models = []
+    for m in models_to_try:
+        if m and m not in unique_models:
+            unique_models.append(m)
+
+    response = None
+    last_err = None
+    for m_name in unique_models:
+        try:
+            groq_client = AsyncGroq(api_key=config.GROQ_API_KEY)
+            response = await groq_client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": "You are a fair, strict community evaluation AI. Output strictly JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                model=m_name,
+                temperature=0.2,
+                max_tokens=150
+            )
+            break
+        except Exception as e:
+            err_str = str(e).lower()
+            if "404" in err_str or "does not exist" in err_str or "model_not_found" in err_str:
+                last_err = e
+                continue
+            else:
+                raise e
+
+    if not response:
+        if last_err:
+            logger.warning(f"Error evaluating chat message with Groq: {last_err}")
+            return False, str(last_err)
+        return False, "Groq unavailable"
+
     try:
-        groq_client = AsyncGroq(api_key=config.GROQ_API_KEY)
-        response = await groq_client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": "You are a fair, strict community evaluation AI. Output strictly JSON."},
-                {"role": "user", "content": prompt}
-            ],
-            model="llama-3.3-70b-versatile",
-            temperature=0.2,
-            max_tokens=150
-        )
         reply = response.choices[0].message.content.strip()
 
         # Parse JSON
@@ -315,6 +346,7 @@ async def evaluate_message_for_point(message: discord.Message) -> Tuple[bool, st
     except Exception as e:
         logger.warning(f"Error evaluating chat message with Groq: {e}")
         return False, str(e)
+
 
 
 # --- REWARD EMBED BUILDERS ---

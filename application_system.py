@@ -56,6 +56,17 @@ APPLICATION_POSITIONS: Dict[str, Dict[str, Any]] = {
             "What creative event ideas, community initiatives, or marketing strategies would you bring to Echo Technologies to grow active community participation?",
             "Why do you want to join our Public Relations team specifically, and what makes you the ideal brand ambassador for Echo Technologies?"
         ]
+    },
+    "qa_tester": {
+        "title": "QA Game Tester",
+        "emoji": "🧪",
+        "role_id": getattr(config, "TESTER_ROLE_ID", config.CONTRIBUTOR_ROLE_ID),
+        "description": "Test upcoming Roblox games, stress-test server features, report bugs, and provide balance feedback.",
+        "questions": [
+            "What device/platform do you play Roblox on (e.g. PC, Mobile, Console) and what is your average FPS/performance?",
+            "Do you have past experience testing Roblox games or finding/reporting bugs? Describe your testing method.",
+            "How many hours per week can you participate in scheduled playtests or stress-testing sessions?"
+        ]
     }
 }
 
@@ -77,10 +88,16 @@ def init_applications_db():
                 reviewed_by INTEGER,
                 review_note TEXT,
                 log_message_id INTEGER,
+                ai_analysis TEXT, -- JSON object string with AI pre-screening score & breakdown
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 completed_at TIMESTAMP
             );
         """)
+        cursor.execute("PRAGMA table_info(applications);")
+        cols = [r[1] for r in cursor.fetchall()]
+        if "ai_analysis" not in cols:
+            cursor.execute("ALTER TABLE applications ADD COLUMN ai_analysis TEXT;")
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS application_settings (
                 position_key TEXT PRIMARY KEY,
@@ -93,6 +110,57 @@ def init_applications_db():
         conn.commit()
 
 init_applications_db()
+
+def check_application_cooldown(user_id: int, position_key: Optional[str] = None, cooldown_days: int = 14) -> Tuple[bool, str]:
+    """Checks if the user has been denied within the last `cooldown_days` days."""
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        if position_key:
+            cursor.execute("""
+                SELECT * FROM applications
+                WHERE user_id = ? AND position_key = ? AND status = 'denied'
+                ORDER BY completed_at DESC, created_at DESC LIMIT 1;
+            """, (user_id, position_key))
+        else:
+            cursor.execute("""
+                SELECT * FROM applications
+                WHERE user_id = ? AND status = 'denied'
+                ORDER BY completed_at DESC, created_at DESC LIMIT 1;
+            """, (user_id,))
+
+        row = cursor.fetchone()
+        if not row:
+            return True, ""
+
+        ref_time_str = row["completed_at"] or row["created_at"]
+        if not ref_time_str:
+            return True, ""
+
+        try:
+            cleaned = str(ref_time_str).rstrip("Z")
+            if "." in cleaned:
+                base, frac = cleaned.split(".", 1)
+                cleaned = f"{base}.{frac[:6]}"
+            ref_time = datetime.fromisoformat(cleaned)
+            if ref_time.tzinfo is None:
+                ref_time = ref_time.replace(tzinfo=timezone.utc)
+        except Exception:
+            return True, ""
+
+        now = datetime.now(timezone.utc)
+        diff = now - ref_time
+        from datetime import timedelta
+        cooldown_td = timedelta(days=cooldown_days)
+        if diff < cooldown_td:
+            remaining = cooldown_td - diff
+            days = remaining.days
+            hours = remaining.seconds // 3600
+            ts = int(ref_time.timestamp())
+            return False, f"⏳ **Application Cooldown Active:** Your previous application was declined on <t:{ts}:D>. Please wait **{days} days, {hours} hours** before applying again."
+
+    return True, ""
+
 
 def get_position_status(position_key: str) -> Dict[str, Any]:
     """Returns status dictionary for a specific position."""
@@ -227,6 +295,10 @@ def create_application_session(user_id: int, guild_id: int, position_key: str) -
     pending = get_pending_review_application(user_id)
     if pending:
         return False, f"You already have an application for **{pending['position_title']}** under review by management! Please await our decision.", pending["id"]
+
+    cooldown_ok, cooldown_msg = check_application_cooldown(user_id, position_key=position_key, cooldown_days=config.APPLICATION_COOLDOWN_DAYS)
+    if not cooldown_ok:
+        return False, cooldown_msg, None
 
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -416,6 +488,95 @@ class CareerLaunchView(ui.View):
             )
         )
 
+        qa_open = statuses.get("qa_tester", {}).get("is_open", True)
+        self.add_item(
+            ui.Button(
+                label="Apply: QA Game Tester" if qa_open else "QA Game Tester (Closed)",
+                emoji="🧪" if qa_open else "🔒",
+                style=discord.ButtonStyle.secondary if qa_open else discord.ButtonStyle.secondary,
+                disabled=not qa_open,
+                custom_id="app_start:qa_tester"
+            )
+        )
+
+
+async def run_ai_prescreening(app_id: int, groq_assistant=None) -> Optional[Dict[str, Any]]:
+    """Uses Groq AI to evaluate candidate submission quality, score, flags, and summary."""
+    app = get_application(app_id)
+    if not app:
+        return None
+
+    pos_data = APPLICATION_POSITIONS.get(app["position_key"], {})
+    questions = pos_data.get("questions", [])
+    answers = json.loads(app["answers"] or "[]")
+
+    if not answers:
+        return None
+
+    qa_formatted = []
+    for i, ans in enumerate(answers):
+        q = questions[i] if i < len(questions) else f"Question {i+1}"
+        qa_formatted.append(f"Q: {q}\nA: {ans}")
+
+    qa_text = "\n\n".join(qa_formatted)
+
+    prompt = f"""
+    You are an automated HR Candidate Evaluator for Echo Technologies.
+    Evaluate the following applicant's responses for the position '{app['position_title']}':
+
+    {qa_text}
+
+    Analyze the candidate's answers carefully for:
+    1. Effort & Detail Level (Low, Medium, High)
+    2. Quality Score on a scale of 1 to 10 (1 = total spam/one-word, 10 = exceptional detailed answers)
+    3. Potential Flags or Warnings (e.g., 'One-word answers', 'Vague responses', 'Possible AI generated text', 'Spam/Nonsense', or empty if good)
+    4. A concise 2-sentence summary of the candidate's qualifications and responses.
+
+    Respond ONLY in strict raw JSON format without markdown codeblocks or quotes:
+    {{"score": 8, "quality": "High", "flags": [], "summary": "The candidate has clear relevant experience and provided detailed answers."}}
+    """
+
+    ai_result = {
+        "score": 7,
+        "quality": "Medium",
+        "flags": [],
+        "summary": "Application submitted with complete responses."
+    }
+
+    if groq_assistant and hasattr(groq_assistant, "client") and groq_assistant.client:
+        try:
+            resp = await groq_assistant.client.chat.completions.create(
+                model=config.GROQ_MODEL,
+                messages=[
+                    {"role": "system", "content": "You are a professional HR candidate screening AI. Respond ONLY with valid JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2,
+                max_tokens=250
+            )
+            raw_text = resp.choices[0].message.content.strip()
+            if raw_text.startswith("```"):
+                raw_text = raw_text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            parsed = json.loads(raw_text)
+            if isinstance(parsed, dict) and "score" in parsed:
+                ai_result = parsed
+        except Exception as e:
+            logger.warning(f"Error calling Groq AI for application prescreening: {e}")
+            total_chars = sum(len(a) for a in answers)
+            avg_chars = total_chars / max(len(answers), 1)
+            if avg_chars < 20:
+                ai_result = {"score": 3, "quality": "Low", "flags": ["Very short/low-effort responses"], "summary": "Applicant gave very short or minimal responses to the interview questions."}
+            elif avg_chars > 80:
+                ai_result = {"score": 8, "quality": "High", "flags": [], "summary": "Applicant provided detailed responses to all interview questions."}
+
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE applications SET ai_analysis = ? WHERE id = ?;", (json.dumps(ai_result), app_id))
+        conn.commit()
+
+    return ai_result
+
+
 
 def build_application_dossier_embed(
     app_data: Dict[str, Any],
@@ -460,6 +621,26 @@ def build_application_dossier_embed(
     embed.add_field(name="👤 Candidate", value=f"{user_mention} (`{user_name}` | `{uid}`)", inline=True)
     embed.add_field(name="🎮 Roblox Profile", value=roblox_field, inline=True)
     embed.add_field(name="💼 Applied Role", value=f"**{app_data['position_title']}**", inline=True)
+
+    # AI Pre-screening Display
+    raw_ai = app_data.get("ai_analysis")
+    if raw_ai:
+        try:
+            ai_data = json.loads(raw_ai) if isinstance(raw_ai, str) else raw_ai
+            score = ai_data.get("score", "N/A")
+            quality = ai_data.get("quality", "Medium")
+            summary = ai_data.get("summary", "No summary generated.")
+            flags = ai_data.get("flags", [])
+            flags_text = f" • **Flags:** `{', '.join(flags)}`" if flags else ""
+
+            badge = "🟢" if int(score) >= 7 else ("🟡" if int(score) >= 5 else "🔴")
+            embed.add_field(
+                name="🤖 AI Pre-Screening Evaluation",
+                value=f"{badge} **Quality Score:** `{score}/10` (**{quality}**){flags_text}\n> {summary}",
+                inline=False
+            )
+        except Exception:
+            pass
 
     # Question & Answer Breakdown
     answers = json.loads(app_data["answers"] or "[]")
@@ -526,6 +707,16 @@ class ApplicationControlView(ui.View):
                 disabled=disabled
             )
         )
+        self.add_item(
+            ui.Button(
+                label="Export Transcript",
+                emoji="📥",
+                style=discord.ButtonStyle.secondary,
+                custom_id=f"app_html:{app_id}",
+                disabled=False
+            )
+        )
+
 
 class DenyApplicationModal(ui.Modal):
     """Modal for HR to supply feedback when declining an applicant."""
@@ -765,6 +956,13 @@ async def handle_applicant_dm_message(bot, message: discord.Message) -> bool:
         )
         finished_embed.set_footer(text=f"Application #{app_id} • Received")
         await message.channel.send(embed=finished_embed)
+
+        # Trigger automated AI Pre-screening before dispatching to HR channel
+        try:
+            groq_asst = getattr(bot, "groq_assistant", None)
+            await run_ai_prescreening(app_id, groq_assistant=groq_asst)
+        except Exception as e:
+            logger.warning(f"Failed to run AI pre-screening on app #{app_id}: {e}")
 
         # Dispatch Dossier to Applications Review Channel (#applications: 1556027504429633738)
         app_record = get_application(app_id)

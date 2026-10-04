@@ -27,7 +27,7 @@ from ticket_views import (
     CannedReplySelectView,
     InternalNoteModal
 )
-from transcript_generator import generate_html_transcript
+from transcript_generator import generate_html_transcript, generate_application_html_transcript
 from hire_system import HireOfferView, handle_hire_action, create_hire_offer
 from hr_system import (
     add_strike, get_staff_strikes, get_strike, pardon_strike,
@@ -3761,16 +3761,19 @@ async def post_career_panel_cmd(interaction: discord.Interaction, channel: Optio
 @app_commands.choices(position=[
     app_commands.Choice(name="🛠️ Product Development", value="product_development"),
     app_commands.Choice(name="🛡️ Support Team", value="support_team"),
-    app_commands.Choice(name="📢 Public Relations", value="public_relations")
+    app_commands.Choice(name="📢 Public Relations", value="public_relations"),
+    app_commands.Choice(name="🧪 QA Game Tester", value="qa_tester")
 ])
 async def apply_cmd(interaction: discord.Interaction, position: str):
+    await interaction.response.defer(ephemeral=True)
     success, reply_msg = await start_dm_application_flow(
         bot=bot,
         user=interaction.user,
         guild=interaction.guild or bot.get_primary_guild(),
         position_key=position
     )
-    await interaction.response.send_message(reply_msg, ephemeral=True)
+    await interaction.followup.send(reply_msg, ephemeral=True)
+
 
 async def _execute_close_applications(
     interaction: discord.Interaction,
@@ -3848,7 +3851,8 @@ async def _execute_open_applications(
     app_commands.Choice(name="🌐 All Positions", value="all"),
     app_commands.Choice(name="🛠️ Product Development", value="product_development"),
     app_commands.Choice(name="🛡️ Support Team", value="support_team"),
-    app_commands.Choice(name="📢 Public Relations", value="public_relations")
+    app_commands.Choice(name="📢 Public Relations", value="public_relations"),
+    app_commands.Choice(name="🧪 QA Game Tester", value="qa_tester")
 ])
 @app_commands.default_permissions(administrator=True)
 async def close_applications_cmd(
@@ -3866,7 +3870,8 @@ async def close_applications_cmd(
     app_commands.Choice(name="🌐 All Positions", value="all"),
     app_commands.Choice(name="🛠️ Product Development", value="product_development"),
     app_commands.Choice(name="🛡️ Support Team", value="support_team"),
-    app_commands.Choice(name="📢 Public Relations", value="public_relations")
+    app_commands.Choice(name="📢 Public Relations", value="public_relations"),
+    app_commands.Choice(name="🧪 QA Game Tester", value="qa_tester")
 ])
 @app_commands.default_permissions(administrator=True)
 async def open_applications_cmd(
@@ -3874,6 +3879,43 @@ async def open_applications_cmd(
     position: str = "all"
 ):
     await _execute_open_applications(interaction, position)
+
+@bot.tree.command(name="application-transcript", description="[STAFF] Export an HTML transcript of an application dossier.")
+@app_commands.describe(app_id="The application ID to export")
+@app_commands.default_permissions(manage_roles=True)
+async def application_transcript_cmd(interaction: discord.Interaction, app_id: int):
+    await interaction.response.defer(ephemeral=True)
+    app = get_application(app_id)
+    if not app:
+        await interaction.followup.send("❌ Application not found.", ephemeral=True)
+        return
+
+    pos_data = APPLICATION_POSITIONS.get(app["position_key"], {})
+    questions = pos_data.get("questions", [])
+    user_info = bot.db.get_by_discord_id(app["user_id"])
+    candidate = bot.get_user(app["user_id"])
+    if candidate and user_info:
+        user_info["discord_name"] = candidate.name
+    elif candidate:
+        user_info = {"discord_name": candidate.name}
+
+    reviewer = bot.get_user(app["reviewed_by"]) if app.get("reviewed_by") else None
+    reviewer_name = reviewer.name if reviewer else None
+
+    html_content = generate_application_html_transcript(
+        app_data=app,
+        questions=questions,
+        user_info=user_info,
+        reviewer_name=reviewer_name
+    )
+    filename = f"application_{app_id}_dossier.html"
+    file = discord.File(io.BytesIO(html_content.encode("utf-8")), filename=filename)
+
+    await interaction.followup.send(
+        content=f"📥 **HTML Dossier Transcript generated for Application #{app_id}** (`{app['position_title']}`):",
+        file=file,
+        ephemeral=True
+    )
 
 # --- Applications Subcommand Group ---
 applications_group = app_commands.Group(name="applications", description="Manage staff and developer recruitment positions")
@@ -3887,7 +3929,8 @@ applications_group = app_commands.Group(name="applications", description="Manage
     app_commands.Choice(name="🌐 All Positions", value="all"),
     app_commands.Choice(name="🛠️ Product Development", value="product_development"),
     app_commands.Choice(name="🛡️ Support Team", value="support_team"),
-    app_commands.Choice(name="📢 Public Relations", value="public_relations")
+    app_commands.Choice(name="📢 Public Relations", value="public_relations"),
+    app_commands.Choice(name="🧪 QA Game Tester", value="qa_tester")
 ])
 async def app_grp_close(interaction: discord.Interaction, position: str = "all", reason: Optional[str] = None):
     await _execute_close_applications(interaction, position, reason)
@@ -3900,10 +3943,12 @@ async def app_grp_close(interaction: discord.Interaction, position: str = "all",
     app_commands.Choice(name="🌐 All Positions", value="all"),
     app_commands.Choice(name="🛠️ Product Development", value="product_development"),
     app_commands.Choice(name="🛡️ Support Team", value="support_team"),
-    app_commands.Choice(name="📢 Public Relations", value="public_relations")
+    app_commands.Choice(name="📢 Public Relations", value="public_relations"),
+    app_commands.Choice(name="🧪 QA Game Tester", value="qa_tester")
 ])
 async def app_grp_open(interaction: discord.Interaction, position: str = "all"):
     await _execute_open_applications(interaction, position)
+
 
 @applications_group.command(name="status", description="Check current vacancy status and statistics for all application positions.")
 async def app_grp_status(interaction: discord.Interaction):
@@ -3949,6 +3994,46 @@ async def app_grp_panel(interaction: discord.Interaction, channel: Optional[disc
     await _post_career_panel_logic(interaction, channel)
 
 bot.tree.add_command(applications_group)
+
+
+@bot.tree.command(name="poll", description="Create an interactive community vote poll.")
+@app_commands.describe(
+    question="The topic or question for the poll",
+    option1="Option 1",
+    option2="Option 2",
+    option3="Optional Option 3",
+    option4="Optional Option 4"
+)
+async def poll_cmd(
+    interaction: discord.Interaction,
+    question: str,
+    option1: str,
+    option2: str,
+    option3: Optional[str] = None,
+    option4: Optional[str] = None
+):
+    await interaction.response.defer()
+    options = [opt for opt in [option1, option2, option3, option4] if opt]
+    emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
+
+    desc_lines = [f"**{question}**\n"]
+    for idx, opt in enumerate(options):
+        desc_lines.append(f"{emojis[idx]} {opt}")
+
+    embed = discord.Embed(
+        title="📊 Community Poll",
+        description="\n".join(desc_lines),
+        color=0x5865F2,
+        timestamp=discord.utils.utcnow()
+    )
+    embed.set_footer(text=f"Poll created by {interaction.user.name} • React below to vote!")
+    msg = await interaction.followup.send(embed=embed, wait=True)
+    for idx in range(len(options)):
+        try:
+            await msg.add_reaction(emojis[idx])
+        except Exception:
+            pass
+
 
 
 # ==========================================
@@ -5430,16 +5515,51 @@ async def on_persistent_components_listener(interaction: discord.Interaction):
             )
             await interaction.response.send_message(reply_msg, ephemeral=True)
 
-        elif cid.startswith("app_acc:") or cid.startswith("app_dec:") or cid.startswith("app_ask:"):
+        elif cid.startswith("app_acc:") or cid.startswith("app_dec:") or cid.startswith("app_ask:") or cid.startswith("app_html:"):
             parts = cid.split(":")
             if len(parts) >= 2:
                 try:
                     app_id = int(parts[1])
+                    if parts[0] == "app_html":
+                        await interaction.response.defer(ephemeral=True)
+                        app = get_application(app_id)
+                        if not app:
+                            await interaction.followup.send("❌ Application not found.", ephemeral=True)
+                        else:
+                            pos_data = APPLICATION_POSITIONS.get(app["position_key"], {})
+                            questions = pos_data.get("questions", [])
+                            user_info = bot.db.get_by_discord_id(app["user_id"])
+                            candidate = bot.get_user(app["user_id"])
+                            if candidate and user_info:
+                                user_info["discord_name"] = candidate.name
+                            elif candidate:
+                                user_info = {"discord_name": candidate.name}
+
+                            reviewer = bot.get_user(app["reviewed_by"]) if app.get("reviewed_by") else None
+                            reviewer_name = reviewer.name if reviewer else None
+
+                            html_content = generate_application_html_transcript(
+                                app_data=app,
+                                questions=questions,
+                                user_info=user_info,
+                                reviewer_name=reviewer_name
+                            )
+                            filename = f"application_{app_id}_dossier.html"
+                            file = discord.File(io.BytesIO(html_content.encode("utf-8")), filename=filename)
+
+                            await interaction.followup.send(
+                                content=f"📥 **HTML Dossier Transcript generated for Application #{app_id}** (`{app['position_title']}`):",
+                                file=file,
+                                ephemeral=True
+                            )
+                        return
+
                     is_admin = interaction.user.guild_permissions.manage_roles or interaction.user.guild_permissions.administrator
                     if not is_admin:
                         await interaction.response.send_message("❌ Only management staff can review applications.", ephemeral=True)
                     else:
                         if parts[0] == "app_acc":
+
                             await interaction.response.defer(ephemeral=True)
                             app = get_application(app_id)
                             if not app:

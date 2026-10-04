@@ -21,6 +21,33 @@ class GroqAssistant:
             self.client = AsyncGroq(api_key=config.GROQ_API_KEY)
         return self.client
 
+    async def _call_groq_with_fallback(self, client, messages, temperature=0.3, max_tokens=800):
+        models = [config.GROQ_MODEL, "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192"]
+        unique_models = []
+        for m in models:
+            if m and m not in unique_models:
+                unique_models.append(m)
+
+        last_err = None
+        for m_name in unique_models:
+            try:
+                return await client.chat.completions.create(
+                    messages=messages,
+                    model=m_name,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+            except Exception as e:
+                err_str = str(e).lower()
+                if "404" in err_str or "does not exist" in err_str or "model_not_found" in err_str:
+                    logger.warning(f"Groq model '{m_name}' unavailable ({e}). Retrying with next model...")
+                    last_err = e
+                    continue
+                raise e
+        if last_err:
+            raise last_err
+
+
     def _build_system_prompt(
         self,
         user_info: Optional[Dict] = None,
@@ -239,14 +266,15 @@ You must ESCALATE the ticket to staff if:
 
         try:
             chat_completion = await asyncio.wait_for(
-                client.chat.completions.create(
+                self._call_groq_with_fallback(
+                    client=client,
                     messages=payload_messages,
-                    model=config.GROQ_MODEL,
                     temperature=0.3,
                     max_tokens=800
                 ),
                 timeout=12.0
             )
+
 
             raw_reply = chat_completion.choices[0].message.content or ""
 
@@ -344,12 +372,13 @@ You must ESCALATE the ticket to staff if:
         ]
 
         try:
-            res = await client.chat.completions.create(
+            res = await self._call_groq_with_fallback(
+                client=client,
                 messages=prompt,
-                model=config.GROQ_MODEL,
                 temperature=0.2,
                 max_tokens=250
             )
+
             return (res.choices[0].message.content or "").strip()
         except Exception as e:
             logger.error(f"Error generating ticket summary: {e}")
@@ -379,12 +408,13 @@ You must ESCALATE the ticket to staff if:
         ]
 
         try:
-            res = await client.chat.completions.create(
+            res = await self._call_groq_with_fallback(
+                client=client,
                 messages=prompt,
-                model=config.GROQ_MODEL,
                 temperature=0.3,
                 max_tokens=300
             )
+
             return (res.choices[0].message.content or "").strip()
         except Exception as e:
             logger.error(f"Error drafting suggested reply: {e}")

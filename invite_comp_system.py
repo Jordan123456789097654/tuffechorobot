@@ -396,8 +396,13 @@ async def update_invite_competition_embed(bot, comp_id: int):
     try:
         msg = await channel.fetch_message(comp["message_id"])
         await msg.edit(embed=embed, view=InviteCompControlView(bot, comp_id))
+    except discord.NotFound:
+        # Message was deleted; clear message_id in DB to avoid repeated warning logs
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("UPDATE invite_competitions SET message_id = NULL WHERE id = ?;", (comp_id,))
     except Exception as e:
         logger.warning(f"Could not update competition message #{comp['message_id']} for contest #{comp_id}: {e}")
+
 
     # Process rank movement DMs
     await check_and_send_rank_movement_dms(bot, guild)

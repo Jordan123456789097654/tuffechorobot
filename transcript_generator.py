@@ -230,3 +230,198 @@ def generate_html_transcript(
 </html>
 """
     return full_html
+
+
+def generate_application_html_transcript(
+    app_data: Dict[str, Any],
+    questions: List[str],
+    user_info: Optional[Dict[str, Any]] = None,
+    reviewer_name: Optional[str] = None
+) -> str:
+    """
+    Generates a standalone Discord-styled HTML dossier transcript for a staff/developer application.
+    """
+    app_id = app_data.get("id", "Unknown")
+    pos_title = app_data.get("position_title", "Position")
+    status = str(app_data.get("status", "pending_review")).upper()
+    created_at = app_data.get("created_at", "Unknown")
+    completed_at = app_data.get("completed_at", "Unknown")
+    review_note = app_data.get("review_note") or "No notes provided."
+
+    username = user_info.get("discord_name", f"User {app_data.get('user_id')}") if user_info else f"User {app_data.get('user_id')}"
+    roblox_str = "Not Verified"
+    if user_info and user_info.get("roblox_username"):
+        roblox_str = f"{user_info.get('roblox_display_name')} (@{user_info.get('roblox_username')}) [ID: {user_info.get('roblox_id')}]"
+
+    # AI Pre-screening info
+    ai_html = ""
+    raw_ai = app_data.get("ai_analysis")
+    if raw_ai:
+        try:
+            ai_data = json.loads(raw_ai) if isinstance(raw_ai, str) else raw_ai
+            score = ai_data.get("score", "N/A")
+            quality = ai_data.get("quality", "Medium")
+            summary = html.escape(ai_data.get("summary", ""))
+            flags = ai_data.get("flags", [])
+            flags_str = ", ".join(flags) if flags else "None"
+
+            color_class = "score-high" if int(score) >= 7 else ("score-mid" if int(score) >= 5 else "score-low")
+            ai_html = f"""
+            <div class="meta-box ai-box">
+                <div style="font-size: 16px; font-weight: bold; margin-bottom: 6px;">🤖 AI Pre-Screening Evaluation</div>
+                <strong>Quality Score:</strong> <span class="{color_class}">{score}/10 ({quality})</span><br>
+                <strong>Summary:</strong> {summary}<br>
+                <strong>Flags / Warnings:</strong> <em>{html.escape(flags_str)}</em>
+            </div>
+            """
+        except Exception:
+            pass
+
+    # Q&A Cards
+    answers = json.loads(app_data.get("answers") or "[]")
+    qa_html = []
+    for i, ans in enumerate(answers):
+        q_text = html.escape(questions[i] if i < len(questions) else f"Question {i+1}")
+        a_text = html.escape(ans).replace("\n", "<br>")
+        card = f"""
+        <div class="qa-card">
+            <div class="q-title">Question {i+1}: {q_text}</div>
+            <div class="a-body">{a_text}</div>
+        </div>
+        """
+        qa_html.append(card)
+
+    # Attachments
+    attachments_html = ""
+    raw_att = app_data.get("attachments")
+    if raw_att:
+        try:
+            att_list = json.loads(raw_att) if isinstance(raw_att, str) else raw_att
+            if att_list:
+                att_items = []
+                for idx, url in enumerate(att_list):
+                    safe_url = html.escape(url)
+                    att_items.append(f'<li><a href="{safe_url}" target="_blank" style="color: #00a2ff;">Attachment #{idx+1}</a></li>')
+                attachments_html = f"""
+                <div class="qa-card" style="border-left-color: #fee75c;">
+                    <div class="q-title">📎 Uploaded Portfolio & Attachments</div>
+                    <ul style="margin: 8px 0 0 18px; padding: 0;">{"".join(att_items)}</ul>
+                </div>
+                """
+        except Exception:
+            pass
+
+    full_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Dossier - #{app_id} ({html.escape(pos_title)})</title>
+    <style>
+        body {{
+            background-color: #313338;
+            color: #dbdee1;
+            font-family: 'gg sans', 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+        }}
+        .container {{
+            max-width: 900px;
+            margin: 0 auto;
+            background: #2b2d31;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            overflow: hidden;
+            border: 1px solid #1e1f22;
+        }}
+        .header {{
+            background: #1e1f22;
+            padding: 24px;
+            border-bottom: 2px solid #5865f2;
+        }}
+        h1 {{
+            margin: 0 0 16px 0;
+            color: #ffffff;
+            font-size: 24px;
+        }}
+        .meta-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }}
+        .meta-box {{
+            background: #2b2d31;
+            padding: 12px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: 1px solid #383a40;
+        }}
+        .ai-box {{
+            grid-column: 1 / -1;
+            background: rgba(0, 162, 255, 0.08);
+            border: 1px dashed #00a2ff;
+        }}
+        .score-high {{ color: #57f287; font-weight: bold; }}
+        .score-mid {{ color: #fee75c; font-weight: bold; }}
+        .score-low {{ color: #ed4245; font-weight: bold; }}
+        .content-area {{
+            padding: 24px;
+        }}
+        .qa-card {{
+            background: #313338;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid #5865f2;
+            border-top: 1px solid #383a40;
+            border-right: 1px solid #383a40;
+            border-bottom: 1px solid #383a40;
+        }}
+        .q-title {{
+            font-weight: 700;
+            color: #5865f2;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }}
+        .a-body {{
+            font-size: 14px;
+            line-height: 1.5;
+            color: #dbdee1;
+        }}
+        .footer {{
+            background: #1e1f22;
+            padding: 16px;
+            text-align: center;
+            font-size: 13px;
+            color: #949ba4;
+            border-top: 1px solid #383a40;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Application #{app_id} &bull; {html.escape(pos_title)}</h1>
+            <div class="meta-grid">
+                <div class="meta-box"><strong>Candidate:</strong> {html.escape(username)}</div>
+                <div class="meta-box"><strong>Roblox Account:</strong> {html.escape(roblox_str)}</div>
+                <div class="meta-box"><strong>Status:</strong> {html.escape(status)}</div>
+                <div class="meta-box"><strong>Submitted:</strong> {html.escape(str(completed_at or created_at))}</div>
+                <div class="meta-box"><strong>Reviewed By:</strong> {html.escape(reviewer_name or "Pending")}</div>
+                <div class="meta-box"><strong>Review Note:</strong> <em>{html.escape(review_note)}</em></div>
+                {ai_html}
+            </div>
+        </div>
+        <div class="content-area">
+            {"".join(qa_html)}
+            {attachments_html}
+        </div>
+        <div class="footer">
+            Echo Technologies HR Application Dossier &bull; Generated {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")}
+        </div>
+    </div>
+</body>
+</html>
+"""
+    return full_html
+
