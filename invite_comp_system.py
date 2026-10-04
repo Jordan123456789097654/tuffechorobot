@@ -429,7 +429,12 @@ async def end_invite_competition(bot, comp_id: int):
     comp["ended"] = 1
     comp["winners_json"] = winners_json
 
-    channel = guild.get_channel(comp["channel_id"]) or await bot.fetch_channel(comp["channel_id"])
+    channel = guild.get_channel(comp["channel_id"])
+    if not channel:
+        try:
+            channel = await bot.fetch_channel(comp["channel_id"])
+        except Exception:
+            channel = None
     if channel and isinstance(channel, discord.TextChannel):
         embed = build_invite_comp_embed(comp, leaderboard=lb)
         if comp.get("message_id"):

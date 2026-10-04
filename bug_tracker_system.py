@@ -250,7 +250,12 @@ class ResolveBugModal(ui.Modal, title="Resolve Bug Report"):
 
         report = get_bug_report(self.bug_id)
         if report:
-            reporter = self.bot.get_user(report["reporter_id"]) or await self.bot.fetch_user(report["reporter_id"])
+            reporter = self.bot.get_user(report["reporter_id"])
+            if not reporter:
+                try:
+                    reporter = await self.bot.fetch_user(report["reporter_id"])
+                except Exception:
+                    reporter = None
             view = BugReportControlView(self.bot, self.bug_id)
             embed = build_bug_embed(report, reporter, interaction.user)
 
