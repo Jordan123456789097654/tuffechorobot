@@ -127,6 +127,30 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "**Executive HR Directorate • Echo Technologies**"
         )
     },
+    "staff_suspension_lifted": {
+        "shortcut": "staff_suspension_lifted",
+        "category": "👔 Staff Disciplinary & HR",
+        "title": "Administrative Suspension Termination & Duty Restoration",
+        "emoji": "🟢",
+        "steps": (
+            "1. Verify conclusion of suspension period or completion of HR inquiry.\n"
+            "2. Execute unsuspend command `/unsuspend member:@User`.\n"
+            "3. Restore staff channel permissions & active duty standing."
+        ),
+        "template": (
+            "**ECHO TECHNOLOGIES • HUMAN RESOURCES DIVISION**\n"
+            "**NOTICE OF ADMINISTRATIVE SUSPENSION TERMINATION**\n\n"
+            "Dear {user},\n\n"
+            "We are pleased to inform you that your **Administrative Suspension** has been officially **Terminated**, and your staff credentials and permissions have been **Restored to Active Duty Status**.\n\n"
+            "🟢 **Status Restoration:**\n"
+            "• **Status:** Active Duty Restored\n"
+            "• **Permissions:** All staff channels, moderation tools, and administrative access reinstated.\n"
+            "• **Next Steps:** Please check in with your Department Lead for active duty assignments.\n\n"
+            "Thank you for your cooperation during the administrative review process.\n\n"
+            "Sincerely,\n"
+            "**Executive HR Directorate • Echo Technologies**"
+        )
+    },
     "staff_demotion_notice": {
         "shortcut": "staff_demotion_notice",
         "category": "👔 Staff Disciplinary & HR",
@@ -344,6 +368,7 @@ class SupervisorCategorySelectView(ui.View):
             options=[
                 discord.SelectOption(label="Disciplinary Strike Warning", value="staff_strike_notice", emoji="⚠️", description="Formal Level 1/2/3 strike warning notice"),
                 discord.SelectOption(label="Administrative Staff Suspension", value="staff_suspension_notice", emoji="⛔", description="Temporary suspension during HR inquiry"),
+                discord.SelectOption(label="Suspension Lifted & Duty Restored", value="staff_suspension_lifted", emoji="🟢", description="Terminate suspension & restore active duty status"),
                 discord.SelectOption(label="Demotion & Role Termination", value="staff_demotion_notice", emoji="🔻", description="Official staff demotion & role removal"),
                 discord.SelectOption(label="Permanent Staff Blacklist", value="staff_blacklist_notice", emoji="🚫", description="Severe misconduct entry & global network ban"),
                 discord.SelectOption(label="Executive Promotion Letter", value="promotion_appointment", emoji="👑", description="Official staff promotion & appointment notice"),
@@ -497,23 +522,6 @@ async def sync_supervisor_templates_channel(bot, channel: Optional[discord.TextC
                     pass
 
         await target_ch.send(embed=header_embed, view=view)
-
-        # Post all scenario cards
-        all_tpls = get_combined_supervisor_template_list()
-        for tpl in all_tpls:
-            em = discord.Embed(
-                title=f"{tpl.get('emoji', '👑')} {tpl['title']}",
-                description=(
-                    f"**Category:** `{tpl.get('category', 'Executive HR')}`\n\n"
-                    f"**📋 Executive Protocol (SOP):**\n"
-                    f"{tpl.get('steps', 'No specific steps.')}\n\n"
-                    f"**💬 Formal Executive Response Template:**\n"
-                    f"```\n{tpl['template']}\n```"
-                ),
-                color=0x9B59B6
-            )
-            em.set_footer(text=f"Shortcut: {tpl['shortcut']} • Echo Technologies Executive Office")
-            await target_ch.send(embed=em)
 
         logger.info(f"Posted supervisor templates guide to #{target_ch.name} ({target_ch.id})")
         return True

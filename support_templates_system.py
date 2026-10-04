@@ -561,23 +561,6 @@ async def sync_support_templates_channel(bot, channel: Optional[discord.TextChan
 
         await target_ch.send(embed=header_embed, view=view)
 
-        # Post all scenario cards
-        all_tpls = get_combined_template_list()
-        for tpl in all_tpls:
-            em = discord.Embed(
-                title=f"{tpl.get('emoji', '📚')} {tpl['title']}",
-                description=(
-                    f"**Category:** `{tpl.get('category', 'General')}`\n\n"
-                    f"**📋 Standard Operating Procedure (SOP):**\n"
-                    f"{tpl.get('steps', 'No specific steps.')}\n\n"
-                    f"**💬 Staff Copy & Paste Template:**\n"
-                    f"```\n{tpl['template']}\n```"
-                ),
-                color=0x5865F2
-            )
-            em.set_footer(text=f"Shortcut: {tpl['shortcut']} • Echo Technologies Support SOP")
-            await target_ch.send(embed=em)
-
         logger.info(f"Posted support templates guide & status widget to #{target_ch.name} ({target_ch.id})")
         return True
     except Exception as e:
