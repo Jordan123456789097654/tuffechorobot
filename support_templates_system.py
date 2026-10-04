@@ -519,6 +519,13 @@ class SendTemplateSelectView(ui.View):
         channel_embed.set_footer(text=f"Template: {tpl['shortcut']} • Modmail Relayed to DM")
         await interaction.channel.send(embed=channel_embed)
 
+        # Check if this is a Staff Exam Test Ticket!
+        if "Support Staff Exam" in ticket.get("section", ""):
+            import asyncio
+            asyncio.create_task(self.bot.process_ai_test_roleplay_message(self.ticket_id, interaction.channel, interaction.user, formatted_text))
+            await interaction.followup.send(f"✅ Dispatched **{tpl['title']}** template into test channel!", ephemeral=True)
+            return
+
         # Send DM to candidate
         try:
             dm = await candidate.create_dm()

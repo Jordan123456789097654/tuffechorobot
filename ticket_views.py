@@ -763,6 +763,23 @@ class CannedReplySelectView(ui.View):
             await interaction.response.send_message("❌ Canned response not found.", ephemeral=True)
             return
 
+        self.bot.ticket_manager.add_message(
+            self.ticket["id"],
+            interaction.user.id,
+            "staff",
+            canned["content"],
+            sender_name=interaction.user.display_name
+        )
+        await interaction.channel.send(
+            f"📁 **Canned Response `/{shortcut}` dispatched by {interaction.user.mention}:**\n> {canned['content']}"
+        )
+
+        if "Support Staff Exam" in self.ticket.get("section", ""):
+            import asyncio
+            asyncio.create_task(self.bot.process_ai_test_roleplay_message(self.ticket["id"], interaction.channel, interaction.user, canned["content"]))
+            await interaction.response.edit_message(content=f"✅ Canned response `/{shortcut}` dispatched in test channel!", view=None)
+            return
+
         target_user = self.bot.get_user(self.ticket["user_id"]) or await self.bot.fetch_user(self.ticket["user_id"])
         if target_user:
             try:
@@ -775,17 +792,6 @@ class CannedReplySelectView(ui.View):
                 staff_embed.set_author(name=f"Staff Response ({interaction.user.display_name})", icon_url=interaction.user.display_avatar.url)
                 dm = await target_user.create_dm()
                 await dm.send(embed=staff_embed)
-
-                self.bot.ticket_manager.add_message(
-                    self.ticket["id"],
-                    interaction.user.id,
-                    "staff",
-                    canned["content"],
-                    sender_name=interaction.user.display_name
-                )
-                await interaction.channel.send(
-                    f"📁 **Canned Response `/{shortcut}` dispatched by {interaction.user.mention}:**\n> {canned['content']}"
-                )
                 await interaction.response.edit_message(content=f"✅ Canned response `/{shortcut}` dispatched to member!", view=None)
             except discord.Forbidden:
                 await interaction.response.send_message("❌ Member has DMs closed.", ephemeral=True)
