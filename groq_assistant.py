@@ -499,24 +499,20 @@ You must ESCALATE the ticket to staff if:
                     f"ORGANIZATION IDENTITY CONTEXT:\n"
                     f"- Echo Technologies is a Roblox technology development group creating systems for Roblox games. Echo Technologies is NOT Roblox Corporation.\n"
                     f"- Understand that official Roblox platform account recovery is handled by Roblox Support (https://www.roblox.com/support), while Echo Technologies handles product support, whitelists, and Discord/group roles.\n\n"
-                    f"ROLEPLAY DIRECTIVES & MULTI-TURN PERSISTENCE:\n"
-                    f"1. Stay strictly in character as a demanding, distressed, or persistent Roblox player in need of assistance.\n"
-                    f"2. DO NOT SURRENDER OR AGREE TO TICKET CLOSURE AFTER JUST A GREETING:\n"
-                    f"   - When the staff member delivers an introduction greeting (e.g. 'Hello, my name is Alex...'), immediately press your issue and demand action (e.g., demand a Robux refund, ask why you were banned/demoted, ask for proof clips, or demand rank restoration).\n"
-                    f"3. TEST MULTIPLE SOPs IN SEQUENCE:\n"
-                    f"   - Push for Robux refund / rank restore until staff explicitly cites the No Compensation / Group Funds SOP.\n"
-                    f"   - Demand to see internal staff video clips or audit logs until staff explicitly cites the Evidence Privacy Policy.\n"
-                    f"   - If warned about penalties, push back or threaten server raids until staff cites the Anti-Evasion & Global Blacklist SOP.\n"
-                    f"4. WHEN TO AGREE TO CLOSURE:\n"
-                    f"   - ONLY express satisfaction and agree to ticket closure AFTER the staff member has addressed your specific demands, cited relevant SOP policies, AND guided you to the official appeal form or Roblox Support.\n"
-                    f"   - If staff says 'DONT CLOSE', 'wait', 'hold on', or asks further questions, react in character to what they just said (e.g. 'Oh, what else do you need from me?').\n"
-                    f"   - NEVER repeat the exact same response twice in a row.\n"
-                    f"5. Output ONLY your message in character as the Roblox member."
+                    f"CONCISENESS & NATURAL DIALOGUE RULES (CRITICAL):\n"
+                    f"1. KEEP RESPONSES SHORT: Write ONLY 1 to 3 short, realistic sentences (maximum 200 characters). NEVER write walls of text or multi-paragraph bullet lists!\n"
+                    f"2. NO REPETITION: Do NOT repeat previous multi-bullet demands or legal ultimatums. React dynamically to the staff member's EXACT latest words.\n"
+                    f"3. PROGRESSION & DE-ESCALATION:\n"
+                    f"   - When staff delivers their greeting -> press your issue in 1-2 sentences.\n"
+                    f"   - When staff cites No Compensation -> demand internal audit logs or video proof in 1 sentence.\n"
+                    f"   - When staff cites Evidence Privacy -> threaten server raid or forum escalation in 1 sentence.\n"
+                    f"   - When staff mentions moderation action, warnings, or Global Blacklist -> DE-ESCALATE! React to the warning (e.g., 'Wait, a permanent global blacklist? Are you serious? Fine, where do I fill out the official form then?').\n"
+                    f"4. Output ONLY your short message in character as the Roblox member."
                 )
             },
             {
                 "role": "user",
-                "content": f"Ticket Transcript so far:\n{convo_text}\n\nRespond as the Roblox user in character:"
+                "content": f"Ticket Transcript so far:\n{convo_text}\n\nRespond concisely as the Roblox user in character (1-3 sentences max):"
             }
         ]
 
@@ -524,8 +520,8 @@ You must ESCALATE the ticket to staff if:
             res = await self._call_groq_with_fallback(
                 client=client,
                 messages=prompt,
-                temperature=0.6,
-                max_tokens=400
+                temperature=0.5,
+                max_tokens=200
             )
             return (res.choices[0].message.content or "").strip()
         except Exception as e:
