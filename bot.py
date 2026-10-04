@@ -144,6 +144,57 @@ intents.message_content = True
 intents.guilds = True
 intents.dm_messages = True
 
+
+def build_simulated_evidence_embed(scenario_title: str) -> Optional[discord.Embed]:
+    """Generates realistic simulated evidence screenshot attachments for exam tickets."""
+    st_lower = scenario_title.lower()
+    if "phishing" in st_lower or "scam" in st_lower or "impersonation" in st_lower or "gauntlet" in st_lower:
+        embed = discord.Embed(
+            title="📸 Member Uploaded Evidence • Discord DM Screenshot",
+            description=(
+                "**From:** `@Echo_Admin_VIP` (`ID: 104928374928347291`)\n"
+                "**Message:** *'Hello! You won the official Echo Technologies Developer Rank Giveaway! Click below to claim Developer rank in our Roblox group:'*\n"
+                "**Link Attached:** `https://echo-technology-rank-claim.com/login`\n"
+                "**Status:** ⚠️ *Malicious off-site phishing link flagged by security filters.*"
+            ),
+            color=0xE74C3C,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_footer(text="Simulated Member Evidence Attachment • Phishing DM Proof")
+        return embed
+
+    elif "exploit" in st_lower or "dispute" in st_lower:
+        embed = discord.Embed(
+            title="📸 Member Uploaded Evidence • In-Game DevConsole & Scoreboard",
+            description=(
+                "**Reported Player:** `BadExploiter99` (`UserId: 987654321`)\n"
+                "**Incident Type:** Speed-hack & Noclip in Main Game Place\n"
+                "**F9 Output Log:** `[ServerScriptService.AntiCheat] WARN: Player Speed Check Exceeded (WalkSpeed: 120)`\n"
+                "**Evidence Format:** Uncropped Video Proof + Scoreboard Tab Verification"
+            ),
+            color=0xE67E22,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_footer(text="Simulated Member Evidence Attachment • Exploit Report Proof")
+        return embed
+
+    elif "ban appeal" in st_lower or "penalty" in st_lower:
+        embed = discord.Embed(
+            title="📸 Member Uploaded Evidence • Roblox Group / Game Ban Screen",
+            description=(
+                "**Account:** `@BannedUser` (`UserId: 12345678`)\n"
+                "**Ban Reason:** *Exploiting / Utilizing unauthorized client modifications*\n"
+                "**Banned By:** Moderator System (`Case #4892`)\n"
+                "**Status:** Appealable via Support Ticket System"
+            ),
+            color=0x9B59B6,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_footer(text="Simulated Member Evidence Attachment • Ban Screen Screenshot")
+        return embed
+    return None
+
+
 class RobloxVerificationBot(commands.Bot):
     def __init__(self):
         super().__init__(
@@ -485,54 +536,6 @@ class RobloxVerificationBot(commands.Bot):
         asyncio.create_task(self.dispatch_ai_test_opening(ticket_id, channel, scenario_title, scenario_details or ""))
 
         return channel
-
-def build_simulated_evidence_embed(scenario_title: str) -> Optional[discord.Embed]:
-    """Generates realistic simulated evidence screenshot attachments for exam tickets."""
-    st_lower = scenario_title.lower()
-    if "phishing" in st_lower or "scam" in st_lower or "impersonation" in st_lower or "gauntlet" in st_lower:
-        embed = discord.Embed(
-            title="📸 Member Uploaded Evidence • Discord DM Screenshot",
-            description=(
-                "**From:** `@Echo_Admin_VIP` (`ID: 104928374928347291`)\n"
-                "**Message:** *'Hello! You won the official Echo Technologies Developer Rank Giveaway! Click below to claim Developer rank in our Roblox group:'*\n"
-                "**Link Attached:** `https://echo-technology-rank-claim.com/login`\n"
-                "**Status:** ⚠️ *Malicious off-site phishing link flagged by security filters.*"
-            ),
-            color=0xE74C3C,
-            timestamp=discord.utils.utcnow()
-        )
-        embed.set_footer(text="Simulated Member Evidence Attachment • Phishing DM Proof")
-        return embed
-
-    elif "exploit" in st_lower or "dispute" in st_lower:
-        embed = discord.Embed(
-            title="📸 Member Uploaded Evidence • In-Game DevConsole & Scoreboard",
-            description=(
-                "**Reported Player:** `BadExploiter99` (`UserId: 987654321`)\n"
-                "**Incident Type:** Speed-hack & Noclip in Main Game Place\n"
-                "**F9 Output Log:** `[ServerScriptService.AntiCheat] WARN: Player Speed Check Exceeded (WalkSpeed: 120)`\n"
-                "**Evidence Format:** Uncropped Video Proof + Scoreboard Tab Verification"
-            ),
-            color=0xE67E22,
-            timestamp=discord.utils.utcnow()
-        )
-        embed.set_footer(text="Simulated Member Evidence Attachment • Exploit Report Proof")
-        return embed
-
-    elif "ban appeal" in st_lower or "penalty" in st_lower:
-        embed = discord.Embed(
-            title="📸 Member Uploaded Evidence • Roblox Group / Game Ban Screen",
-            description=(
-                "**Account:** `@BannedUser` (`UserId: 12345678`)\n"
-                "**Ban Reason:** *Exploiting / Utilizing unauthorized client modifications*\n"
-                "**Banned By:** Moderator System (`Case #4892`)\n"
-                "**Status:** Appealable via Support Ticket System"
-            ),
-            color=0x9B59B6,
-            timestamp=discord.utils.utcnow()
-        )
-        embed.set_footer(text="Simulated Member Evidence Attachment • Ban Screen Screenshot")
-        return embed
 
     async def dispatch_ai_test_opening(self, ticket_id: int, channel: discord.TextChannel, scenario_title: str, scenario_details: str):
         """Generates and dispatches initial roleplay opening message for a staff test ticket."""
