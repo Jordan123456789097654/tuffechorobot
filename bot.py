@@ -477,6 +477,54 @@ class RobloxVerificationBot(commands.Bot):
 
         return channel
 
+def build_simulated_evidence_embed(scenario_title: str) -> Optional[discord.Embed]:
+    """Generates realistic simulated evidence screenshot attachments for exam tickets."""
+    st_lower = scenario_title.lower()
+    if "phishing" in st_lower or "scam" in st_lower or "impersonation" in st_lower or "gauntlet" in st_lower:
+        embed = discord.Embed(
+            title="📸 Member Uploaded Evidence • Discord DM Screenshot",
+            description=(
+                "**From:** `@Echo_Admin_VIP` (`ID: 104928374928347291`)\n"
+                "**Message:** *'Hello! You won the official Echo Technologies Developer Rank Giveaway! Click below to claim Developer rank in our Roblox group:'*\n"
+                "**Link Attached:** `https://echo-technology-rank-claim.com/login`\n"
+                "**Status:** ⚠️ *Malicious off-site phishing link flagged by security filters.*"
+            ),
+            color=0xE74C3C,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_footer(text="Simulated Member Evidence Attachment • Phishing DM Proof")
+        return embed
+
+    elif "exploit" in st_lower or "dispute" in st_lower:
+        embed = discord.Embed(
+            title="📸 Member Uploaded Evidence • In-Game DevConsole & Scoreboard",
+            description=(
+                "**Reported Player:** `BadExploiter99` (`UserId: 987654321`)\n"
+                "**Incident Type:** Speed-hack & Noclip in Main Game Place\n"
+                "**F9 Output Log:** `[ServerScriptService.AntiCheat] WARN: Player Speed Check Exceeded (WalkSpeed: 120)`\n"
+                "**Evidence Format:** Uncropped Video Proof + Scoreboard Tab Verification"
+            ),
+            color=0xE67E22,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_footer(text="Simulated Member Evidence Attachment • Exploit Report Proof")
+        return embed
+
+    elif "ban appeal" in st_lower or "penalty" in st_lower:
+        embed = discord.Embed(
+            title="📸 Member Uploaded Evidence • Roblox Group / Game Ban Screen",
+            description=(
+                "**Account:** `@BannedUser` (`UserId: 12345678`)\n"
+                "**Ban Reason:** *Exploiting / Utilizing unauthorized client modifications*\n"
+                "**Banned By:** Moderator System (`Case #4892`)\n"
+                "**Status:** Appealable via Support Ticket System"
+            ),
+            color=0x9B59B6,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_footer(text="Simulated Member Evidence Attachment • Ban Screen Screenshot")
+        return embed
+
     async def dispatch_ai_test_opening(self, ticket_id: int, channel: discord.TextChannel, scenario_title: str, scenario_details: str):
         """Generates and dispatches initial roleplay opening message for a staff test ticket."""
         await asyncio.sleep(2.0)
@@ -494,6 +542,12 @@ class RobloxVerificationBot(commands.Bot):
         opening_embed.set_footer(text="🤖 AI Evaluator Roleplay • Reply directly in this channel to respond to the member")
         await channel.send(embed=opening_embed)
 
+        # Dispatch simulated evidence screenshot upload if applicable
+        evidence_embed = build_simulated_evidence_embed(scenario_title)
+        if evidence_embed:
+            await asyncio.sleep(1.0)
+            await channel.send(embed=evidence_embed)
+
     async def process_ai_test_roleplay_message(self, ticket_id: int, channel: discord.TextChannel, staff_user: discord.User, new_content: str):
         """Processes staff member's response during a test ticket, adding realistic typing delay and acting out the member."""
         ticket = self.ticket_manager.get_ticket_by_channel(channel.id)
@@ -503,11 +557,26 @@ class RobloxVerificationBot(commands.Bot):
         sec = ticket.get("section", "Support Staff Exam")
         scen_title = sec.replace("Support Staff Exam: ", "") if "Support Staff Exam: " in sec else sec
 
-        await asyncio.sleep(1.5)
-        async with channel.typing():
-            await asyncio.sleep(3.5)
-            history = self.ticket_manager.get_history_for_llm(ticket_id)
-            ai_reply = await self.groq_assistant.generate_test_roleplay_response(history, scen_title)
+        history = self.ticket_manager.get_history_for_llm(ticket_id)
+        staff_replies_count = len([m for m in history if m.get("role") in ["staff", "assistant"]])
+
+        # Special Multi-Stage Gauntlet Exam Logic
+        if "gauntlet" in scen_title.lower():
+            if staff_replies_count == 1:
+                ai_reply = "Okay I changed my password and submitted a ticket to Roblox Support. But why was I demoted in your group? Show me the internal staff audit logs right now!"
+                evidence_embed = build_simulated_evidence_embed("ban appeal")
+            elif staff_replies_count == 2:
+                ai_reply = "Fine! If you won't show me the internal logs or refund my 4,500 Robux, I'm going to bring 20 alts to mass-report your Discord server and delete your game assets!"
+                evidence_embed = None
+            else:
+                ai_reply = "Alright, I understand your rules and policies now. Thank you for explaining everything clearly. You can close this ticket!"
+                evidence_embed = None
+        else:
+            await asyncio.sleep(1.5)
+            async with channel.typing():
+                await asyncio.sleep(3.5)
+                ai_reply = await self.groq_assistant.generate_test_roleplay_response(history, scen_title)
+            evidence_embed = None
 
         self.ticket_manager.add_message(ticket_id, 0, "user", ai_reply, sender_name="Member (Simulated)")
 
@@ -518,6 +587,10 @@ class RobloxVerificationBot(commands.Bot):
         )
         reply_embed.set_footer(text="🤖 AI Evaluator Roleplay Mode • Continue your response in character")
         await channel.send(embed=reply_embed)
+
+        if evidence_embed:
+            await asyncio.sleep(1.0)
+            await channel.send(embed=evidence_embed)
 
     async def process_ai_ticket_message(
         self,
@@ -5828,6 +5901,7 @@ async def ticket_request_close_cmd(interaction: discord.Interaction, reason: Opt
     custom_details="Custom scenario task details or prompt"
 )
 @app_commands.choices(scenario_title=[
+    app_commands.Choice(name="Multi-Stage Support Gauntlet (3-Stage Exam)", value="Multi-Stage Support Gauntlet (3-Stage Exam)"),
     app_commands.Choice(name="Master Phishing & Account Security Simulation", value="Master Phishing & Account Security Simulation"),
     app_commands.Choice(name="Hostile Member & Threat De-Escalation Simulation", value="Hostile Member & Threat De-Escalation Simulation"),
     app_commands.Choice(name="False Ban Appeal & Confidential Evidence Request", value="False Ban Appeal & Confidential Evidence Request"),
@@ -5907,6 +5981,7 @@ async def test_ticket_cmd(
     custom_details="Custom scenario task details or prompt"
 )
 @app_commands.choices(scenario_title=[
+    app_commands.Choice(name="Multi-Stage Support Gauntlet (3-Stage Exam)", value="Multi-Stage Support Gauntlet (3-Stage Exam)"),
     app_commands.Choice(name="Master Phishing & Account Security Simulation", value="Master Phishing & Account Security Simulation"),
     app_commands.Choice(name="Hostile Member & Threat De-Escalation Simulation", value="Hostile Member & Threat De-Escalation Simulation"),
     app_commands.Choice(name="False Ban Appeal & Confidential Evidence Request", value="False Ban Appeal & Confidential Evidence Request"),
@@ -5930,6 +6005,7 @@ async def ticket_test_staff_cmd(
     custom_details="Custom scenario task details or prompt"
 )
 @app_commands.choices(scenario_title=[
+    app_commands.Choice(name="Multi-Stage Support Gauntlet (3-Stage Exam)", value="Multi-Stage Support Gauntlet (3-Stage Exam)"),
     app_commands.Choice(name="Master Phishing & Account Security Simulation", value="Master Phishing & Account Security Simulation"),
     app_commands.Choice(name="Hostile Member & Threat De-Escalation Simulation", value="Hostile Member & Threat De-Escalation Simulation"),
     app_commands.Choice(name="False Ban Appeal & Confidential Evidence Request", value="False Ban Appeal & Confidential Evidence Request"),
