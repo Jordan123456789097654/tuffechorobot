@@ -443,10 +443,10 @@ class RobloxVerificationBot(commands.Bot):
             logger.error(f"Error creating staff test ticket channel: {e}")
             return None
 
-        # Register ticket in DB with AI enabled for roleplay actor mode
+        # Register ticket in DB with standard AI disabled (roleplay evaluator mode active)
         sec_label = f"Support Staff Exam: {scenario_title}"
         ticket_id = self.ticket_manager.create_ticket(target_staff.id, channel.id, guild.id, section=sec_label)
-        self.ticket_manager.set_ai_enabled(ticket_id, True)
+        self.ticket_manager.set_ai_enabled(ticket_id, False)
         self.ticket_manager.claim_ticket(ticket_id, founder.id)
 
         test_embed = discord.Embed(
@@ -528,7 +528,7 @@ class RobloxVerificationBot(commands.Bot):
     ):
         """Asks Groq AI to process inquiry, responds, or triggers escalation."""
         ticket = self.ticket_manager.get_ticket_by_channel(channel.id)
-        if not ticket or ticket["status"] == "closed" or not ticket.get("ai_enabled", 1):
+        if not ticket or ticket["status"] == "closed" or not ticket.get("ai_enabled", 1) or "Support Staff Exam" in ticket.get("section", ""):
             return
 
         pts = get_user_points(user.id)
@@ -1545,6 +1545,27 @@ async def on_message(message: discord.Message):
         ticket_user_id = ticket["user_id"]
         ai_active = bool(ticket.get("ai_enabled", 1))
 
+        # Case B1: Staff Examination / AI Roleplay Evaluator Ticket!
+        if "Support Staff Exam" in ticket.get("section", ""):
+            if not message.author.bot:
+                att_urls = [a.url for a in message.attachments]
+                bot.ticket_manager.add_message(
+                    ticket_id,
+                    message.author.id,
+                    "staff",
+                    message.content,
+                    sender_name=message.author.display_name,
+                    attachments=att_urls
+                )
+                if ticket.get("status") != "closed":
+                    asyncio.create_task(bot.process_ai_test_roleplay_message(ticket_id, message.channel, message.author, message.content))
+                    try:
+                        await message.add_reaction("🧠")
+                    except Exception:
+                        pass
+                await bot.process_commands(message)
+                return
+
         # Determine whether this message is from staff or the user
         if message.author.id != ticket_user_id:
             # Different person than ticket opener -> Definitely staff!
@@ -1573,17 +1594,6 @@ async def on_message(message: discord.Message):
                 sender_name=message.author.display_name,
                 attachments=att_urls
             )
-
-            # Check if this is a Staff Examination / Roleplay Evaluator Ticket!
-            if "Support Staff Exam" in ticket.get("section", ""):
-                if ticket.get("status") != "closed":
-                    asyncio.create_task(bot.process_ai_test_roleplay_message(ticket_id, message.channel, message.author, message.content))
-                    try:
-                        await message.add_reaction("🧠")
-                    except Exception:
-                        pass
-                await bot.process_commands(message)
-                return
             target_user = bot.get_user(ticket_user_id)
             if not target_user:
                 try:
