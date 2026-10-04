@@ -6152,6 +6152,80 @@ async def staff_test_ticket_cmd(
     await test_ticket_cmd.callback(interaction, target_staff, scenario_title, custom_details)
 
 
+@bot.tree.command(name="say", description="[Foundership Only] Send a message or embed on behalf of the bot into any channel.")
+@app_commands.describe(
+    message="The text message content to send as the bot",
+    channel="Target text channel (defaults to current channel)",
+    reply_to_id="Optional message ID to reply to",
+    embed_title="Optional title if you want to format as a rich embed",
+    embed_color="Optional hex color for embed (e.g. #5865F2, #2ECC71, #ED4245)"
+)
+async def say_cmd(
+    interaction: discord.Interaction,
+    message: str,
+    channel: Optional[discord.TextChannel] = None,
+    reply_to_id: Optional[str] = None,
+    embed_title: Optional[str] = None,
+    embed_color: Optional[str] = None
+):
+    foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID) if interaction.guild else None
+    is_foundership = (
+        (foundership_role in interaction.user.roles) if foundership_role else False
+    ) or interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild
+
+    if not is_foundership:
+        await interaction.response.send_message("❌ Only **Foundership & Administrators** can use `/say`.", ephemeral=True)
+        return
+
+    target_ch = channel or interaction.channel
+    if not isinstance(target_ch, discord.TextChannel):
+        await interaction.response.send_message("❌ Invalid target text channel.", ephemeral=True)
+        return
+
+    await interaction.response.defer(ephemeral=True)
+
+    reply_msg = None
+    if reply_to_id:
+        try:
+            msg_id = int(reply_to_id.strip())
+            reply_msg = await target_ch.fetch_message(msg_id)
+        except Exception:
+            reply_msg = None
+
+    color_val = 0x5865F2
+    if embed_color:
+        try:
+            clean_hex = embed_color.strip().lstrip("#")
+            color_val = int(clean_hex, 16)
+        except Exception:
+            color_val = 0x5865F2
+
+    try:
+        if embed_title:
+            embed = discord.Embed(
+                title=embed_title,
+                description=message,
+                color=color_val,
+                timestamp=discord.utils.utcnow()
+            )
+            embed.set_footer(text="Echo Technologies Official Announcement")
+            if reply_msg:
+                await reply_msg.reply(embed=embed)
+            else:
+                await target_ch.send(embed=embed)
+        else:
+            if reply_msg:
+                await reply_msg.reply(content=message)
+            else:
+                await target_ch.send(content=message)
+
+        await interaction.followup.send(f"✅ Successfully dispatched message to {target_ch.mention}!", ephemeral=True)
+        logger.info(f"User {interaction.user.name} ({interaction.user.id}) used /say in #{target_ch.name}")
+    except Exception as e:
+        logger.error(f"Error executing /say command: {e}")
+        await interaction.followup.send(f"❌ Failed to send message: `{e}`", ephemeral=True)
+
+
 @bot.tree.command(name="exam-status", description="[Foundership Only] Get an instant live AI telemetry report DM for an active exam.")
 async def exam_status_cmd(interaction: discord.Interaction):
     foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID) if interaction.guild else None

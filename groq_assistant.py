@@ -7,6 +7,20 @@ import config
 
 logger = logging.getLogger("GroqAssistant")
 
+
+def ensure_complete_sentences(text: str) -> str:
+    """Ensures text ends with complete punctuation and trims incomplete trailing fragments."""
+    text = (text or "").strip()
+    if not text:
+        return text
+    if text[-1] in ".!?\"'":
+        return text
+    last_punct = max(text.rfind('.'), text.rfind('!'), text.rfind('?'))
+    if last_punct != -1 and last_punct > len(text) // 3:
+        return text[:last_punct + 1].strip()
+    return text + "."
+
+
 class GroqAssistant:
     """Manages AI conversation, ticket resolution attempts, and escalation detection via Groq."""
 
@@ -460,7 +474,7 @@ You must ESCALATE the ticket to staff if:
                     f"- Echo Technologies is NOT Roblox Corporation (the official gaming platform company).\n"
                     f"- DO NOT write messages claiming that Echo Technologies banned your main Roblox platform account or that you're quitting the Roblox platform! Frame complaints around Echo Technologies products, Echo Roblox group ranks/demotions, Echo game place bans, product whitelist errors, or phishing DMs.\n\n"
                     f"DIRECTIVE: Write an EXTREMELY realistic, angry, demanding, or panicked OPENING message for this scenario.\n"
-                    f"Do NOT break character. Output ONLY the message as the user."
+                    f"CRITICAL: Always finish your thoughts completely with proper terminal punctuation (. ! ?). Output ONLY the message as the user."
                 )
             },
             {
@@ -474,9 +488,10 @@ You must ESCALATE the ticket to staff if:
                 client=client,
                 messages=prompt,
                 temperature=0.7,
-                max_tokens=300
+                max_tokens=500
             )
-            return (res.choices[0].message.content or "").strip()
+            raw = (res.choices[0].message.content or "").strip()
+            return ensure_complete_sentences(raw)
         except Exception as e:
             logger.error(f"Error generating test opening prompt: {e}")
             return f"Why was I demoted in your Echo Technologies Roblox group? Fix my rank and whitelist access right now!"
@@ -511,12 +526,13 @@ You must ESCALATE the ticket to staff if:
                     f"   - When staff cites No Compensation -> demand internal audit logs or video proof in 1 sentence.\n"
                     f"   - When staff cites Evidence Privacy -> threaten server raid or forum escalation in 1 sentence.\n"
                     f"   - When staff mentions moderation action, warnings, or Global Blacklist -> DE-ESCALATE! React to the warning (e.g., 'Wait, a permanent global blacklist? Are you serious? Fine, where do I fill out the official form then?').\n"
-                    f"4. Output ONLY your short message in character as the Roblox member."
+                    f"4. COMPLETE SENTENCES: Always write complete, fully punctuated sentences ending in proper punctuation (. ! ?). Never stop mid-phrase or leave incomplete thoughts.\n"
+                    f"5. Output ONLY your short message in character as the Roblox member."
                 )
             },
             {
                 "role": "user",
-                "content": f"Ticket Transcript so far:\n{convo_text}\n\nRespond concisely as the Roblox user in character (1-3 sentences max):"
+                "content": f"Ticket Transcript so far:\n{convo_text}\n\nRespond concisely as the Roblox user in character (1-3 complete sentences max):"
             }
         ]
 
@@ -525,9 +541,10 @@ You must ESCALATE the ticket to staff if:
                 client=client,
                 messages=prompt,
                 temperature=0.5,
-                max_tokens=200
+                max_tokens=500
             )
-            return (res.choices[0].message.content or "").strip()
+            raw = (res.choices[0].message.content or "").strip()
+            return ensure_complete_sentences(raw)
         except Exception as e:
             logger.error(f"Error generating test roleplay response: {e}")
             return "I don't care about your SOP procedure! Answer my question right now!"
@@ -555,7 +572,7 @@ You must ESCALATE the ticket to staff if:
                     "- Either demand unearned rank restoration / group funds payout\n"
                     "- Or demand to see confidential internal staff video clips / audit logs\n"
                     "- Or threat of an alt-account raid / mass-reporting the Discord server\n"
-                    "Do NOT break character. Output ONLY the member's message."
+                    "Do NOT break character. Always write complete sentences with terminal punctuation. Output ONLY the member's message."
                 )
             },
             {
@@ -569,9 +586,10 @@ You must ESCALATE the ticket to staff if:
                 client=client,
                 messages=prompt,
                 temperature=0.7,
-                max_tokens=300
+                max_tokens=400
             )
-            return (res.choices[0].message.content or "").strip()
+            raw = (res.choices[0].message.content or "").strip()
+            return ensure_complete_sentences(raw)
         except Exception as e:
             logger.error(f"Error generating curveball prompt: {e}")
             return "Fine! If you won't refund my Robux, give me Senior Developer rank right now and show me the staff audit logs, or I'm bringing 20 people to mass-report your server!"
