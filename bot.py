@@ -5947,6 +5947,122 @@ async def staff_test_ticket_cmd(
     await test_ticket_cmd.callback(interaction, target_staff, scenario_title, custom_details)
 
 
+@bot.tree.command(name="end-simulation", description="[Foundership Only] Conclude active staff test ticket & generate AI report.")
+@app_commands.describe(
+    grade_and_log="Auto-grade staff performance and log report card (default: True)"
+)
+async def end_simulation_cmd(
+    interaction: discord.Interaction,
+    grade_and_log: Optional[bool] = True
+):
+    foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID) if interaction.guild else None
+    is_foundership = (
+        (foundership_role in interaction.user.roles) if foundership_role else False
+    ) or interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild
+
+    if not is_foundership:
+        await interaction.response.send_message("❌ Only **Foundership & Trainers** can conclude simulation exams.", ephemeral=True)
+        return
+
+    ticket = bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
+    if not ticket or "Support Staff Exam" not in ticket.get("section", ""):
+        await interaction.response.send_message("❌ This command must be executed inside an active staff test ticket channel (`test-*`).", ephemeral=True)
+        return
+
+    await interaction.response.defer(ephemeral=False)
+    target_staff = await safe_fetch_user(bot, ticket["user_id"])
+    target_mention = target_staff.mention if target_staff else f"<@{ticket['user_id']}>"
+    scen_title = ticket.get("section", "Support Staff Exam").replace("Support Staff Exam: ", "")
+
+    if grade_and_log:
+        history = bot.ticket_manager.get_history_for_llm(ticket["id"])
+        eval_res = await bot.groq_assistant.evaluate_staff_test_performance(history, scen_title)
+
+        score = eval_res["score"]
+        verdict = eval_res["verdict"]
+        notes = f"{eval_res['feedback_notes']}\n\n=== REMEDIATION & STUDY GUIDE ===\n{eval_res['remediation_guide']}"
+
+        eval_record = add_staff_evaluation(
+            staff_id=ticket["user_id"],
+            evaluator_id=interaction.user.id,
+            guild_id=interaction.guild_id or config.GUILD_ID,
+            score=score,
+            verdict=verdict,
+            scenario=scen_title,
+            feedback_notes=notes
+        )
+
+        if target_staff:
+            try:
+                trainee_dm = await target_staff.create_dm()
+                dm_embed = build_evaluation_dm_embed(eval_record, target_staff, interaction.user)
+                await trainee_dm.send(embed=dm_embed)
+            except Exception:
+                pass
+
+        try:
+            trainer_dm = await interaction.user.create_dm()
+            trainer_embed = build_evaluation_dm_embed(eval_record, target_staff or interaction.user, interaction.user)
+            trainer_embed.title = f"🧾 Trainer Audit Receipt • Evaluation #{eval_record['id']}"
+            await trainer_dm.send(embed=trainer_embed)
+        except Exception:
+            pass
+
+        pub_ch = interaction.guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID) if interaction.guild else None
+        if pub_ch and isinstance(pub_ch, discord.TextChannel) and target_staff:
+            try:
+                log_embed = build_evaluation_log_embed(eval_record, target_staff, interaction.user)
+                await pub_ch.send(embed=log_embed)
+            except Exception:
+                pass
+
+        embed = discord.Embed(
+            title="🏆 Simulation Exam Concluded",
+            description=(
+                f"Successfully concluded staff practical evaluation for {target_mention}!\n\n"
+                f"📊 **Final Score:** `{score}/100` | 🏆 **Verdict:** `{verdict}`\n"
+                f"📂 **Scenario:** `{scen_title}`\n\n"
+                f"### 📋 Evaluator Summary\n{eval_res['feedback_notes']}\n\n"
+                f"### 📚 Remediation & Study Guide\n{eval_res['remediation_guide']}\n\n"
+                f"*(Dispatched official report card to {target_mention}'s DMs. Channel closing in 5 seconds...)*"
+            ),
+            color=0x57F287 if score >= 85 else 0xED4245,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_footer(text="Echo Technologies HR Operations • Staff Evaluation System")
+        await interaction.followup.send(embed=embed)
+    else:
+        embed = discord.Embed(
+            title="🛑 Simulation Exam Canceled",
+            description=f"The test ticket simulation for {target_mention} has been canceled without logging results.\n\n*(Channel closing in 5 seconds...)*",
+            color=0xFEE75C
+        )
+        await interaction.followup.send(embed=embed)
+
+    bot.ticket_manager.close_ticket(ticket["id"], interaction.user.id, "Simulation ended via command")
+    await asyncio.sleep(5.0)
+    try:
+        await interaction.channel.delete(reason="Simulation concluded by trainer")
+    except Exception:
+        pass
+
+
+@bot.tree.command(name="end-exam", description="[Foundership Only] Alias for /end-simulation.")
+@app_commands.describe(grade_and_log="Auto-grade staff performance and log report card (default: True)")
+async def end_exam_cmd(interaction: discord.Interaction, grade_and_log: Optional[bool] = True):
+    await end_simulation_cmd.callback(interaction, grade_and_log)
+
+@bot.tree.command(name="stop-simulation", description="[Foundership Only] Alias for /end-simulation.")
+@app_commands.describe(grade_and_log="Auto-grade staff performance and log report card (default: True)")
+async def stop_simulation_cmd(interaction: discord.Interaction, grade_and_log: Optional[bool] = True):
+    await end_simulation_cmd.callback(interaction, grade_and_log)
+
+@bot.tree.command(name="finish-exam", description="[Foundership Only] Alias for /end-simulation.")
+@app_commands.describe(grade_and_log="Auto-grade staff performance and log report card (default: True)")
+async def finish_exam_cmd(interaction: discord.Interaction, grade_and_log: Optional[bool] = True):
+    await end_simulation_cmd.callback(interaction, grade_and_log)
+
+
 # ==========================================
 # 🧪 STAFF EVALUATION & EXAM LOGGING SYSTEM
 # ==========================================
