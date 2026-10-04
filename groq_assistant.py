@@ -39,8 +39,8 @@ class GroqAssistant:
                 )
             except Exception as e:
                 err_str = str(e).lower()
-                if "404" in err_str or "does not exist" in err_str or "model_not_found" in err_str:
-                    logger.warning(f"Groq model '{m_name}' unavailable ({e}). Retrying with next model...")
+                if any(k in err_str for k in ["404", "does not exist", "model_not_found", "413", "rate_limit", "tokens per minute", "payload too large"]):
+                    logger.warning(f"Groq model '{m_name}' unavailable or rate-limited ({e}). Retrying with next model...")
                     last_err = e
                     continue
                 raise e

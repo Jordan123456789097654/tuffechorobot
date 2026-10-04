@@ -248,6 +248,10 @@ class TicketManager:
                 conn.commit()
             return new_state
 
+    def set_ai_enabled(self, ticket_id: int, enabled: bool) -> bool:
+        """Explicitly sets AI enabled state to True or False."""
+        return self.toggle_ai(ticket_id, enabled=enabled)
+
     def escalate_ticket(self, ticket_id: int, reason: str = "") -> bool:
         """Marks a ticket as escalated and pauses AI."""
         with self._get_connection() as conn:

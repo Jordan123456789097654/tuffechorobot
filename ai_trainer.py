@@ -167,30 +167,21 @@ class AITrainer:
             "total_chars": len(self.knowledge_text)
         }
 
-    def get_knowledge_prompt(self) -> str:
-        """Returns the compiled knowledge base formatted for system prompt injection, including support & supervisor templates."""
+    def get_knowledge_prompt(self, max_chars: int = 3500) -> str:
+        """Returns the compiled knowledge base formatted for system prompt injection, cleanly capped to avoid token limits."""
         base_text = self.knowledge_text or "No server-specific knowledge trained yet. Answer helpfully using general Discord/Roblox best practices."
+        if len(base_text) > max_chars:
+            base_text = base_text[:max_chars] + "\n...[Knowledge Base Truncated for Conciseness]"
+
         try:
             from support_templates_system import get_combined_template_list
-            from supervisor_templates_system import get_combined_supervisor_template_list
             tpls = get_combined_template_list()
-            exec_tpls = get_combined_supervisor_template_list()
-
             if tpls:
-                tpl_lines = ["\n\n=== OFFICIAL SUPPORT TEAM TEMPLATES & STANDARD OPERATING PROCEDURES (SOP) ==="]
-                for t in tpls:
-                    tpl_lines.append(f"• [{t.get('category', 'General')}] {t['title']} (Shortcut: {t['shortcut']})")
-                    tpl_lines.append(f"  SOP Steps: {t.get('steps', 'N/A')}")
-                    tpl_lines.append(f"  Official Response Template:\n{t['template']}\n")
+                tpl_lines = ["\n\n=== OFFICIAL SUPPORT SOP DIRECTIVES ==="]
+                for t in tpls[:12]:
+                    tpl_lines.append(f"• [{t.get('category', 'General')}] {t['title']} — SOP: {t.get('steps', 'N/A')[:150]}")
                 base_text += "\n" + "\n".join(tpl_lines)
-
-            if exec_tpls:
-                exec_lines = ["\n\n=== EXECUTIVE SUPERVISOR & HR DIRECTIVES (STAFF DISCIPLINARY & PENALTIES) ==="]
-                for t in exec_tpls:
-                    exec_lines.append(f"• [{t.get('category', 'Executive HR')}] {t['title']} (Shortcut: {t['shortcut']})")
-                    exec_lines.append(f"  Executive Protocol: {t.get('steps', 'N/A')}")
-                    exec_lines.append(f"  Formal HR Notice:\n{t['template']}\n")
-                base_text += "\n" + "\n".join(exec_lines)
         except Exception as e:
-            logger.warning(f"Could not load support/supervisor templates into AI knowledge prompt: {e}")
-        return base_text
+            logger.warning(f"Could not load support templates into AI knowledge prompt: {e}")
+
+        return base_text[:4500]
