@@ -1,4 +1,4 @@
-import random
+import secrets
 
 # A carefully curated dictionary of 100% innocent, common, child-friendly English words.
 # Roblox's CommunitySift / Two Hat filter aggressively tags numbers, alphanumeric codes,
@@ -29,5 +29,5 @@ def generate_safe_verification_code(word_count: int = 4) -> str:
     safe words separated by spaces.
     Example: 'silver candle river guitar'
     """
-    selected_words = random.sample(FILTER_SAFE_WORDS, word_count)
+    selected_words = secrets.SystemRandom().sample(FILTER_SAFE_WORDS, word_count)
     return " ".join(selected_words)

@@ -1,5 +1,5 @@
 import aiohttp
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
 class RobloxAPI:
@@ -88,6 +88,10 @@ class RobloxAPI:
                 base, frac = cleaned.split(".", 1)
                 frac = frac[:6]
                 cleaned = f"{base}.{frac}"
-            return datetime.fromisoformat(cleaned)
+            dt = datetime.fromisoformat(cleaned)
+            # Roblox timestamps are UTC; return timezone-aware so .timestamp() and age math are correct
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
         except Exception:
             return None
