@@ -113,6 +113,64 @@ BUILTIN_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "4. If you encounter an error, screenshot your Output Window (View -> Output) and reply here!"
         )
     },
+    "http_service": {
+        "shortcut": "http_service",
+        "category": "🛠️ Studio Assets & Technical",
+        "title": "Roblox Studio HttpService & API Key Setup",
+        "emoji": "🌐",
+        "steps": (
+            "1. Instruct user to enable HttpService under Game Settings > Security.\n"
+            "2. Verify HTTP 403 / 404 response codes in Output log (F9).\n"
+            "3. Confirm target domain URL and API authorization tokens."
+        ),
+        "template": (
+            "Hello {user}! To resolve HTTP Request and API errors in your Roblox Studio place:\n\n"
+            "1. Open your game in **Roblox Studio**.\n"
+            "2. Navigate to **Home** -> **Game Settings** -> **Security**.\n"
+            "3. Toggle **Allow HTTP Requests** to **ON** and click Save.\n"
+            "4. Make sure your server script URL endpoints and auth keys are correctly configured.\n\n"
+            "If you still see errors, press `F9` in-game (or open View -> Output in Studio) and send us a screenshot!"
+        )
+    },
+    "datastore_recovery": {
+        "shortcut": "datastore_recovery",
+        "category": "💾 DataStore & Recovery",
+        "title": "DataStore & Player Save File Recovery",
+        "emoji": "💾",
+        "steps": (
+            "1. Collect player numeric Roblox User ID and approximate date of data loss.\n"
+            "2. Search DataStore backup logs or database snapshots.\n"
+            "3. Re-issue lost items or restore data key."
+        ),
+        "template": (
+            "Hello {user}! Regarding your DataStore & player save file recovery request:\n\n"
+            "Please reply with the following details so our technical team can inspect your save file:\n"
+            "1. Your numeric **Roblox User ID**.\n"
+            "2. Approximate date & time when your data was lost.\n"
+            "3. List of missing items, levels, or currency.\n"
+            "4. Any screenshots or video clips showing your inventory prior to the data loss."
+        )
+    },
+    "commission_quote": {
+        "shortcut": "commission_quote",
+        "category": "🎨 Custom Commissions",
+        "title": "Custom Roblox Studio Commission Quote",
+        "emoji": "🎨",
+        "steps": (
+            "1. Collect project scope, asset type (UI, Scripts, 3D Models), budget, and deadline.\n"
+            "2. Evaluate developer capacity and calculate pricing quote.\n"
+            "3. Assign lead developer and establish commission milestones."
+        ),
+        "template": (
+            "Hello {user}! Thank you for your interest in commissioning custom development from Echo Technologies!\n\n"
+            "To provide an accurate pricing quote and timeline, please reply with:\n"
+            "1. **Project Type:** (Scripting, UI Design, 3D Building, Animation, or Full Game Setup)\n"
+            "2. **Detailed Description:** Scope of work and required features.\n"
+            "3. **Budget Range:** (Robux / USD payment method).\n"
+            "4. **Deadline:** Expected completion date.\n"
+            "5. **Reference Files:** Any visual concepts or reference links."
+        )
+    },
     "billing": {
         "shortcut": "billing",
         "category": "💳 Billing & Gamepasses",
@@ -343,6 +401,9 @@ class TemplateCategorySelectView(ui.View):
             options=[
                 discord.SelectOption(label="Roblox Verification & Accounts", value="verification", emoji="🔐", description="Code censored, reverify, manual verify steps"),
                 discord.SelectOption(label="Roblox Studio Assets & Technical", value="studio_setup", emoji="🛠️", description="HTTP Requests, DataStores, script setup"),
+                discord.SelectOption(label="HttpService & API Key Setup", value="http_service", emoji="🌐", description="Enable HttpService & debug HTTP errors"),
+                discord.SelectOption(label="DataStore Player Save Recovery", value="datastore_recovery", emoji="💾", description="Investigate lost inventory & restore save keys"),
+                discord.SelectOption(label="Custom Studio Commission Quote", value="commission_quote", emoji="🎨", description="Scripting/UI commission specification form"),
                 discord.SelectOption(label="Robux Billing & Gamepasses", value="billing", emoji="💳", description="Purchase verification, gamepass transfers"),
                 discord.SelectOption(label="Game Bugs & Server Crashes", value="bugs", emoji="🎮", description="Bug report format & reproduction steps"),
                 discord.SelectOption(label="Booster Perks & Rewards", value="booster", emoji="🚀", description="Booster role claim, community points shop"),
