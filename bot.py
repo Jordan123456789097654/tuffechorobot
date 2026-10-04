@@ -1733,6 +1733,38 @@ async def on_message(message: discord.Message):
                     sender_name=message.author.display_name,
                     attachments=att_urls
                 )
+
+                # Check if message triggers simulation halt / conclusion
+                content_lower = message.content.lower().strip()
+                stop_phrases = [
+                    "end of simulation", "end simulation", "stop simulation", "finish simulation",
+                    "end of exam", "stop exam", "finish exam", "simulation over", "exam over",
+                    "halt simulation", "cancel simulation", "close simulation", "end practical"
+                ]
+
+                if any(phrase in content_lower for phrase in stop_phrases):
+                    logger.info(f"Simulation stop phrase detected in #{message.channel.name} by {message.author.name}")
+                    try:
+                        await message.add_reaction("🛑")
+                    except Exception:
+                        pass
+
+                    stop_notice = discord.Embed(
+                        title="🛑 SIMULATION HALTED • END OF EXAM TRIGGERED",
+                        description=(
+                            f"The AI roleplay evaluator simulation has been **HALTED** by {message.author.mention}.\n\n"
+                            f"• **AI Roleplay Actor:** **DISABLED** (No further AI responses will be sent).\n"
+                            f"• **Auto-Grading:** Compiling transcript evaluation and issuing DM report card..."
+                        ),
+                        color=0xED4245,
+                        timestamp=discord.utils.utcnow()
+                    )
+                    stop_notice.set_footer(text="Echo Support Academy • Practical Exam Concluded")
+                    await message.channel.send(embed=stop_notice)
+
+                    asyncio.create_task(conclude_and_grade_staff_exam(bot, ticket, message.channel, message.author, grade_and_log=True))
+                    return
+
                 if ticket.get("status") != "closed":
                     asyncio.create_task(bot.process_ai_test_roleplay_message(ticket_id, message.channel, message.author, message.content))
                     try:
@@ -6151,6 +6183,94 @@ async def exam_status_cmd(interaction: discord.Interaction):
     await interaction.followup.send("✅ Sent live exam telemetry status report directly to your DMs!", ephemeral=True)
 
 
+async def conclude_and_grade_staff_exam(
+    bot: commands.Bot,
+    ticket: dict,
+    channel: discord.TextChannel,
+    executor_user: discord.User,
+    grade_and_log: bool = True
+):
+    """Concludes an active staff test ticket, evaluates performance, sends DM scorecards, and deletes ticket channel."""
+    # Instantly mark ticket as closed so no further AI responses fire
+    bot.ticket_manager.close_ticket(ticket["id"], executor_user.id, "Simulation ended")
+
+    target_staff = await safe_fetch_user(bot, ticket["user_id"])
+    target_mention = target_staff.mention if target_staff else f"<@{ticket['user_id']}>"
+    scen_title = ticket.get("section", "Support Staff Exam").replace("Support Staff Exam: ", "")
+
+    eval_record = None
+    if grade_and_log:
+        history = bot.ticket_manager.get_history_for_llm(ticket["id"])
+        eval_res = await bot.groq_assistant.evaluate_staff_test_performance(history, scen_title)
+
+        score = eval_res["score"]
+        verdict = eval_res["verdict"]
+        notes = f"{eval_res['feedback_notes']}\n\n=== REMEDIATION & STUDY GUIDE ===\n{eval_res['remediation_guide']}"
+
+        eval_record = add_staff_evaluation(
+            staff_id=ticket["user_id"],
+            evaluator_id=executor_user.id,
+            guild_id=channel.guild.id if channel.guild else config.GUILD_ID,
+            score=score,
+            verdict=verdict,
+            scenario=scen_title,
+            feedback_notes=notes
+        )
+
+        if target_staff:
+            try:
+                trainee_dm = await target_staff.create_dm()
+                dm_embed = build_evaluation_dm_embed(eval_record, target_staff, executor_user)
+                await trainee_dm.send(embed=dm_embed)
+            except Exception:
+                pass
+
+        try:
+            trainer_dm = await executor_user.create_dm()
+            trainer_embed = build_evaluation_dm_embed(eval_record, target_staff or executor_user, executor_user)
+            trainer_embed.title = f"🧾 Trainer Audit Receipt • Evaluation #{eval_record['id']}"
+            await trainer_dm.send(embed=trainer_embed)
+        except Exception:
+            pass
+
+        pub_ch = channel.guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID) if channel.guild else None
+        if pub_ch and isinstance(pub_ch, discord.TextChannel) and target_staff:
+            try:
+                log_embed = build_evaluation_log_embed(eval_record, target_staff, executor_user)
+                await pub_ch.send(embed=log_embed)
+            except Exception:
+                pass
+
+        embed = discord.Embed(
+            title="🏆 Simulation Exam Concluded",
+            description=(
+                f"Successfully concluded staff practical evaluation for {target_mention}!\n\n"
+                f"📊 **Final Score:** `{score}/100` | 🏆 **Verdict:** `{verdict}`\n"
+                f"📂 **Scenario:** `{scen_title}`\n\n"
+                f"### 📋 Evaluator Summary\n{eval_res['feedback_notes']}\n\n"
+                f"### 📚 Remediation & Study Guide\n{eval_res['remediation_guide']}\n\n"
+                f"*(Dispatched official report card to {target_mention}'s DMs. Channel closing in 5 seconds...)*"
+            ),
+            color=0x57F287 if score >= 85 else 0xED4245,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_footer(text="Echo Technologies HR Operations • Staff Evaluation System")
+        await channel.send(embed=embed)
+    else:
+        embed = discord.Embed(
+            title="🛑 Simulation Exam Canceled",
+            description=f"The test ticket simulation for {target_mention} has been canceled without logging results.\n\n*(Channel closing in 5 seconds...)*",
+            color=0xFEE75C
+        )
+        await channel.send(embed=embed)
+
+    await asyncio.sleep(5.0)
+    try:
+        await channel.delete(reason="Simulation concluded by trainer")
+    except Exception:
+        pass
+
+
 @bot.tree.command(name="end-simulation", description="[Foundership Only] Conclude active staff test ticket & generate AI report.")
 @app_commands.describe(
     grade_and_log="Auto-grade staff performance and log report card (default: True)"
@@ -6174,81 +6294,7 @@ async def end_simulation_cmd(
         return
 
     await interaction.response.defer(ephemeral=False)
-    target_staff = await safe_fetch_user(bot, ticket["user_id"])
-    target_mention = target_staff.mention if target_staff else f"<@{ticket['user_id']}>"
-    scen_title = ticket.get("section", "Support Staff Exam").replace("Support Staff Exam: ", "")
-
-    if grade_and_log:
-        history = bot.ticket_manager.get_history_for_llm(ticket["id"])
-        eval_res = await bot.groq_assistant.evaluate_staff_test_performance(history, scen_title)
-
-        score = eval_res["score"]
-        verdict = eval_res["verdict"]
-        notes = f"{eval_res['feedback_notes']}\n\n=== REMEDIATION & STUDY GUIDE ===\n{eval_res['remediation_guide']}"
-
-        eval_record = add_staff_evaluation(
-            staff_id=ticket["user_id"],
-            evaluator_id=interaction.user.id,
-            guild_id=interaction.guild_id or config.GUILD_ID,
-            score=score,
-            verdict=verdict,
-            scenario=scen_title,
-            feedback_notes=notes
-        )
-
-        if target_staff:
-            try:
-                trainee_dm = await target_staff.create_dm()
-                dm_embed = build_evaluation_dm_embed(eval_record, target_staff, interaction.user)
-                await trainee_dm.send(embed=dm_embed)
-            except Exception:
-                pass
-
-        try:
-            trainer_dm = await interaction.user.create_dm()
-            trainer_embed = build_evaluation_dm_embed(eval_record, target_staff or interaction.user, interaction.user)
-            trainer_embed.title = f"🧾 Trainer Audit Receipt • Evaluation #{eval_record['id']}"
-            await trainer_dm.send(embed=trainer_embed)
-        except Exception:
-            pass
-
-        pub_ch = interaction.guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID) if interaction.guild else None
-        if pub_ch and isinstance(pub_ch, discord.TextChannel) and target_staff:
-            try:
-                log_embed = build_evaluation_log_embed(eval_record, target_staff, interaction.user)
-                await pub_ch.send(embed=log_embed)
-            except Exception:
-                pass
-
-        embed = discord.Embed(
-            title="🏆 Simulation Exam Concluded",
-            description=(
-                f"Successfully concluded staff practical evaluation for {target_mention}!\n\n"
-                f"📊 **Final Score:** `{score}/100` | 🏆 **Verdict:** `{verdict}`\n"
-                f"📂 **Scenario:** `{scen_title}`\n\n"
-                f"### 📋 Evaluator Summary\n{eval_res['feedback_notes']}\n\n"
-                f"### 📚 Remediation & Study Guide\n{eval_res['remediation_guide']}\n\n"
-                f"*(Dispatched official report card to {target_mention}'s DMs. Channel closing in 5 seconds...)*"
-            ),
-            color=0x57F287 if score >= 85 else 0xED4245,
-            timestamp=discord.utils.utcnow()
-        )
-        embed.set_footer(text="Echo Technologies HR Operations • Staff Evaluation System")
-        await interaction.followup.send(embed=embed)
-    else:
-        embed = discord.Embed(
-            title="🛑 Simulation Exam Canceled",
-            description=f"The test ticket simulation for {target_mention} has been canceled without logging results.\n\n*(Channel closing in 5 seconds...)*",
-            color=0xFEE75C
-        )
-        await interaction.followup.send(embed=embed)
-
-    bot.ticket_manager.close_ticket(ticket["id"], interaction.user.id, "Simulation ended via command")
-    await asyncio.sleep(5.0)
-    try:
-        await interaction.channel.delete(reason="Simulation concluded by trainer")
-    except Exception:
-        pass
+    await conclude_and_grade_staff_exam(bot, ticket, interaction.channel, interaction.user, grade_and_log=grade_and_log)
 
 
 @bot.tree.command(name="end-exam", description="[Foundership Only] Alias for /end-simulation.")
