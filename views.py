@@ -191,13 +191,23 @@ class VerificationCheckView(ui.View):
             )
             return
 
-        current_bio = (details.get("description") or "").lower()
-        required_words = self.code.lower().split()
+        # Normalize whitespace/newlines so Roblox reflowing the bio doesn't break the match
+        current_bio = " ".join((details.get("description") or "").lower().split())
+        required_phrase = " ".join(self.code.lower().split())
 
-        # Check if code or all required words exist in bio
-        is_verified = (self.code.lower() in current_bio) or all(word in current_bio for word in required_words)
+        is_verified = required_phrase in current_bio
 
         if is_verified:
+            # Prevent one Roblox account from being linked to multiple Discord accounts
+            owner = self.db.get_by_roblox_id(self.roblox_id)
+            if owner and owner["discord_id"] != interaction.user.id:
+                await interaction.followup.send(
+                    "❌ That Roblox account is already linked to a different Discord account. "
+                    "If this is a mistake, please open a support ticket.",
+                    ephemeral=True
+                )
+                return
+
             # 1. Save link in persistent database
             self.db.link_user(
                 discord_id=interaction.user.id,

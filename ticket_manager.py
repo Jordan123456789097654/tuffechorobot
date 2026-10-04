@@ -316,7 +316,9 @@ class TicketManager:
         history = []
         for r in rows[-limit:]:
             role = "assistant" if r["sender_type"] == "ai" else "user"
-            history.append({"role": role, "content": r["content"]})
+            # Attachment-only messages are stored with empty content; the LLM API rejects empty messages
+            content = (r["content"] or "").strip() or "[The user sent an attachment/file with no text]"
+            history.append({"role": role, "content": content})
         return history
 
     def get_all_ticket_messages(self, ticket_id: int) -> List[Dict[str, Any]]:

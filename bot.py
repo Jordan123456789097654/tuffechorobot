@@ -7,6 +7,7 @@ import logging
 import os
 import io
 import secrets
+import sqlite3
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Literal
 
@@ -112,6 +113,17 @@ from points_system import (
 
 
 
+async def safe_fetch_user(client, user_id: int):
+    """Returns a cached/fetched user or None if the account no longer exists / can't be fetched."""
+    user = client.get_user(user_id)
+    if user:
+        return user
+    try:
+        return await client.fetch_user(user_id)
+    except Exception:
+        return None
+
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -139,6 +151,8 @@ class RobloxVerificationBot(commands.Bot):
         self.ai_trainer = AITrainer()
         self.groq_assistant = GroqAssistant(self.ai_trainer)
         self.ticket_manager = TicketManager()
+        self.invite_cache = {}
+        self.invite_lock = asyncio.Lock()
 
     async def setup_hook(self):
         # Register persistent views
@@ -428,6 +442,18 @@ class RobloxVerificationBot(commands.Bot):
             except Exception as e:
                 logger.error(f"Error executing automated AI ticket close: {e}")
 
+        # Never trust the AI's reward tags on their own: verify eligibility server-side
+        if claimed_blacklist:
+            fresh_pts = get_user_points(user.id)
+            if fresh_pts["points"] < 5 or fresh_pts.get("has_claimed_reward"):
+                logger.warning(f"Ignored ineligible blacklist claim tag for user {user.id} (pts={fresh_pts['points']}, claimed={fresh_pts.get('has_claimed_reward')})")
+                claimed_blacklist = False
+        if claimed_discount:
+            fresh_pts = get_user_points(user.id)
+            if fresh_pts["points"] < 8:
+                logger.warning(f"Ignored ineligible coupon claim tag for user {user.id} (pts={fresh_pts['points']})")
+                claimed_discount = False
+
         # If user unlocked and claimed the Echo Blacklist System, deliver official card & download button
         if claimed_blacklist:
             mark_reward_claimed(user.id, True)
@@ -487,6 +513,28 @@ class RobloxVerificationBot(commands.Bot):
 
         # If user redeemed the 50% Off Discount Coupon (8 Points), execute 3-step live processing sequence
         if claimed_discount:
+            # Deduct points and mint the code FIRST (before the animated steps) so the
+            # balance check and deduction can't be raced by a second message.
+            balance_before = get_user_points(user.id)["points"]
+            coupon_code = f"ECHO-50-{secrets.token_hex(3).upper()}"
+            new_pts = remove_points(
+                user_id=user.id,
+                amount=8,
+                source="reward_redeem",
+                reason=f"Redeemed 50% Off Coupon ({coupon_code}) via AI Ticket Assistant"
+            )
+            try:
+                with sqlite3.connect("verifications.db") as _c:
+                    _c.execute(
+                        """
+                        INSERT INTO user_redemptions (user_id, reward_id, reward_name, cost, coupon_code, status)
+                        VALUES (?, 'coupon_discount', '50% Off Any Asset Store Coupon', 8, ?, 'completed');
+                        """,
+                        (user.id, coupon_code)
+                    )
+            except Exception as e:
+                logger.error(f"Error logging coupon redemption in DB: {e}")
+
             # Step 1/3: Verification Message
             async with channel.typing():
                 await asyncio.sleep(1.8)
@@ -495,7 +543,7 @@ class RobloxVerificationBot(commands.Bot):
                     description=(
                         f"**[Step 1/3: Account Audit & Balance Check]**\n\n"
                         f"• **Member:** {user.mention} (`{user.name}`)\n"
-                        f"• **Current Balance:** `{pts['points']} Points` *(Minimum 8 Points required)*\n"
+                        f"• **Current Balance:** `{balance_before} Points` *(Minimum 8 Points required)*\n"
                         f"• **Eligibility:** 🟢 **VERIFIED & APPROVED**\n\n"
                         f"⏳ *Accessing cryptographic voucher engine and preparing ledger transaction...*"
                     ),
@@ -512,25 +560,6 @@ class RobloxVerificationBot(commands.Bot):
             # Step 2/3: Deduction & Key Generation Message
             async with channel.typing():
                 await asyncio.sleep(2.4)
-                coupon_code = f"ECHO-50-{secrets.token_hex(3).upper()}"
-                new_pts = remove_points(
-                    user_id=user.id,
-                    amount=8,
-                    source="reward_redeem",
-                    reason=f"Redeemed 50% Off Coupon ({coupon_code}) via AI Ticket Assistant"
-                )
-                try:
-                    import sqlite3 as _sql
-                    with _sql.connect("verifications.db") as _c:
-                        _cur = _c.cursor()
-                        _cur.execute("""
-                            INSERT INTO user_redemptions (user_id, reward_id, reward_name, cost, coupon_code, status)
-                            VALUES (?, 'coupon_discount', '50% Off Any Asset Store Coupon', 8, ?, 'completed');
-                        """, (user.id, coupon_code))
-                        _c.commit()
-                except Exception as e:
-                    logger.error(f"Error logging coupon redemption in DB: {e}")
-
                 step2_embed = discord.Embed(
                     title="⚙️ Ledger Transaction & Key Minting",
                     description=(
@@ -704,7 +733,12 @@ class RobloxVerificationBot(commands.Bot):
         user_id = ticket["user_id"]
         self.ticket_manager.close_ticket(ticket_id, closed_by=closed_by.id if closed_by else None, reason=reason)
 
-        user = self.get_user(user_id) or await self.fetch_user(user_id)
+        user = self.get_user(user_id)
+        if not user:
+            try:
+                user = await self.fetch_user(user_id)
+            except Exception:
+                user = None  # user deleted their account / left; still finish the close flow
 
         # 1. Generate and upload HTML transcript to transcript channel (1556000161690292274)
         transcript_ch = await self.get_transcript_channel(channel.guild)
@@ -813,42 +847,6 @@ bot = RobloxVerificationBot()
 
 # --- EVENTS ---
 
-@bot.event
-async def on_member_join(member: discord.Member):
-    """Handles auto-roles, welcomer greeting, and global security ban enforcement."""
-    # 1. Global Ban Security Auto-Enforcement
-    banned, ban_data = is_globally_banned(member.id)
-    if banned:
-        ban_reason = ban_data.get("reason", "Echo Technologies Global Security Blacklist") if ban_data else "Blacklisted"
-        try:
-            await member.ban(reason=f"[SECURITY ENFORCED] Globally Banned User: {ban_reason}")
-            logger.warning(f"Enforced global ban on {member.name} ({member.id})")
-            await dispatch_mod_log(
-                bot=bot,
-                guild=member.guild,
-                action="global_ban",
-                target=member,
-                moderator=bot.user,
-                reason=f"Attempted to join server while on global blacklist.\nOriginal Reason: {ban_reason}",
-                extra_field=("🚨 Automatic Security Enforcement", "User was automatically banned on server join.")
-            )
-            return
-        except Exception as e:
-            logger.error(f"Failed to auto-enforce global ban on {member.id}: {e}")
-
-    for role_id in config.JOIN_ROLE_IDS:
-        if role_id:
-            role = member.guild.get_role(role_id)
-            if role:
-                try:
-                    await member.add_roles(role, reason="Auto-role assigned on server join")
-                    logger.info(f"Assigned join role {role.name} ({role.id}) to {member.name}")
-                except Exception as e:
-                    logger.warning(f"Failed to assign join role {role_id} to {member.name}: {e}")
-
-    # Dispatch Welcome Greeting Card to #welcome
-    asyncio.create_task(send_welcome_greeting(bot, member))
-
 def build_verification_panel_embed() -> discord.Embed:
     embed = discord.Embed(
         title="🛡️ Roblox Account Verification",
@@ -909,7 +907,7 @@ async def check_ticket_inactivity():
         for ticket in to_warn:
             bot.ticket_manager.mark_inactivity_warning_sent(ticket["id"])
             user_id = ticket["user_id"]
-            user = bot.get_user(user_id) or await bot.fetch_user(user_id)
+            user = await safe_fetch_user(bot, user_id)
             if user:
                 try:
                     dm = await user.create_dm()
@@ -980,34 +978,14 @@ async def on_ready():
         check_invite_comp_loop.start()
         logger.info("Started invite competition background monitor loop (30s interval).")
 
-@tasks.loop(seconds=30)
-async def check_invite_comp_loop():
-    """Background loop to conclude expired invite competitions."""
-    try:
-        await check_invite_competitions_loop(bot)
-    except Exception as e:
-        logger.error(f"Error in invite competition loop: {e}")
+    # 0.95. Start Partner Health Monitor Loop (6-hour interval)
+    if not partner_health_monitor_loop.is_running():
+        partner_health_monitor_loop.start()
+        logger.info("Started partner health background monitor loop (6-hour interval).")
 
-@tasks.loop(hours=1)
-async def check_hr_maintenance_loop():
-    """Background task to run 30-day strike decay and lift expired staff suspensions."""
-    try:
-        expired_count = check_strike_expiration()
-        if expired_count > 0:
-            logger.info(f"Deactivated {expired_count} expired strike records (30-day clean conduct decay).")
-        await check_expired_suspensions(bot)
-    except Exception as e:
-        logger.error(f"Error in HR maintenance loop: {e}")
-
-@tasks.loop(hours=6)
-async def partner_health_monitor_loop():
-    """Checks for broken invite links across active affiliate partners."""
-    try:
-        await check_partner_health(bot)
-    except Exception as e:
-        logger.error(f"Error in partner health monitor loop: {e}")
-
-
+    # 0.97. Snapshot invite usage counts for accurate invite tracking
+    for g in bot.guilds:
+        await refresh_invite_cache(g)
 
     # 1. Post Verification Panel if needed
     channel = bot.get_channel(config.VERIFICATION_CHANNEL_ID)
@@ -1043,6 +1021,33 @@ async def partner_health_monitor_loop():
     if guild:
         report = await bot.ai_trainer.train_from_guild(guild)
         logger.info(f"AI Knowledge Initialized: {report['trainer_messages']} msgs, {report['embeds_parsed']} embeds parsed.")
+
+@tasks.loop(seconds=30)
+async def check_invite_comp_loop():
+    """Background loop to conclude expired invite competitions."""
+    try:
+        await check_invite_competitions_loop(bot)
+    except Exception as e:
+        logger.error(f"Error in invite competition loop: {e}")
+
+@tasks.loop(hours=1)
+async def check_hr_maintenance_loop():
+    """Background task to run 30-day strike decay and lift expired staff suspensions."""
+    try:
+        expired_count = check_strike_expiration()
+        if expired_count > 0:
+            logger.info(f"Deactivated {expired_count} expired strike records (30-day clean conduct decay).")
+        await check_expired_suspensions(bot)
+    except Exception as e:
+        logger.error(f"Error in HR maintenance loop: {e}")
+
+@tasks.loop(hours=6)
+async def partner_health_monitor_loop():
+    """Checks for broken invite links across active affiliate partners."""
+    try:
+        await check_partner_health(bot)
+    except Exception as e:
+        logger.error(f"Error in partner health monitor loop: {e}")
 
 async def evaluate_and_award_chat_point(message: discord.Message):
     """
@@ -1100,34 +1105,92 @@ async def evaluate_and_award_chat_point(message: discord.Message):
     except Exception as e:
         logger.error(f"Error evaluating message for points: {e}")
 
+async def refresh_invite_cache(guild: discord.Guild) -> None:
+    """Stores the current use-count of every invite in the guild."""
+    try:
+        invites = await guild.invites()
+    except (discord.Forbidden, discord.HTTPException):
+        bot.invite_cache.pop(guild.id, None)
+        return
+    bot.invite_cache[guild.id] = {inv.code: (inv.uses or 0) for inv in invites}
+
+async def detect_used_invite(guild: discord.Guild) -> Optional[discord.Invite]:
+    """Finds which invite was used by comparing use-counts against the cached snapshot."""
+    async with bot.invite_lock:
+        old = bot.invite_cache.get(guild.id)
+        try:
+            invites = await guild.invites()
+        except (discord.Forbidden, discord.HTTPException):
+            return None
+        bot.invite_cache[guild.id] = {inv.code: (inv.uses or 0) for inv in invites}
+        if old is None:
+            return None
+        for inv in invites:
+            if (inv.uses or 0) > old.get(inv.code, 0):
+                return inv
+        return None
+
+@bot.event
+async def on_invite_create(invite: discord.Invite):
+    if invite.guild:
+        bot.invite_cache.setdefault(invite.guild.id, {})[invite.code] = invite.uses or 0
+
+@bot.event
+async def on_invite_delete(invite: discord.Invite):
+    if invite.guild:
+        bot.invite_cache.get(invite.guild.id, {}).pop(invite.code, None)
+
+@bot.event
+async def on_guild_join(guild: discord.Guild):
+    await refresh_invite_cache(guild)
+
 @bot.event
 async def on_member_join(member: discord.Member):
-    """Tracks which invite link a joining member used, performs alt safety checks, and logs audit alerts."""
+    """Global-ban enforcement, invite tracking, anti-alt checks, auto-roles and welcome greeting."""
     guild = member.guild
-    
-    # 1. Anti-Alt / Account Age Security Check (< 7 days old)
+
+    # 1. Global Ban Security Auto-Enforcement
+    banned, ban_data = is_globally_banned(member.id)
+    if banned:
+        ban_reason = ban_data.get("reason", "Echo Technologies Global Security Blacklist") if ban_data else "Blacklisted"
+        try:
+            await member.ban(reason=f"[SECURITY ENFORCED] Globally Banned User: {ban_reason}")
+            logger.warning(f"Enforced global ban on {member.name} ({member.id})")
+            await dispatch_mod_log(
+                bot=bot,
+                guild=guild,
+                action="global_ban",
+                target=member,
+                moderator=bot.user,
+                reason=f"Attempted to join server while on global blacklist.\nOriginal Reason: {ban_reason}",
+                extra_field=("🚨 Automatic Security Enforcement", "User was automatically banned on server join.")
+            )
+            return
+        except Exception as e:
+            logger.error(f"Failed to auto-enforce global ban on {member.id}: {e}")
+
+    # 2. Anti-Alt / Account Age Security Check (< 7 days old)
     created_at = member.created_at
     if created_at.tzinfo is None:
         created_at = created_at.replace(tzinfo=timezone.utc)
     account_age_days = (datetime.now(timezone.utc) - created_at).days
     is_alt = account_age_days < 7
 
+    # 3. Invite tracking (only credit the invite whose use-count actually increased)
     used_inviter_id = None
     used_code = None
-
     try:
-        invites = await guild.invites()
-        for inv in invites:
-            if inv.inviter:
-                record_member_join_invite(guild.id, member.id, inv.inviter.id, inv.code, is_fake=is_alt)
-                used_inviter_id = inv.inviter.id
-                used_code = inv.code
+        used_invite = await detect_used_invite(guild)
+        if used_invite and used_invite.inviter:
+            used_inviter_id = used_invite.inviter.id
+            used_code = used_invite.code
+            record_member_join_invite(guild.id, member.id, used_inviter_id, used_code, is_fake=is_alt)
     except Exception as e:
         logger.debug(f"Invite tracking error on member join: {e}")
 
     # Audit Log Alert for Flagged Alts
     if is_alt and used_inviter_id:
-        audit_ch = guild.get_channel(config.MOD_LOG_CHANNEL_ID) or guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID)
+        audit_ch = guild.get_channel(config.MOD_LOGS_CHANNEL_ID) or guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID)
         if audit_ch and isinstance(audit_ch, discord.TextChannel):
             try:
                 audit_embed = discord.Embed(
@@ -1147,19 +1210,18 @@ async def on_member_join(member: discord.Member):
             except Exception:
                 pass
 
-    # 2. Auto-Assign Join Roles (e.g. Unverified & Member roles)
-    if config.JOIN_ROLE_IDS:
-        for r_id in config.JOIN_ROLE_IDS:
-            if r_id:
-                role = guild.get_role(r_id)
-                if role:
-                    try:
-                        await member.add_roles(role, reason="Auto-assigned join role")
-                        logger.info(f"Auto-assigned join role '{role.name}' ({role.id}) to {member.name}")
-                    except Exception as e:
-                        logger.warning(f"Failed to assign join role {r_id} to {member.name}: {e}")
+    # 4. Auto-Assign Join Roles (e.g. Unverified & Member roles)
+    for r_id in config.JOIN_ROLE_IDS:
+        if r_id:
+            role = guild.get_role(r_id)
+            if role:
+                try:
+                    await member.add_roles(role, reason="Auto-assigned join role")
+                    logger.info(f"Auto-assigned join role '{role.name}' ({role.id}) to {member.name}")
+                except Exception as e:
+                    logger.warning(f"Failed to assign join role {r_id} to {member.name}: {e}")
 
-    # 3. Dispatch welcome greeting
+    # 5. Dispatch welcome greeting
     try:
         await send_welcome_greeting(bot, member)
     except Exception as e:
@@ -1367,7 +1429,12 @@ async def on_message(message: discord.Message):
                 sender_name=message.author.display_name,
                 attachments=att_urls
             )
-            target_user = bot.get_user(ticket_user_id) or await bot.fetch_user(ticket_user_id)
+            target_user = bot.get_user(ticket_user_id)
+            if not target_user:
+                try:
+                    target_user = await bot.fetch_user(ticket_user_id)
+                except Exception:
+                    target_user = None
             if target_user:
                 try:
                     staff_desc = message.content or ("*(Uploaded file attachment)*" if message.attachments else "")
@@ -1669,7 +1736,7 @@ async def check_alt(interaction: discord.Interaction, member: discord.Member):
     record = bot.db.get_by_discord_id(member.id)
 
     discord_created = member.created_at
-    discord_age_days = (datetime.utcnow().replace(tzinfo=discord_created.tzinfo) - discord_created).days
+    discord_age_days = (datetime.now(timezone.utc) - discord_created).days
 
     embed = discord.Embed(title=f"🕵️ Alt Account Check: {member.name}", color=0xFEE75C)
     embed.add_field(name="Discord Age", value=f"{discord_age_days} days old (<t:{int(discord_created.timestamp())}:D>)", inline=False)
@@ -1679,7 +1746,7 @@ async def check_alt(interaction: discord.Interaction, member: discord.Member):
         if details and "created" in details:
             rbx_dt = bot.roblox_api.parse_creation_date(details["created"])
             if rbx_dt:
-                rbx_age_days = (datetime.utcnow() - rbx_dt).days
+                rbx_age_days = (datetime.now(timezone.utc) - rbx_dt).days
                 embed.add_field(name="Roblox Account", value=f"**{record['roblox_username']}** (ID: `{record['roblox_id']}`)", inline=True)
                 embed.add_field(name="Roblox Age", value=f"{rbx_age_days} days old", inline=True)
                 if rbx_age_days < 30 or discord_age_days < 7:
@@ -2059,7 +2126,7 @@ async def ticket_canned_send(interaction: discord.Interaction, shortcut: str):
         await interaction.response.send_message(f"❌ Canned template `{shortcut}` not found. Use `/ticket canned list`.", ephemeral=True)
         return
 
-    target_user = bot.get_user(ticket["user_id"]) or await bot.fetch_user(ticket["user_id"])
+    target_user = await safe_fetch_user(bot, ticket["user_id"])
     if target_user:
         try:
             staff_embed = discord.Embed(
@@ -2609,7 +2676,7 @@ async def staff_pardon_cmd(interaction: discord.Interaction, strike_id: int, rea
         except Exception:
             pass
 
-    staff_user = bot.get_user(strike["staff_id"]) or await bot.fetch_user(strike["staff_id"])
+    staff_user = await safe_fetch_user(bot, strike["staff_id"])
     if staff_user:
         try:
             dm = await staff_user.create_dm()
@@ -4606,7 +4673,6 @@ async def partner_post_portal_cmd(interaction: discord.Interaction):
             "and active gaming communities.\n\n"
             "**Partner Benefits:**\n"
             "• 📢 Instant `@here` Ping & Dedicated Showcase Thread in `#our-affiliates`\n"
-            "• 🎟️ Exclusive 20% Off Store Coupon Code for your community\n"
             "• 👑 `@Partner Representative` Discord Role & VIP Perks\n"
             "• 🪙 +3 Community Points reward for PR team members\n\n"
             "**Requirements:**\n"

@@ -61,7 +61,6 @@ def init_partnerships_db():
                 added_by INTEGER NOT NULL,
                 tier TEXT DEFAULT 'Bronze',
                 status TEXT DEFAULT 'active',
-                coupon_code TEXT DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
@@ -103,14 +102,22 @@ def init_partnerships_db():
                 PRIMARY KEY (giveaway_id, user_id)
             );
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS partner_blacklists (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                target_type TEXT NOT NULL,
+                target_val TEXT NOT NULL,
+                reason TEXT DEFAULT 'No reason provided',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
         # Migrate existing partnerships table columns if missing
         cursor.execute("PRAGMA table_info(partnerships);")
         existing_cols = [row[1] for row in cursor.fetchall()]
         cols_to_add = {
             "roblox_group_id": "INTEGER DEFAULT NULL",
             "tier": "TEXT DEFAULT 'Bronze'",
-            "status": "TEXT DEFAULT 'active'",
-            "coupon_code": "TEXT DEFAULT NULL"
+            "status": "TEXT DEFAULT 'active'"
         }
         for col_name, col_def in cols_to_add.items():
             if col_name not in existing_cols:
@@ -137,8 +144,7 @@ def add_partnership_record(
     thread_id: Optional[int],
     message_id: Optional[int],
     added_by: int,
-    tier: str = "Bronze",
-    coupon_code: Optional[str] = None
+    tier: str = "Bronze"
 ) -> int:
     """Inserts a new partnership into the database."""
     with sqlite3.connect(DB_PATH) as conn:
@@ -146,9 +152,9 @@ def add_partnership_record(
         cursor.execute("""
             INSERT INTO partnerships (
                 name, invite_url, description, category, representative_id,
-                banner_url, roblox_group_id, thread_id, message_id, added_by, tier, coupon_code
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """, (name, invite_url, description, category, representative_id, banner_url, roblox_group_id, thread_id, message_id, added_by, tier, coupon_code))
+                banner_url, roblox_group_id, thread_id, message_id, added_by, tier
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """, (name, invite_url, description, category, representative_id, banner_url, roblox_group_id, thread_id, message_id, added_by, tier))
         conn.commit()
         return cursor.lastrowid
 
@@ -400,7 +406,6 @@ def build_partner_embed(
     representative: Optional[discord.Member] = None,
     custom_banner: Optional[str] = None,
     partner_id: Optional[int] = None,
-    coupon_code: Optional[str] = None,
     tier: str = "Bronze"
 ) -> discord.Embed:
     """Builds a comprehensive, detailed partnership showcase embed."""
@@ -435,13 +440,6 @@ def build_partner_embed(
         embed.add_field(
             name="👤 Official Ambassador / Representative",
             value=f"{representative.mention} (`{representative.name}`)",
-            inline=True
-        )
-
-    if coupon_code:
-        embed.add_field(
-            name="🎟️ Member Perks & Store Discount",
-            value=f"Use code **`{coupon_code}`** for **20% OFF** store products!",
             inline=True
         )
 
@@ -500,10 +498,6 @@ async def publish_affiliate_partnership(
     meta = await resolve_invite_metadata(bot, invite_url, roblox_group_url)
     tier = calculate_partner_tier(meta.get("member_count"))
 
-    # Generate custom partner coupon code
-    clean_short_name = re.sub(r'[^A-Z0-9]', '', name.upper())[:6] or "PARTNER"
-    coupon_code = f"PARTNER-{clean_short_name}-20"
-
     embed = build_partner_embed(
         name=name,
         invite_url=invite_url,
@@ -512,7 +506,6 @@ async def publish_affiliate_partnership(
         meta=meta,
         representative=representative,
         custom_banner=banner_url,
-        coupon_code=coupon_code,
         tier=tier
     )
     view = PartnerLinkView(invite_url=invite_url, partner_name=name)
@@ -556,8 +549,7 @@ async def publish_affiliate_partnership(
             thread_id=thread_id,
             message_id=message_id,
             added_by=added_by,
-            tier=tier,
-            coupon_code=coupon_code
+            tier=tier
         )
 
         # 3. Assign Partner Representative Role if representative provided
@@ -630,7 +622,6 @@ async def update_affiliate_partnership(
         representative=rep_member,
         custom_banner=updated_partner.get("banner_url"),
         partner_id=partner_id,
-        coupon_code=updated_partner.get("coupon_code"),
         tier=tier
     )
     new_view = PartnerLinkView(invite_url=updated_partner["invite_url"], partner_name=updated_partner["name"])

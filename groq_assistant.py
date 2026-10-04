@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import re
 from typing import List, Dict, Tuple, Optional
 from groq import AsyncGroq
 import config
@@ -215,7 +216,12 @@ You must ESCALATE the ticket to staff if:
             "close inquiry", "close the ticket", "close this ticket please", "please close this",
             "everything is working now, you can close", "issue is resolved, you can close"
         ]
-        if any(phrase in latest_user_text for phrase in close_phrases) or ("close" in latest_user_text and ("ticket" in latest_user_text or "inquiry" in latest_user_text or "this" in latest_user_text)):
+        negated_close = bool(re.search(r"\b(don'?t|do not|dont|never|not|no need to|without)\b[^.!?]{0,20}\bclose\b", latest_user_text))
+        wants_close = (
+            any(phrase in latest_user_text for phrase in close_phrases)
+            or bool(re.search(r"\bclose\b", latest_user_text) and re.search(r"\b(ticket|inquiry)\b", latest_user_text))
+        )
+        if wants_close and not negated_close:
             return (
                 "Glad everything is resolved! I am closing this ticket channel now. Have a great day! 🎉",
                 False,
