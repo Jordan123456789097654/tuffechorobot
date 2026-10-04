@@ -108,6 +108,8 @@ from points_system import (
     get_user_redemptions, tip_points, build_tip_embed,
     build_shop_embed, PointsShopView
 )
+from support_templates_system import sync_support_templates_channel
+
 
 
 
@@ -1015,6 +1017,14 @@ async def on_ready():
         logger.info("Synced live career opportunities recruitment panel.")
     except Exception as e:
         logger.error(f"Could not sync career panel: {e}")
+
+    # 1.6. Post or Refresh Support Templates & Guide in #support-templates (1556425130752876626)
+    try:
+        await sync_support_templates_channel(bot)
+        logger.info("Synced support templates knowledge base in #support-templates.")
+    except Exception as e:
+        logger.error(f"Could not sync support templates channel: {e}")
+
 
     # 2. Train AI from guild knowledge (#ai-trainer & embeds)
     guild = bot.get_primary_guild()
@@ -4033,6 +4043,20 @@ async def poll_cmd(
             await msg.add_reaction(emojis[idx])
         except Exception:
             pass
+
+@bot.tree.command(name="post-support-templates", description="[ADMIN] Post or refresh support guidelines and response templates in #support-templates.")
+@app_commands.describe(channel="Target channel (defaults to #support-templates)")
+@app_commands.default_permissions(administrator=True)
+async def post_support_templates_cmd(interaction: discord.Interaction, channel: Optional[discord.TextChannel] = None):
+    await interaction.response.defer(ephemeral=True)
+    target_ch = channel or bot.get_channel(config.SUPPORT_TEMPLATES_CHANNEL_ID)
+    success = await sync_support_templates_channel(bot, channel=target_ch)
+    if success:
+        ch_mention = target_ch.mention if target_ch else f"<#{config.SUPPORT_TEMPLATES_CHANNEL_ID}>"
+        await interaction.followup.send(f"✅ **Support response templates and guidelines posted to {ch_mention}!**", ephemeral=True)
+    else:
+        await interaction.followup.send("❌ Failed to post support templates.", ephemeral=True)
+
 
 
 
