@@ -651,17 +651,6 @@ class RobloxVerificationBot(commands.Bot):
             await asyncio.sleep(1.0)
             await channel.send(embed=evidence_embed)
 
-        # Dispatch real-time Live Exam Telemetry update DM to Trainer / Founder
-        trainer_id = ticket.get("claimed_by")
-        if trainer_id:
-            try:
-                candidate_user = self.get_user(ticket["user_id"]) or await self.fetch_user(ticket["user_id"])
-                trainer_user = self.get_user(trainer_id) or await self.fetch_user(trainer_id)
-                if trainer_user and not trainer_user.bot:
-                    asyncio.create_task(self.dispatch_live_trainer_exam_update(ticket_id, channel, candidate_user or staff_user, trainer_user))
-            except Exception as e:
-                logger.warning(f"Could not fetch trainer/candidate user for live telemetry DM: {e}")
-
     async def dispatch_live_trainer_exam_update(self, ticket_id: int, channel: discord.TextChannel, staff_user: discord.User, trainer_user: discord.User):
         """Dispatches a real-time live evaluation telemetry update DM to the trainer during a test ticket."""
         try:
