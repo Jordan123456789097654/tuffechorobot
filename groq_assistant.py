@@ -500,8 +500,11 @@ You must ESCALATE the ticket to staff if:
                     f"   - Refusing unauthorized Robux payouts\n"
                     f"   - Evidence Privacy SOP citation\n"
                     f"   - Anti-Evasion / Blacklist Warning citation (if raid threats mentioned)\n"
-                    f"4. Once the staff member gives proper guidance, thank them and state that your inquiry is resolved so they can initiate ticket closure.\n"
-                    f"5. Output ONLY your message in character as the member."
+                    f"4. DYNAMIC CLOSURE & RESPONSES:\n"
+                    f"   - If the staff member provides complete guidance, express satisfaction that your inquiry is resolved.\n"
+                    f"   - CRITICAL: If the staff member says 'DONT CLOSE', 'wait', 'hold on', or asks further questions, DO NOT repeat 'you can close this ticket'! React in character to what they just said (e.g. ask 'Oh, what else do you need?' or 'Is there something else I need to confirm?').\n"
+                    f"   - NEVER repeat the exact same response twice in a row. Always react dynamically to the staff member's latest message.\n"
+                    f"5. Output ONLY your message in character as the Roblox member."
                 )
             },
             {

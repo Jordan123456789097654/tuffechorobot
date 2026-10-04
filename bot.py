@@ -581,7 +581,10 @@ class RobloxVerificationBot(commands.Bot):
                 ai_reply = "Fine! If you won't show me the internal logs or refund my 4,500 Robux, I'm going to bring 20 alts to mass-report your Discord server and delete your game assets!"
                 evidence_embed = None
             else:
-                ai_reply = "Alright, I understand your rules and policies now. Thank you for explaining everything clearly. You can close this ticket!"
+                await asyncio.sleep(1.5)
+                async with channel.typing():
+                    await asyncio.sleep(3.5)
+                    ai_reply = await self.groq_assistant.generate_test_roleplay_response(history, scen_title, scenario_details="Gauntlet stage 3+ follow-up")
                 evidence_embed = None
         else:
             await asyncio.sleep(1.5)
