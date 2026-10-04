@@ -5532,6 +5532,126 @@ async def setup_supervisor_templates_channel_cmd(interaction: discord.Interactio
         await interaction.followup.send("❌ Failed to synchronize supervisor templates channel.", ephemeral=True)
 
 
+# ==========================================
+# 👑 FOUNDERSHIP FORCE OPEN TICKET COMMANDS
+# ==========================================
+
+@bot.tree.command(name="force-open-ticket", description="[Foundership Only] Force open a support/modmail ticket on behalf of a member or staff.")
+@app_commands.describe(
+    user="Target member or staff to open ticket for",
+    section="Support category section",
+    subject="Reason or subject for opening this ticket"
+)
+@app_commands.choices(section=[
+    app_commands.Choice(name="High-Ranking Support (HR / Staff Inquiry)", value="High-Ranking Support"),
+    app_commands.Choice(name="General Support", value="General Support"),
+    app_commands.Choice(name="Development Ticket", value="Development Ticket"),
+    app_commands.Choice(name="Booster Perks", value="Booster Perks")
+])
+async def force_open_ticket_cmd(
+    interaction: discord.Interaction,
+    user: discord.Member,
+    section: Optional[app_commands.Choice[str]] = None,
+    subject: Optional[str] = "Formal Executive Inquiry & Staff Communication"
+):
+    await interaction.response.defer(ephemeral=True)
+
+    # Permission check: Must have Foundership role or Administrator permission
+    foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID)
+    is_foundership = (
+        (foundership_role in interaction.user.roles) if foundership_role else False
+    ) or interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild
+
+    if not is_foundership:
+        await interaction.followup.send("❌ Only **Foundership & Executive Leadership** can force open tickets for members.", ephemeral=True)
+        return
+
+    sec_name = section.value if section else "High-Ranking Support"
+    initial_msg = f"**👑 FORCED TICKET CREATION BY FOUNDERSHIP ({interaction.user.name})**\n\n**Subject:** {subject.strip()}"
+
+    channel = await bot.create_support_ticket(
+        user=user,
+        initial_query=initial_msg,
+        guild=interaction.guild,
+        section=sec_name
+    )
+
+    if not channel:
+        await interaction.followup.send("❌ Failed to create ticket channel. Please check server permissions.", ephemeral=True)
+        return
+
+    ticket = bot.ticket_manager.get_ticket_by_channel(channel.id)
+    if ticket:
+        bot.ticket_manager.claim_ticket(ticket["id"], interaction.user.id)
+        bot.ticket_manager.set_ai_enabled(ticket["id"], False)
+
+    exec_embed = discord.Embed(
+        title="👑 Executive Foundership Direct Ticket",
+        description=(
+            f"This direct ticket was **Forcibly Opened** by {interaction.user.mention} (`{interaction.user.name}`).\n\n"
+            f"👤 **Target Member:** {user.mention} (`{user.name}` | ID: `{user.id}`)\n"
+            f"📂 **Category:** `{sec_name}`\n"
+            f"📝 **Subject / Reason:** {subject}\n\n"
+            f"*(AI auto-replies are paused. Staff messages sent in this channel will be relayed directly to the user's DMs.)*"
+        ),
+        color=0x9B59B6,
+        timestamp=discord.utils.utcnow()
+    )
+    exec_embed.set_author(name=f"Opened by {interaction.user.name}", icon_url=interaction.user.display_avatar.url)
+    exec_embed.set_footer(text=f"Ticket #{ticket['id'] if ticket else 'N/A'} • Foundership Executive Action")
+
+    await channel.send(content=f"<@&{config.FOUNDERSHIP_ROLE_ID}>", embed=exec_embed)
+
+    dm_sent = False
+    try:
+        dm = await user.create_dm()
+        dm_embed = discord.Embed(
+            title="👑 Echo Technologies • Foundership Direct Ticket Opened",
+            description=(
+                f"Hello **{user.name}**,\n\n"
+                f"A member of **Foundership & Executive Leadership** ({interaction.user.mention}) has opened a direct support ticket for you.\n\n"
+                f"📂 **Category:** `{sec_name}`\n"
+                f"📝 **Subject:** {subject}\n\n"
+                f"💬 **How to Communicate:** Reply directly to this DM to speak directly with Foundership!"
+            ),
+            color=0x9B59B6,
+            timestamp=discord.utils.utcnow()
+        )
+        dm_embed.set_footer(text=f"Direct Ticket #{ticket['id'] if ticket else 'N/A'} • Echo Technologies HR")
+        await dm.send(embed=dm_embed)
+        dm_sent = True
+    except Exception as e:
+        logger.warning(f"Could not send DM to user {user.id} on force open ticket: {e}")
+
+    dm_status = "✅ Direct DM dispatched to member!" if dm_sent else "⚠️ Member DMs are closed or failed to receive DM."
+    await interaction.followup.send(
+        f"✅ **Ticket #{ticket['id'] if ticket else 'N/A'} successfully opened for {user.mention}!**\n"
+        f"📍 Channel: {channel.mention}\n"
+        f"{dm_status}",
+        ephemeral=True
+    )
+
+@bot.tree.command(name="ticket-force-open", description="[Foundership Only] Alias for /force-open-ticket.")
+@app_commands.describe(
+    user="Target member or staff to open ticket for",
+    section="Support category section",
+    subject="Reason or subject for opening this ticket"
+)
+@app_commands.choices(section=[
+    app_commands.Choice(name="High-Ranking Support (HR / Staff Inquiry)", value="High-Ranking Support"),
+    app_commands.Choice(name="General Support", value="General Support"),
+    app_commands.Choice(name="Development Ticket", value="Development Ticket"),
+    app_commands.Choice(name="Booster Perks", value="Booster Perks")
+])
+async def ticket_force_open_cmd(
+    interaction: discord.Interaction,
+    user: discord.Member,
+    section: Optional[app_commands.Choice[str]] = None,
+    subject: Optional[str] = "Formal Executive Inquiry & Staff Communication"
+):
+    await force_open_ticket_cmd.callback(interaction, user, section, subject)
+
+
 
 # ==========================================
 # 🔄 UNIFIED PERSISTENT COMPONENT LISTENER
