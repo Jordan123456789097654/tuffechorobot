@@ -344,6 +344,113 @@ class TicketControlView(ui.View):
         view = SendTemplateSelectView(self.bot, ticket["id"])
         await interaction.response.send_message("Choose an official support template to dispatch directly to the member's DMs:", view=view, ephemeral=True)
 
+    @ui.button(
+        label="Request Close",
+        style=discord.ButtonStyle.secondary,
+        emoji="🔔",
+        custom_id="ticket_ctrl_req_close_btn",
+        row=1
+    )
+    async def request_close_button(self, interaction: discord.Interaction, button: ui.Button):
+        ticket = self.bot.ticket_manager.get_or_recover_ticket(interaction.channel_id, channel_obj=interaction.channel)
+        if not ticket:
+            await interaction.response.send_message("❌ No active ticket found.", ephemeral=True)
+            return
+
+        modal = RequestCloseModal(self.bot, ticket)
+        await interaction.response.send_modal(modal)
+
+
+class RequestCloseModal(ui.Modal):
+    """Modal for staff to specify why they are requesting ticket closure."""
+
+    reason_input = ui.TextInput(
+        label="Closure Notes / Reason for Member",
+        placeholder="e.g. Issue resolved, account re-synced, or setup complete.",
+        default="Your support inquiry has been marked as resolved.",
+        style=discord.TextStyle.paragraph,
+        max_length=500,
+        required=False
+    )
+
+    def __init__(self, bot, ticket: dict):
+        super().__init__(title=f"Request Close Ticket #{ticket['id']}")
+        self.bot = bot
+        self.ticket = ticket
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        reason = self.reason_input.value.strip() or "Issue resolved"
+
+        candidate = self.bot.get_user(self.ticket["user_id"])
+        if not candidate:
+            try:
+                candidate = await self.bot.fetch_user(self.ticket["user_id"])
+            except Exception:
+                candidate = None
+
+        if not candidate:
+            await interaction.followup.send("❌ Could not find ticket member.", ephemeral=True)
+            return
+
+        dm_sent = False
+        try:
+            dm = await candidate.create_dm()
+            dm_embed = discord.Embed(
+                title="🔔 Echo Support • Ticket Close Request",
+                description=(
+                    f"Hello **{candidate.name}**!\n\n"
+                    f"Our support staff member **{interaction.user.name}** has marked your support ticket (**#{self.ticket['id']}**) as resolved and requested to close it.\n\n"
+                    f"📝 **Staff Note:**\n```{reason}```\n"
+                    f"Please click **Accept & Close Ticket** below if your issue is resolved, or **Keep Ticket Open** if you still need help!"
+                ),
+                color=0x5865F2,
+                timestamp=discord.utils.utcnow()
+            )
+            dm_embed.set_footer(text=f"Ticket #{self.ticket['id']} • Echo Technologies Support")
+            view = TicketCloseRequestDMView(self.bot, self.ticket["id"])
+            await dm.send(embed=dm_embed, view=view)
+            dm_sent = True
+        except Exception as e:
+            logger.warning(f"Could not send close request DM to member {candidate.id}: {e}")
+
+        # Post notification in ticket channel
+        ch_embed = discord.Embed(
+            title="🔔 Ticket Close Request Dispatched",
+            description=(
+                f"Staff member {interaction.user.mention} sent a **Close Request** to {candidate.mention}'s DMs.\n\n"
+                f"📝 **Note:** `{reason}`\n\n"
+                f"*(Awaiting member response. The member can accept & close or request to keep the ticket open.)*"
+            ),
+            color=0x5865F2,
+            timestamp=discord.utils.utcnow()
+        )
+        await interaction.channel.send(embed=ch_embed)
+
+        dm_status = f"✅ Dispatched Close Request directly to {candidate.mention}'s DMs!" if dm_sent else "⚠️ Posted Close Request notice to channel (Member DM delivery failed)."
+        await interaction.followup.send(dm_status, ephemeral=True)
+
+
+class TicketCloseRequestDMView(ui.View):
+    """View sent to member's DM when staff requests to close a ticket."""
+
+    def __init__(self, bot, ticket_id: int):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.ticket_id = ticket_id
+
+        # Attach dynamic persistent custom IDs
+        self.accept_btn.custom_id = f"req_close_acc:{ticket_id}"
+        self.keep_btn.custom_id = f"req_close_keep:{ticket_id}"
+
+    @ui.button(label="Accept & Close Ticket", style=discord.ButtonStyle.success, emoji="✅")
+    async def accept_btn(self, interaction: discord.Interaction, button: ui.Button):
+        pass
+
+    @ui.button(label="Keep Ticket Open", style=discord.ButtonStyle.danger, emoji="💬")
+    async def keep_btn(self, interaction: discord.Interaction, button: ui.Button):
+        pass
+
 
 class TransferSectionSelect(ui.Select):
     """Dropdown for staff to transfer a ticket to another section."""

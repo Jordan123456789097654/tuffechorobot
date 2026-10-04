@@ -5652,6 +5652,21 @@ async def ticket_force_open_cmd(
     await force_open_ticket_cmd.callback(interaction, user, section, subject)
 
 
+@bot.tree.command(name="ticket-request-close", description="Request to close an active support ticket by sending a DM prompt to the member.")
+@app_commands.describe(reason="Reason or notes for requesting ticket closure")
+async def ticket_request_close_cmd(interaction: discord.Interaction, reason: Optional[str] = "Your support inquiry has been marked as resolved."):
+    await interaction.response.defer(ephemeral=True)
+    ticket = await bot.get_or_recover_ticket(interaction.channel)
+    if not ticket:
+        await interaction.followup.send("❌ This command must be used inside an active support ticket channel.", ephemeral=True)
+        return
+
+    from ticket_views import RequestCloseModal
+    modal = RequestCloseModal(bot, ticket)
+    modal.reason_input.default = reason
+    await interaction.followup.send(f"🔔 Dispatched Close Request dialog for Ticket #{ticket['id']}!", ephemeral=True)
+
+
 
 # ==========================================
 # 🔄 UNIFIED PERSISTENT COMPONENT LISTENER
@@ -5679,6 +5694,37 @@ async def on_persistent_components_listener(interaction: discord.Interaction):
                     )
                 except Exception as e:
                     logger.error(f"Error executing hire interaction: {e}")
+
+        # 1b. Ticket Close Request System
+        elif cid.startswith("req_close_acc:") or cid.startswith("req_close_keep:"):
+            parts = cid.split(":")
+            if len(parts) >= 2:
+                try:
+                    ticket_id = int(parts[1])
+                    action = "accept" if parts[0] == "req_close_acc" else "keep"
+                    ticket = bot.ticket_manager.get_ticket_by_id(ticket_id)
+                    if not ticket or ticket["status"] == "closed":
+                        await interaction.response.send_message("ℹ️ This ticket has already been closed.", ephemeral=True)
+                    else:
+                        if action == "accept":
+                            await interaction.response.defer()
+                            channel = bot.get_channel(ticket["channel_id"])
+                            await interaction.followup.send("✅ Thank you! Your ticket has been closed. Please rate your experience below:", ephemeral=False)
+                            await bot.close_support_ticket(ticket, channel, closed_by=interaction.user)
+                        else:
+                            await interaction.response.defer()
+                            channel = bot.get_channel(ticket["channel_id"])
+                            if channel:
+                                keep_embed = discord.Embed(
+                                    title="💬 Member Requested to Keep Ticket Open",
+                                    description=f"Member {interaction.user.mention} rejected the close request and requested to keep **Ticket #{ticket_id}** open.",
+                                    color=0xFEE75C
+                                )
+                                await channel.send(embed=keep_embed)
+                            bot.ticket_manager.set_ai_enabled(ticket_id, True)
+                            await interaction.followup.send("💬 Your request to keep the ticket open has been sent to our team! Reply here anytime to continue.", ephemeral=False)
+                except Exception as e:
+                    logger.error(f"Error handling close request interaction: {e}")
 
         # 2. Suggestions System
         elif cid.startswith("sug_up:") or cid.startswith("sug_dn:") or cid.startswith("sug_rev:"):
