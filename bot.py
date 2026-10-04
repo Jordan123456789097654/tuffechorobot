@@ -5912,15 +5912,27 @@ class LogStaffEvaluationModal(discord.ui.Modal, title="Log Staff Evaluation & Fe
             feedback_notes=notes
         )
 
-        # DM staff member
-        dm_sent = False
+        # 1. DM Trainee (Staff Member)
+        trainee_dm_sent = False
         try:
             dm = await self.target_staff.create_dm()
             dm_embed = build_evaluation_dm_embed(eval_data, self.target_staff, interaction.user)
             await dm.send(embed=dm_embed)
-            dm_sent = True
+            trainee_dm_sent = True
         except Exception as e:
-            logger.warning(f"Could not send evaluation DM to {self.target_staff.id}: {e}")
+            logger.warning(f"Could not send evaluation DM to trainee {self.target_staff.id}: {e}")
+
+        # 2. DM Trainer / Evaluator (Foundership)
+        trainer_dm_sent = False
+        try:
+            trainer_dm = await interaction.user.create_dm()
+            trainer_embed = build_evaluation_dm_embed(eval_data, self.target_staff, interaction.user)
+            trainer_embed.title = f"🧾 Trainer Audit Receipt • Evaluation #{eval_data['id']} ({self.target_staff.name})"
+            trainer_embed.set_footer(text=f"Trainer/Evaluator Audit Record • Echo HR Operations")
+            await trainer_dm.send(embed=trainer_embed)
+            trainer_dm_sent = True
+        except Exception as e:
+            logger.warning(f"Could not send evaluation DM copy to trainer {interaction.user.id}: {e}")
 
         # Post to public/staff logs channel (#staff-disciplinary / 1556021154756698192)
         pub_ch = interaction.guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID) if interaction.guild else None
@@ -5931,11 +5943,12 @@ class LogStaffEvaluationModal(discord.ui.Modal, title="Log Staff Evaluation & Fe
             except Exception as e:
                 logger.warning(f"Could not post evaluation log to channel: {e}")
 
-        dm_status = "✅ Dispatched evaluation report to staff member's DMs!" if dm_sent else "⚠️ Staff member DMs closed."
+        trainee_status = "✅ Sent DM to Trainee!" if trainee_dm_sent else "⚠️ Trainee DMs closed."
+        trainer_status = "✅ Sent receipt DM to Trainer!" if trainer_dm_sent else "⚠️ Trainer DMs closed."
         await interaction.followup.send(
             f"✅ **Staff Evaluation Record #{eval_data['id']} successfully logged for {self.target_staff.mention}!**\n"
             f"📊 **Score:** `{self.score}/100` | 🏆 **Verdict:** `{self.verdict}`\n"
-            f"{dm_status}",
+            f"📩 **DM Status:** {trainee_status} | {trainer_status}",
             ephemeral=True
         )
 
@@ -5990,15 +6003,27 @@ async def staff_eval_log_cmd(
         feedback_notes=feedback_notes.strip()
     )
 
-    # DM staff member
-    dm_sent = False
+    # 1. DM Trainee (Staff Member)
+    trainee_dm_sent = False
     try:
         dm = await target_staff.create_dm()
         dm_embed = build_evaluation_dm_embed(eval_data, target_staff, interaction.user)
         await dm.send(embed=dm_embed)
-        dm_sent = True
+        trainee_dm_sent = True
     except Exception as e:
-        logger.warning(f"Could not send evaluation DM: {e}")
+        logger.warning(f"Could not send evaluation DM to trainee {target_staff.id}: {e}")
+
+    # 2. DM Trainer / Evaluator (Foundership)
+    trainer_dm_sent = False
+    try:
+        trainer_dm = await interaction.user.create_dm()
+        trainer_embed = build_evaluation_dm_embed(eval_data, target_staff, interaction.user)
+        trainer_embed.title = f"🧾 Trainer Audit Receipt • Evaluation #{eval_data['id']} ({target_staff.name})"
+        trainer_embed.set_footer(text=f"Trainer/Evaluator Audit Record • Echo HR Operations")
+        await trainer_dm.send(embed=trainer_embed)
+        trainer_dm_sent = True
+    except Exception as e:
+        logger.warning(f"Could not send evaluation DM copy to trainer {interaction.user.id}: {e}")
 
     # Log to staff public channel
     pub_ch = interaction.guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID) if interaction.guild else None
@@ -6009,11 +6034,12 @@ async def staff_eval_log_cmd(
         except Exception as e:
             logger.warning(f"Could not post evaluation log: {e}")
 
-    dm_status = "✅ Dispatched evaluation report to staff member's DMs!" if dm_sent else "⚠️ Staff member DMs closed."
+    trainee_status = "✅ Sent DM to Trainee!" if trainee_dm_sent else "⚠️ Trainee DMs closed."
+    trainer_status = "✅ Sent receipt DM to Trainer!" if trainer_dm_sent else "⚠️ Trainer DMs closed."
     await interaction.followup.send(
         f"✅ **Staff Evaluation Record #{eval_data['id']} successfully logged for {target_staff.mention}!**\n"
         f"📊 **Score:** `{score_clamped}/100` | 🏆 **Verdict:** `{verdict_val}`\n"
-        f"{dm_status}",
+        f"📩 **DM Status:** {trainee_status} | {trainer_status}",
         ephemeral=True
     )
 
