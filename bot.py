@@ -5522,7 +5522,7 @@ async def exec_tpl_list_cmd(interaction: discord.Interaction):
 
 bot.tree.add_command(supervisor_template_group)
 
-@bot.tree.command(name="setup-supervisor-templates-channel", description="Initialize or refresh the #supervisor-templates channel guide.")
+@bot.tree.command(name="setup-supervisor-templates", description="Initialize or refresh the #supervisor-templates channel guide.")
 async def setup_supervisor_templates_channel_cmd(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     success = await sync_supervisor_templates_channel(bot, channel=interaction.channel)
