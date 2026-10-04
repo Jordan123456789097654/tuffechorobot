@@ -386,6 +386,91 @@ class RobloxVerificationBot(commands.Bot):
 
         return channel
 
+    async def create_staff_test_ticket(
+        self,
+        founder: discord.Member,
+        target_staff: discord.Member,
+        guild: discord.Guild,
+        scenario_title: str = "Support Team Practical Assessment",
+        scenario_details: str = ""
+    ) -> Optional[discord.TextChannel]:
+        """Creates an isolated testing ticket channel visible ONLY to the Founder, target staff member, and bot."""
+        category = None
+        if config.TICKETS_CATEGORY_ID:
+            category = guild.get_channel(config.TICKETS_CATEGORY_ID)
+            if not category:
+                try:
+                    category = await guild.fetch_channel(config.TICKETS_CATEGORY_ID)
+                except Exception:
+                    category = None
+            if not isinstance(category, discord.CategoryChannel):
+                category = None
+
+        if not category:
+            for cat in guild.categories:
+                if "ticket" in cat.name.lower() or "support" in cat.name.lower():
+                    category = cat
+                    break
+
+        support_role = guild.get_role(config.SUPPORT_TEAM_ROLE_ID)
+        escalation_role = guild.get_role(config.ESCALATION_ROLE_ID)
+
+        # Strictly isolated overwrites:
+        # Hidden from @everyone and hidden from SUPPORT_TEAM_ROLE_ID!
+        # Visible ONLY to target_staff, founder, and bot!
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            target_staff: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True, attach_files=True),
+            founder: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True, attach_files=True),
+            guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_channels=True, read_message_history=True, attach_files=True)
+        }
+
+        if support_role:
+            overwrites[support_role] = discord.PermissionOverwrite(view_channel=False)
+        if escalation_role:
+            overwrites[escalation_role] = discord.PermissionOverwrite(view_channel=False)
+
+        channel_name = f"test-{target_staff.name.lower().replace(' ', '-')[:15]}"
+        try:
+            channel = await guild.create_text_channel(
+                name=channel_name,
+                category=category,
+                overwrites=overwrites,
+                topic=f"[Support Staff Exam] Practical assessment for {target_staff.name} ({target_staff.id}) • Exam Channel"
+            )
+        except Exception as e:
+            logger.error(f"Error creating staff test ticket channel: {e}")
+            return None
+
+        # Register ticket in DB and force AI disabled
+        ticket_id = self.ticket_manager.create_ticket(target_staff.id, channel.id, guild.id, section="Support Staff Examination")
+        self.ticket_manager.set_ai_enabled(ticket_id, False)
+        self.ticket_manager.claim_ticket(ticket_id, founder.id)
+
+        test_embed = discord.Embed(
+            title="🧪 Echo Technologies • Support Team Practical Assessment",
+            description=(
+                f"Welcome {target_staff.mention} to your practical support evaluation!\n\n"
+                f"👤 **Assessed Staff Member:** {target_staff.mention} (`{target_staff.name}`)\n"
+                f"👑 **Exam Moderator:** {founder.mention} (`{founder.name}`)\n"
+                f"🎯 **Scenario Title:** `{scenario_title}`\n\n"
+                f"📋 **Scenario Task / Prompt Instructions:**\n"
+                f"```\n{scenario_details or 'Demonstrate standard support procedure, verify user inquiry, and apply appropriate response templates.'}\n```\n"
+                f"────────────────────────────────────────\n"
+                f"⚠️ **EXAMINATION PROTOCOL & RULES:**\n"
+                f"• **AI Assistance:** **DISABLED** (Groq AI will NOT respond in this channel).\n"
+                f"• **Channel Privacy:** **CONFIDENTIAL** (Hidden from other support team members & server users).\n"
+                f"• **Requirement:** Please reply in this channel demonstrating your SOP steps and appropriate support templates."
+            ),
+            color=0x9B59B6,
+            timestamp=discord.utils.utcnow()
+        )
+        test_embed.set_footer(text=f"Exam Ticket #{ticket_id} • Foundership Practical Assessment")
+        view = TicketControlView(self)
+        await channel.send(content=f"{target_staff.mention} {founder.mention}", embed=test_embed, view=view)
+
+        return channel
+
     async def process_ai_ticket_message(
         self,
         ticket_id: int,
@@ -5665,6 +5750,107 @@ async def ticket_request_close_cmd(interaction: discord.Interaction, reason: Opt
     modal = RequestCloseModal(bot, ticket)
     modal.reason_input.default = reason
     await interaction.followup.send(f"🔔 Dispatched Close Request dialog for Ticket #{ticket['id']}!", ephemeral=True)
+
+
+@bot.tree.command(name="ticket-test-staff", description="[Foundership Only] Open an isolated practical assessment ticket for a support team member (AI disabled).")
+@app_commands.describe(
+    target_staff="Support team member to test",
+    scenario_title="Preset assessment scenario",
+    custom_details="Custom scenario task details or prompt"
+)
+@app_commands.choices(scenario_title=[
+    app_commands.Choice(name="Mock Roblox Verification & Bio Code Censorship", value="Mock Roblox Verification & Bio Code Censorship"),
+    app_commands.Choice(name="Mock Robux Billing & Gamepass Dispute", value="Mock Robux Billing & Gamepass Dispute"),
+    app_commands.Choice(name="Mock Game Bug & Reproduction Steps", value="Mock Game Bug & Reproduction Steps"),
+    app_commands.Choice(name="Mock Exploit & Scam Player Report", value="Mock Exploit & Scam Player Report"),
+    app_commands.Choice(name="Mock Ban Appeal & Penalty Review", value="Mock Ban Appeal & Penalty Review"),
+    app_commands.Choice(name="Custom Practical Assessment Scenario", value="Custom Practical Assessment Scenario")
+])
+async def ticket_test_staff_cmd(
+    interaction: discord.Interaction,
+    target_staff: discord.Member,
+    scenario_title: Optional[app_commands.Choice[str]] = None,
+    custom_details: Optional[str] = "Demonstrate standard support procedure, verify user inquiry, and apply appropriate response templates."
+):
+    await interaction.response.defer(ephemeral=True)
+
+    foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID)
+    is_foundership = (
+        (foundership_role in interaction.user.roles) if foundership_role else False
+    ) or interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild
+
+    if not is_foundership:
+        await interaction.followup.send("❌ Only **Foundership & Executive Leadership** can open practical test tickets for support staff.", ephemeral=True)
+        return
+
+    scen_name = scenario_title.value if scenario_title else "Support Team Practical Assessment"
+
+    channel = await bot.create_staff_test_ticket(
+        founder=interaction.user,
+        target_staff=target_staff,
+        guild=interaction.guild,
+        scenario_title=scen_name,
+        scenario_details=custom_details
+    )
+
+    if not channel:
+        await interaction.followup.send("❌ Failed to create staff test ticket channel. Please check server permissions.", ephemeral=True)
+        return
+
+    ticket = bot.ticket_manager.get_ticket_by_channel(channel.id)
+
+    # DM notification to target staff member
+    dm_sent = False
+    try:
+        dm = await target_staff.create_dm()
+        dm_embed = discord.Embed(
+            title="🧪 Echo Technologies • Support Team Evaluation Notice",
+            description=(
+                f"Hello **{target_staff.name}**!\n\n"
+                f"You have been assigned a practical **Support SOP Assessment** by Foundership member {interaction.user.mention}.\n\n"
+                f"🎯 **Scenario:** `{scen_name}`\n"
+                f"📍 **Test Channel:** {channel.mention}\n\n"
+                f"⚠️ **Note:** The AI Assistant is **Disabled** in this channel. Please head to your test channel to complete your practical examination!"
+            ),
+            color=0x9B59B6,
+            timestamp=discord.utils.utcnow()
+        )
+        dm_embed.set_footer(text=f"Exam Ticket #{ticket['id'] if ticket else 'N/A'} • Echo HR Operations")
+        await dm.send(embed=dm_embed)
+        dm_sent = True
+    except Exception as e:
+        logger.warning(f"Could not send DM notice to staff member {target_staff.id}: {e}")
+
+    dm_status = "✅ Sent test notice directly to staff member's DMs!" if dm_sent else "⚠️ Staff member DMs are closed or failed to receive DM."
+    await interaction.followup.send(
+        f"🧪 **Practical Test Ticket #{ticket['id'] if ticket else 'N/A'} created for {target_staff.mention}!**\n"
+        f"📍 Channel: {channel.mention}\n"
+        f"🔒 Visible ONLY to {interaction.user.mention}, {target_staff.mention}, and the Bot (AI Disabled).\n"
+        f"{dm_status}",
+        ephemeral=True
+    )
+
+@bot.tree.command(name="staff-test-ticket", description="[Foundership Only] Alias for /ticket-test-staff.")
+@app_commands.describe(
+    target_staff="Support team member to test",
+    scenario_title="Preset assessment scenario",
+    custom_details="Custom scenario task details or prompt"
+)
+@app_commands.choices(scenario_title=[
+    app_commands.Choice(name="Mock Roblox Verification & Bio Code Censorship", value="Mock Roblox Verification & Bio Code Censorship"),
+    app_commands.Choice(name="Mock Robux Billing & Gamepass Dispute", value="Mock Robux Billing & Gamepass Dispute"),
+    app_commands.Choice(name="Mock Game Bug & Reproduction Steps", value="Mock Game Bug & Reproduction Steps"),
+    app_commands.Choice(name="Mock Exploit & Scam Player Report", value="Mock Exploit & Scam Player Report"),
+    app_commands.Choice(name="Mock Ban Appeal & Penalty Review", value="Mock Ban Appeal & Penalty Review"),
+    app_commands.Choice(name="Custom Practical Assessment Scenario", value="Custom Practical Assessment Scenario")
+])
+async def staff_test_ticket_cmd(
+    interaction: discord.Interaction,
+    target_staff: discord.Member,
+    scenario_title: Optional[app_commands.Choice[str]] = None,
+    custom_details: Optional[str] = "Demonstrate standard support procedure, verify user inquiry, and apply appropriate response templates."
+):
+    await ticket_test_staff_cmd.callback(interaction, target_staff, scenario_title, custom_details)
 
 
 
