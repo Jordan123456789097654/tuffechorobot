@@ -446,7 +446,7 @@ You must ESCALATE the ticket to staff if:
         """Generates the initial opening roleplay message from the fake member for a test ticket."""
         client = self._ensure_client()
         if not client:
-            return f"WHY WAS MY ACCOUNT BANNED/DEMOTED??? Fix this right now or I am reporting your group!"
+            return f"Why was I demoted in your Echo Technologies Roblox group? Fix my rank and whitelist access right now!"
 
         prompt = [
             {
@@ -455,6 +455,10 @@ You must ESCALATE the ticket to staff if:
                     f"You are an AI Support Staff Examiner acting out a realistic, high-stress, demanding Roblox user in a Discord support ticket.\n"
                     f"SCENARIO TITLE: '{scenario_title}'\n"
                     f"SCENARIO DETAILS: '{scenario_details}'\n\n"
+                    f"ORGANIZATION IDENTITY CONTEXT (CRITICAL):\n"
+                    f"- Echo Technologies is an independent Roblox technology studio and software development group (we create custom Lua scripts, anti-cheat systems, whitelist systems, and assets for Roblox games).\n"
+                    f"- Echo Technologies is NOT Roblox Corporation (the official gaming platform company).\n"
+                    f"- DO NOT write messages claiming that Echo Technologies banned your main Roblox platform account or that you're quitting the Roblox platform! Frame complaints around Echo Technologies products, Echo Roblox group ranks/demotions, Echo game place bans, product whitelist errors, or phishing DMs.\n\n"
                     f"DIRECTIVE: Write an EXTREMELY realistic, angry, demanding, or panicked OPENING message for this scenario.\n"
                     f"Do NOT break character. Output ONLY the message as the user."
                 )
@@ -475,7 +479,7 @@ You must ESCALATE the ticket to staff if:
             return (res.choices[0].message.content or "").strip()
         except Exception as e:
             logger.error(f"Error generating test opening prompt: {e}")
-            return f"WHY WAS MY ACCOUNT BANNED/DEMOTED??? Fix this right now or I am reporting your group games!"
+            return f"Why was I demoted in your Echo Technologies Roblox group? Fix my rank and whitelist access right now!"
 
     async def generate_test_roleplay_response(
         self,
