@@ -5636,7 +5636,7 @@ async def setup_supervisor_templates_channel_cmd(interaction: discord.Interactio
 async def force_open_ticket_cmd(
     interaction: discord.Interaction,
     user: discord.Member,
-    section: Optional[app_commands.Choice[str]] = None,
+    section: Optional[str] = None,
     subject: Optional[str] = "Formal Executive Inquiry & Staff Communication"
 ):
     await interaction.response.defer(ephemeral=True)
@@ -5651,7 +5651,7 @@ async def force_open_ticket_cmd(
         await interaction.followup.send("❌ Only **Foundership & Executive Leadership** can force open tickets for members.", ephemeral=True)
         return
 
-    sec_name = section.value if section else "High-Ranking Support"
+    sec_name = section.value if hasattr(section, 'value') else (section or "High-Ranking Support")
     initial_msg = f"**👑 FORCED TICKET CREATION BY FOUNDERSHIP ({interaction.user.name})**\n\n**Subject:** {subject.strip()}"
 
     channel = await bot.create_support_ticket(
@@ -5731,7 +5731,7 @@ async def force_open_ticket_cmd(
 async def ticket_force_open_cmd(
     interaction: discord.Interaction,
     user: discord.Member,
-    section: Optional[app_commands.Choice[str]] = None,
+    section: Optional[str] = None,
     subject: Optional[str] = "Formal Executive Inquiry & Staff Communication"
 ):
     await force_open_ticket_cmd.callback(interaction, user, section, subject)
@@ -5769,7 +5769,7 @@ async def ticket_request_close_cmd(interaction: discord.Interaction, reason: Opt
 async def ticket_test_staff_cmd(
     interaction: discord.Interaction,
     target_staff: discord.Member,
-    scenario_title: Optional[app_commands.Choice[str]] = None,
+    scenario_title: Optional[str] = None,
     custom_details: Optional[str] = "Demonstrate standard support procedure, verify user inquiry, and apply appropriate response templates."
 ):
     await interaction.response.defer(ephemeral=True)
@@ -5783,7 +5783,7 @@ async def ticket_test_staff_cmd(
         await interaction.followup.send("❌ Only **Foundership & Executive Leadership** can open practical test tickets for support staff.", ephemeral=True)
         return
 
-    scen_name = scenario_title.value if scenario_title else "Support Team Practical Assessment"
+    scen_name = scenario_title.value if hasattr(scenario_title, 'value') else (scenario_title or "Support Team Practical Assessment")
 
     channel = await bot.create_staff_test_ticket(
         founder=interaction.user,
@@ -5847,7 +5847,7 @@ async def ticket_test_staff_cmd(
 async def staff_test_ticket_cmd(
     interaction: discord.Interaction,
     target_staff: discord.Member,
-    scenario_title: Optional[app_commands.Choice[str]] = None,
+    scenario_title: Optional[str] = None,
     custom_details: Optional[str] = "Demonstrate standard support procedure, verify user inquiry, and apply appropriate response templates."
 ):
     await ticket_test_staff_cmd.callback(interaction, target_staff, scenario_title, custom_details)
