@@ -36,7 +36,8 @@ from hr_system import (
     get_active_suspension, check_expired_suspensions, check_strike_expiration,
     add_watchlist_user, remove_watchlist_user, get_watchlist, evaluate_watchlist_message,
     add_staff_blacklist, remove_staff_blacklist, get_staff_blacklists, is_staff_blacklisted,
-    build_staff_dossier_embed, StrikeAppealModal, HRAppealControlView, StrikeDMAppealView, StrikeDMAppealModal
+    build_staff_dossier_embed, StrikeAppealModal, HRAppealControlView, StrikeDMAppealView, StrikeDMAppealModal,
+    add_staff_evaluation, get_staff_evaluations, build_evaluation_dm_embed, build_evaluation_log_embed
 )
 from suggestions_system import (
     create_suggestion, set_suggestion_message, get_suggestion,
@@ -5873,6 +5874,250 @@ async def staff_test_ticket_cmd(
     custom_details: Optional[str] = "Demonstrate standard support procedure, verify user inquiry, and apply appropriate response templates."
 ):
     await test_ticket_cmd.callback(interaction, target_staff, scenario_title, custom_details)
+
+
+# ==========================================
+# 🧪 STAFF EVALUATION & EXAM LOGGING SYSTEM
+# ==========================================
+
+class LogStaffEvaluationModal(discord.ui.Modal, title="Log Staff Evaluation & Feedback"):
+    def __init__(self, bot, target_staff: discord.Member, score: int, verdict: str, scenario: str):
+        super().__init__()
+        self.bot = bot
+        self.target_staff = target_staff
+        self.score = score
+        self.verdict = verdict
+        self.scenario = scenario
+
+        self.notes_input = discord.ui.TextInput(
+            label="Feedback & Detailed Evaluation Notes",
+            style=discord.TextStyle.paragraph,
+            placeholder="Enter detailed evaluation notes, strengths, areas for improvement, and grading breakdown...",
+            required=True,
+            max_length=2000
+        )
+        self.add_item(self.notes_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        notes = self.notes_input.value.strip()
+
+        eval_data = add_staff_evaluation(
+            staff_id=self.target_staff.id,
+            evaluator_id=interaction.user.id,
+            guild_id=interaction.guild_id or config.GUILD_ID,
+            score=self.score,
+            verdict=self.verdict,
+            scenario=self.scenario,
+            feedback_notes=notes
+        )
+
+        # DM staff member
+        dm_sent = False
+        try:
+            dm = await self.target_staff.create_dm()
+            dm_embed = build_evaluation_dm_embed(eval_data, self.target_staff, interaction.user)
+            await dm.send(embed=dm_embed)
+            dm_sent = True
+        except Exception as e:
+            logger.warning(f"Could not send evaluation DM to {self.target_staff.id}: {e}")
+
+        # Post to public/staff logs channel (#staff-disciplinary / 1556021154756698192)
+        pub_ch = interaction.guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID) if interaction.guild else None
+        if pub_ch and isinstance(pub_ch, discord.TextChannel):
+            try:
+                log_embed = build_evaluation_log_embed(eval_data, self.target_staff, interaction.user)
+                await pub_ch.send(embed=log_embed)
+            except Exception as e:
+                logger.warning(f"Could not post evaluation log to channel: {e}")
+
+        dm_status = "✅ Dispatched evaluation report to staff member's DMs!" if dm_sent else "⚠️ Staff member DMs closed."
+        await interaction.followup.send(
+            f"✅ **Staff Evaluation Record #{eval_data['id']} successfully logged for {self.target_staff.mention}!**\n"
+            f"📊 **Score:** `{self.score}/100` | 🏆 **Verdict:** `{self.verdict}`\n"
+            f"{dm_status}",
+            ephemeral=True
+        )
+
+
+@bot.tree.command(name="staff-eval-log", description="[Foundership Only] Log staff test results with score & feedback.")
+@app_commands.describe(
+    target_staff="Support team member evaluated",
+    score="Numerical score (0 to 100)",
+    verdict="Final exam verdict",
+    scenario="Evaluation scenario title",
+    feedback_notes="Optional feedback notes (or leave empty to open modal)"
+)
+@app_commands.choices(verdict=[
+    app_commands.Choice(name="Exceptional (95-100)", value="Exceptional"),
+    app_commands.Choice(name="Pass (85-94)", value="Pass"),
+    app_commands.Choice(name="Conditional Pass (70-84)", value="Conditional Pass"),
+    app_commands.Choice(name="Fail (0-69)", value="Fail")
+])
+async def staff_eval_log_cmd(
+    interaction: discord.Interaction,
+    target_staff: discord.Member,
+    score: int,
+    verdict: Optional[str] = "Pass",
+    scenario: Optional[str] = "Hostile Member Wrongful Ban & SOP Exam",
+    feedback_notes: Optional[str] = None
+):
+    foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID) if interaction.guild else None
+    is_foundership = (
+        (foundership_role in interaction.user.roles) if foundership_role else False
+    ) or interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild
+
+    if not is_foundership:
+        await interaction.response.send_message("❌ Only **Foundership & Executive Leadership** can log staff evaluations.", ephemeral=True)
+        return
+
+    verdict_val = verdict.value if hasattr(verdict, 'value') else (verdict or "Pass")
+    score_clamped = max(0, min(100, score))
+
+    if not feedback_notes:
+        modal = LogStaffEvaluationModal(bot, target_staff, score_clamped, verdict_val, scenario or "Support SOP Evaluation")
+        await interaction.response.send_modal(modal)
+        return
+
+    await interaction.response.defer(ephemeral=True)
+    eval_data = add_staff_evaluation(
+        staff_id=target_staff.id,
+        evaluator_id=interaction.user.id,
+        guild_id=interaction.guild_id or config.GUILD_ID,
+        score=score_clamped,
+        verdict=verdict_val,
+        scenario=scenario or "Support SOP Evaluation",
+        feedback_notes=feedback_notes.strip()
+    )
+
+    # DM staff member
+    dm_sent = False
+    try:
+        dm = await target_staff.create_dm()
+        dm_embed = build_evaluation_dm_embed(eval_data, target_staff, interaction.user)
+        await dm.send(embed=dm_embed)
+        dm_sent = True
+    except Exception as e:
+        logger.warning(f"Could not send evaluation DM: {e}")
+
+    # Log to staff public channel
+    pub_ch = interaction.guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID) if interaction.guild else None
+    if pub_ch and isinstance(pub_ch, discord.TextChannel):
+        try:
+            log_embed = build_evaluation_log_embed(eval_data, target_staff, interaction.user)
+            await pub_ch.send(embed=log_embed)
+        except Exception as e:
+            logger.warning(f"Could not post evaluation log: {e}")
+
+    dm_status = "✅ Dispatched evaluation report to staff member's DMs!" if dm_sent else "⚠️ Staff member DMs closed."
+    await interaction.followup.send(
+        f"✅ **Staff Evaluation Record #{eval_data['id']} successfully logged for {target_staff.mention}!**\n"
+        f"📊 **Score:** `{score_clamped}/100` | 🏆 **Verdict:** `{verdict_val}`\n"
+        f"{dm_status}",
+        ephemeral=True
+    )
+
+
+@bot.tree.command(name="log-test-result", description="[Foundership Only] Alias for /staff-eval-log.")
+@app_commands.describe(
+    target_staff="Support team member evaluated",
+    score="Numerical score (0 to 100)",
+    verdict="Final exam verdict",
+    scenario="Evaluation scenario title",
+    feedback_notes="Optional feedback notes (or leave empty to open modal)"
+)
+@app_commands.choices(verdict=[
+    app_commands.Choice(name="Exceptional (95-100)", value="Exceptional"),
+    app_commands.Choice(name="Pass (85-94)", value="Pass"),
+    app_commands.Choice(name="Conditional Pass (70-84)", value="Conditional Pass"),
+    app_commands.Choice(name="Fail (0-69)", value="Fail")
+])
+async def log_test_result_cmd(
+    interaction: discord.Interaction,
+    target_staff: discord.Member,
+    score: int,
+    verdict: Optional[str] = "Pass",
+    scenario: Optional[str] = "Hostile Member Wrongful Ban & SOP Exam",
+    feedback_notes: Optional[str] = None
+):
+    await staff_eval_log_cmd.callback(interaction, target_staff, score, verdict, scenario, feedback_notes)
+
+
+@bot.tree.command(name="staff-test-log", description="[Foundership Only] Alias for /staff-eval-log.")
+@app_commands.describe(
+    target_staff="Support team member evaluated",
+    score="Numerical score (0 to 100)",
+    verdict="Final exam verdict",
+    scenario="Evaluation scenario title",
+    feedback_notes="Optional feedback notes (or leave empty to open modal)"
+)
+@app_commands.choices(verdict=[
+    app_commands.Choice(name="Exceptional (95-100)", value="Exceptional"),
+    app_commands.Choice(name="Pass (85-94)", value="Pass"),
+    app_commands.Choice(name="Conditional Pass (70-84)", value="Conditional Pass"),
+    app_commands.Choice(name="Fail (0-69)", value="Fail")
+])
+async def staff_test_log_cmd(
+    interaction: discord.Interaction,
+    target_staff: discord.Member,
+    score: int,
+    verdict: Optional[str] = "Pass",
+    scenario: Optional[str] = "Hostile Member Wrongful Ban & SOP Exam",
+    feedback_notes: Optional[str] = None
+):
+    await staff_eval_log_cmd.callback(interaction, target_staff, score, verdict, scenario, feedback_notes)
+
+
+@bot.tree.command(name="staff-eval-history", description="View historical evaluation scores and feedback for a staff member.")
+@app_commands.describe(target_staff="Support team member to inspect")
+async def staff_eval_history_cmd(interaction: discord.Interaction, target_staff: discord.Member):
+    await interaction.response.defer(ephemeral=False)
+    evals = get_staff_evaluations(target_staff.id)
+    if not evals:
+        await interaction.followup.send(f"ℹ️ No training or evaluation records found for {target_staff.mention}.", ephemeral=True)
+        return
+
+    avg_score = round(sum(e["score"] for e in evals) / len(evals), 1)
+    color = 0x57F287 if avg_score >= 85 else (0xFEE75C if avg_score >= 70 else 0xED4245)
+
+    embed = discord.Embed(
+        title=f"📊 Staff Evaluation Dossier • {target_staff.name}",
+        description=(
+            f"**Member:** {target_staff.mention} (`@{target_staff.name}` | `{target_staff.id}`)\n"
+            f"**Total Assessments:** `{len(evals)}` exams logged\n"
+            f"**Average Score:** `{avg_score} / 100`\n\n"
+            f"### 📜 Evaluation History"
+        ),
+        color=color,
+        timestamp=discord.utils.utcnow()
+    )
+
+    for e in evals[:5]:
+        v_emoji = "🌟" if e["score"] >= 95 else ("✅" if e["score"] >= 85 else ("🟡" if e["score"] >= 70 else "❌"))
+        evaluator = interaction.guild.get_member(e["evaluator_id"]) if interaction.guild else None
+        evaluator_name = evaluator.name if evaluator else f"User {e['evaluator_id']}"
+        embed.add_field(
+            name=f"Record #{e['id']} • Score: {e['score']}/100 ({e['verdict']} {v_emoji})",
+            value=(
+                f"**Scenario:** `{e['scenario']}`\n"
+                f"**Evaluator:** `{evaluator_name}`\n"
+                f"**Feedback:** {e['feedback_notes'][:300]}\n"
+                f"**Date:** <t:{int(datetime.fromisoformat(e['created_at'].replace('Z','+00:00')).timestamp() if 'T' in e['created_at'] else int(datetime.strptime(e['created_at'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp()))}:R>"
+            ),
+            inline=False
+        )
+
+    embed.set_footer(text="Echo Technologies HR Leadership Dossier")
+    if target_staff.display_avatar:
+        embed.set_thumbnail(url=target_staff.display_avatar.url)
+
+    await interaction.followup.send(embed=embed)
+
+
+@bot.tree.command(name="staff-test-history", description="[Foundership Only] Alias for /staff-eval-history.")
+@app_commands.describe(target_staff="Support team member to inspect")
+async def staff_test_history_cmd(interaction: discord.Interaction, target_staff: discord.Member):
+    await staff_eval_history_cmd.callback(interaction, target_staff)
 
 
 

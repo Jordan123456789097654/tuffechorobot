@@ -98,6 +98,21 @@ def init_hr_db():
             );
         """)
 
+        # 6. Staff Evaluations Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS staff_evaluations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                staff_id INTEGER NOT NULL,
+                evaluator_id INTEGER NOT NULL,
+                guild_id INTEGER NOT NULL,
+                score INTEGER NOT NULL,
+                verdict TEXT NOT NULL,
+                scenario TEXT DEFAULT 'General Support Evaluation',
+                feedback_notes TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
         conn.commit()
 
 init_hr_db()
@@ -993,4 +1008,130 @@ def build_strike_log_embed(
     embed.add_field(name="Active Strikes", value=f"`{total_active}` total", inline=True)
     embed.add_field(name="Reason", value=reason[:1024], inline=False)
     embed.set_footer(text=f"Echo Technologies HR System • Record #{strike_id}")
+    return embed
+
+
+# ==========================================
+# 🧪 STAFF EVALUATIONS & EXAM LOGGING
+# ==========================================
+
+def add_staff_evaluation(
+    staff_id: int,
+    evaluator_id: int,
+    guild_id: int,
+    score: int,
+    verdict: str,
+    scenario: str,
+    feedback_notes: str
+) -> dict:
+    """Inserts a new staff evaluation record into database."""
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO staff_evaluations (staff_id, evaluator_id, guild_id, score, verdict, scenario, feedback_notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
+        """, (staff_id, evaluator_id, guild_id, score, verdict, scenario, feedback_notes))
+        conn.commit()
+        eval_id = cursor.lastrowid
+        cursor.execute("""
+            SELECT id, staff_id, evaluator_id, guild_id, score, verdict, scenario, feedback_notes, created_at
+            FROM staff_evaluations WHERE id = ?;
+        """, (eval_id,))
+        row = cursor.fetchone()
+        return {
+            "id": row[0],
+            "staff_id": row[1],
+            "evaluator_id": row[2],
+            "guild_id": row[3],
+            "score": row[4],
+            "verdict": row[5],
+            "scenario": row[6],
+            "feedback_notes": row[7],
+            "created_at": row[8]
+        }
+
+def get_staff_evaluations(staff_id: int) -> List[dict]:
+    """Retrieves all historical evaluation records for a staff member."""
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, staff_id, evaluator_id, guild_id, score, verdict, scenario, feedback_notes, created_at
+            FROM staff_evaluations
+            WHERE staff_id = ?
+            ORDER BY created_at DESC;
+        """, (staff_id,))
+        rows = cursor.fetchall()
+        return [
+            {
+                "id": r[0],
+                "staff_id": r[1],
+                "evaluator_id": r[2],
+                "guild_id": r[3],
+                "score": r[4],
+                "verdict": r[5],
+                "scenario": r[6],
+                "feedback_notes": r[7],
+                "created_at": r[8]
+            }
+            for r in rows
+        ]
+
+def build_evaluation_dm_embed(
+    eval_data: dict,
+    staff: discord.Member,
+    evaluator: discord.User
+) -> discord.Embed:
+    """Constructs official evaluation report DM sent to the staff member."""
+    score = eval_data["score"]
+    verdict = eval_data["verdict"]
+    color = 0x57F287 if score >= 85 else (0xFEE75C if score >= 70 else 0xED4245)
+    verdict_emoji = "🌟" if score >= 95 else ("✅" if score >= 85 else ("🟡" if score >= 70 else "❌"))
+
+    embed = discord.Embed(
+        title=f"{verdict_emoji} Echo Technologies • Staff Training Assessment Results",
+        description=(
+            f"Dear **{staff.display_name}**,\n\n"
+            f"Your recent support evaluation / SOP exam record (`#{eval_data['id']}`) has been officially logged by Foundership.\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📊 **Final Score:** `{score} / 100`\n"
+            f"🏆 **Verdict:** **{verdict}** {verdict_emoji}\n"
+            f"🎯 **Scenario:** `{eval_data['scenario']}`\n"
+            f"👑 **Evaluator:** {evaluator.mention} (`@{evaluator.name}`)\n"
+            f"📅 **Date:** <t:{int(discord.utils.utcnow().timestamp())}:F>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"### 📋 Evaluator Feedback & Detailed Notes\n"
+            f"{eval_data['feedback_notes']}\n\n"
+            f"Thank you for your dedication to Echo Technologies Support Operations!"
+        ),
+        color=color,
+        timestamp=discord.utils.utcnow()
+    )
+    embed.set_footer(text=f"Evaluation ID #{eval_data['id']} • Echo HR Leadership Records")
+    if staff.display_avatar:
+        embed.set_thumbnail(url=staff.display_avatar.url)
+    return embed
+
+def build_evaluation_log_embed(
+    eval_data: dict,
+    staff: discord.Member,
+    evaluator: discord.User
+) -> discord.Embed:
+    """Constructs HR audit log embed sent to public/staff logs channel."""
+    score = eval_data["score"]
+    verdict = eval_data["verdict"]
+    color = 0x57F287 if score >= 85 else (0xFEE75C if score >= 70 else 0xED4245)
+
+    embed = discord.Embed(
+        title=f"📋 HR Audit Log: Staff Examination #{eval_data['id']}",
+        color=color,
+        timestamp=discord.utils.utcnow()
+    )
+    embed.set_thumbnail(url=staff.display_avatar.url)
+    embed.add_field(name="Staff Member", value=f"{staff.mention} (`{staff.name}` | `{staff.id}`)", inline=True)
+    embed.add_field(name="Evaluator", value=f"{evaluator.mention} (`{evaluator.name}`)", inline=True)
+    embed.add_field(name="Score", value=f"`{score} / 100`", inline=True)
+    embed.add_field(name="Verdict", value=f"**{verdict}**", inline=True)
+    embed.add_field(name="Scenario", value=f"`{eval_data['scenario']}`", inline=True)
+    embed.add_field(name="Feedback Notes", value=eval_data['feedback_notes'][:1024], inline=False)
+    embed.set_footer(text=f"Echo Technologies HR System • Record #{eval_data['id']}")
     return embed
