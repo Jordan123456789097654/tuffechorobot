@@ -605,9 +605,15 @@ You must ESCALATE the ticket to staff if:
         if not client or not messages_history:
             return default_eval
 
-        staff_msgs = [m["content"] for m in messages_history if m.get("role") == "staff" or m.get("role") == "assistant"]
-        staff_text = "\n---\n".join(staff_msgs) if staff_msgs else "No staff replies found."
-        full_transcript = "\n".join([f"{m.get('sender_name', m['role']).upper()}: {m['content']}" for m in messages_history])
+        staff_msgs = [
+            m["content"] for m in messages_history 
+            if m.get("role") in ["staff", "candidate", "assistant"] 
+            and m.get("role") != "trainer"
+            and "END OF SIMULATION" not in m["content"].upper()
+            and "END SIMULATION" not in m["content"].upper()
+        ]
+        staff_text = "\n---\n".join(staff_msgs) if staff_msgs else "No candidate responses found."
+        full_transcript = "\n".join([f"{m.get('sender_name', m['role']).upper()} ({m.get('role', 'user').upper()}): {m['content']}" for m in messages_history])
 
         prompt = [
             {

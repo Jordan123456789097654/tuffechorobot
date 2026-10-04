@@ -655,11 +655,12 @@ class RobloxVerificationBot(commands.Bot):
         trainer_id = ticket.get("claimed_by")
         if trainer_id:
             try:
+                candidate_user = self.get_user(ticket["user_id"]) or await self.fetch_user(ticket["user_id"])
                 trainer_user = self.get_user(trainer_id) or await self.fetch_user(trainer_id)
                 if trainer_user and not trainer_user.bot:
-                    asyncio.create_task(self.dispatch_live_trainer_exam_update(ticket_id, channel, staff_user, trainer_user))
+                    asyncio.create_task(self.dispatch_live_trainer_exam_update(ticket_id, channel, candidate_user or staff_user, trainer_user))
             except Exception as e:
-                logger.warning(f"Could not fetch trainer user {trainer_id} for live telemetry DM: {e}")
+                logger.warning(f"Could not fetch trainer/candidate user for live telemetry DM: {e}")
 
     async def dispatch_live_trainer_exam_update(self, ticket_id: int, channel: discord.TextChannel, staff_user: discord.User, trainer_user: discord.User):
         """Dispatches a real-time live evaluation telemetry update DM to the trainer during a test ticket."""
@@ -1724,11 +1725,15 @@ async def on_message(message: discord.Message):
         # Case B1: Staff Examination / AI Roleplay Evaluator Ticket!
         if "Support Staff Exam" in ticket.get("section", ""):
             if not message.author.bot:
+                candidate_id = ticket["user_id"]
+                is_candidate = (message.author.id == candidate_id)
+                msg_role = "staff" if is_candidate else "trainer"
+
                 att_urls = [a.url for a in message.attachments]
                 bot.ticket_manager.add_message(
                     ticket_id,
                     message.author.id,
-                    "staff",
+                    msg_role,
                     message.content,
                     sender_name=message.author.display_name,
                     attachments=att_urls
@@ -1765,7 +1770,8 @@ async def on_message(message: discord.Message):
                     asyncio.create_task(conclude_and_grade_staff_exam(bot, ticket, message.channel, message.author, grade_and_log=True))
                     return
 
-                if ticket.get("status") != "closed":
+                # ONLY dispatch AI roleplay response & live telemetry DM if the CANDIDATE responded!
+                if is_candidate and ticket.get("status") != "closed":
                     asyncio.create_task(bot.process_ai_test_roleplay_message(ticket_id, message.channel, message.author, message.content))
                     try:
                         await message.add_reaction("🧠")
