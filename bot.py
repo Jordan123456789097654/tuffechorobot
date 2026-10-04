@@ -5752,7 +5752,7 @@ async def ticket_request_close_cmd(interaction: discord.Interaction, reason: Opt
     await interaction.followup.send(f"🔔 Dispatched Close Request dialog for Ticket #{ticket['id']}!", ephemeral=True)
 
 
-@bot.tree.command(name="ticket-test-staff", description="[Foundership Only] Open an isolated practical assessment ticket for a support team member (AI disabled).")
+@bot.tree.command(name="test-ticket", description="[Foundership Only] Open practical assessment ticket for support staff (AI disabled).")
 @app_commands.describe(
     target_staff="Support team member to test",
     scenario_title="Preset assessment scenario",
@@ -5766,7 +5766,7 @@ async def ticket_request_close_cmd(interaction: discord.Interaction, reason: Opt
     app_commands.Choice(name="Mock Ban Appeal & Penalty Review", value="Mock Ban Appeal & Penalty Review"),
     app_commands.Choice(name="Custom Practical Assessment Scenario", value="Custom Practical Assessment Scenario")
 ])
-async def ticket_test_staff_cmd(
+async def test_ticket_cmd(
     interaction: discord.Interaction,
     target_staff: discord.Member,
     scenario_title: Optional[str] = None,
@@ -5830,7 +5830,29 @@ async def ticket_test_staff_cmd(
         ephemeral=True
     )
 
-@bot.tree.command(name="staff-test-ticket", description="[Foundership Only] Alias for /ticket-test-staff.")
+@bot.tree.command(name="ticket-test-staff", description="[Foundership Only] Alias for /test-ticket.")
+@app_commands.describe(
+    target_staff="Support team member to test",
+    scenario_title="Preset assessment scenario",
+    custom_details="Custom scenario task details or prompt"
+)
+@app_commands.choices(scenario_title=[
+    app_commands.Choice(name="Mock Roblox Verification & Bio Code Censorship", value="Mock Roblox Verification & Bio Code Censorship"),
+    app_commands.Choice(name="Mock Robux Billing & Gamepass Dispute", value="Mock Robux Billing & Gamepass Dispute"),
+    app_commands.Choice(name="Mock Game Bug & Reproduction Steps", value="Mock Game Bug & Reproduction Steps"),
+    app_commands.Choice(name="Mock Exploit & Scam Player Report", value="Mock Exploit & Scam Player Report"),
+    app_commands.Choice(name="Mock Ban Appeal & Penalty Review", value="Mock Ban Appeal & Penalty Review"),
+    app_commands.Choice(name="Custom Practical Assessment Scenario", value="Custom Practical Assessment Scenario")
+])
+async def ticket_test_staff_cmd(
+    interaction: discord.Interaction,
+    target_staff: discord.Member,
+    scenario_title: Optional[str] = None,
+    custom_details: Optional[str] = "Demonstrate standard support procedure, verify user inquiry, and apply appropriate response templates."
+):
+    await test_ticket_cmd.callback(interaction, target_staff, scenario_title, custom_details)
+
+@bot.tree.command(name="staff-test-ticket", description="[Foundership Only] Alias for /test-ticket.")
 @app_commands.describe(
     target_staff="Support team member to test",
     scenario_title="Preset assessment scenario",
@@ -5850,7 +5872,7 @@ async def staff_test_ticket_cmd(
     scenario_title: Optional[str] = None,
     custom_details: Optional[str] = "Demonstrate standard support procedure, verify user inquiry, and apply appropriate response templates."
 ):
-    await ticket_test_staff_cmd.callback(interaction, target_staff, scenario_title, custom_details)
+    await test_ticket_cmd.callback(interaction, target_staff, scenario_title, custom_details)
 
 
 
