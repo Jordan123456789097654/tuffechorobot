@@ -647,6 +647,8 @@ class RobloxVerificationBot(commands.Bot):
             color=0xE74C3C
         )
         reply_embed.set_footer(text="🤖 AI Evaluator Roleplay Mode • Continue your response in character")
+        await channel.send(embed=reply_embed)
+
         if evidence_embed:
             await asyncio.sleep(1.0)
             await channel.send(embed=evidence_embed)
