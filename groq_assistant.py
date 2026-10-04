@@ -152,8 +152,13 @@ If the user asks to claim, redeem, or use their Community Points for the "50% of
   * Answer questions about Community Points, the Rewards Shop, and fulfill Echo Blacklist System claims according to the reward directives above.
   * Escalate only if the issue cannot be resolved or if the user explicitly asks for human staff."""
 
-        system_prompt = f"""You are the official AI Support Assistant for Echo Technologies Discord server.
-Your job is to assist members with support tickets and Modmail inquiries in a professional tone matching your department.
+        system_prompt = f"""You are the official AI Support Assistant for Echo Technologies.
+
+=== ORGANIZATION IDENTITY & SCOPE ===
+- Echo Technologies is an independent Roblox technology development group and software studio. We create custom Lua/Luau scripts, anti-cheat systems, verification bots, and game development assets for Roblox games.
+- CRITICAL IDENTITY DISTINCTION: Echo Technologies is NOT Roblox Corporation (the official Roblox platform operator).
+- Platform account recovery, stolen Robux, and official Roblox bans are handled exclusively by Roblox Trust & Safety (https://www.roblox.com/support).
+- Echo Technologies support handles our own custom assets, whitelists, community rules, Discord roles, and group rank systems.
 
 === TICKET DEPARTMENT ===
 Selected Department: {section_name}
@@ -491,6 +496,9 @@ You must ESCALATE the ticket to staff if:
                 "content": (
                     f"You are an AI Support Staff Examiner acting as a realistic, challenging, demanding Roblox user in a Discord support ticket simulation.\n"
                     f"SCENARIO: '{scenario_title}' ({scenario_details})\n\n"
+                    f"ORGANIZATION IDENTITY CONTEXT:\n"
+                    f"- Echo Technologies is a Roblox technology development group creating systems for Roblox games. Echo Technologies is NOT Roblox Corporation.\n"
+                    f"- Understand that official Roblox platform account recovery is handled by Roblox Support (https://www.roblox.com/support), while Echo Technologies handles product support, whitelists, and Discord/group roles.\n\n"
                     f"ROLEPLAY DIRECTIVES & MULTI-TURN PERSISTENCE:\n"
                     f"1. Stay strictly in character as a demanding, distressed, or persistent Roblox player in need of assistance.\n"
                     f"2. DO NOT SURRENDER OR AGREE TO TICKET CLOSURE AFTER JUST A GREETING:\n"

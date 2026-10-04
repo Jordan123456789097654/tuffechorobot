@@ -96,9 +96,12 @@ class AITrainer:
 
         # Section 1: Server Identity & Context
         server_info = [
-            f"=== DISCORD SERVER CONTEXT ===",
+            f"=== DISCORD SERVER CONTEXT & ORGANIZATION IDENTITY ===",
+            f"Organization Name: Echo Technologies",
+            f"Organization Identity: Independent Roblox technology studio and software development group (creates custom Lua/Luau scripts, anti-cheats, verification bots, and game development assets for Roblox games).",
+            f"CRITICAL DISTINCTION: Echo Technologies is NOT Roblox Corporation. Official platform account recovery and stolen Robux are handled solely via https://www.roblox.com/support.",
             f"Server Name: {guild.name}",
-            f"Server Description: {guild.description or 'Community server'}",
+            f"Server Description: {guild.description or 'Echo Technologies Community & Developer Support'}",
             f"Member Count: {guild.member_count}",
         ]
         knowledge_sections.append("\n".join(server_info))
