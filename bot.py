@@ -575,16 +575,62 @@ class RobloxVerificationBot(commands.Bot):
         # Special Multi-Stage Gauntlet Exam Logic
         if "gauntlet" in scen_title.lower():
             if staff_replies_count == 1:
+                stage_embed = discord.Embed(
+                    title="⚡ GAUNTLET PROGRESSION • STAGE 2 OF 3 ACTIVATED",
+                    description=(
+                        "**✅ Stage 1 Complete:** *Phishing & Account Security SOP*\n"
+                        "**▶️ Current Stage 2 Challenge:** *Group Demotion, Ban Appeal & Internal Evidence Request*\n\n"
+                        "*(The simulated member has resolved their account security, but is now demanding confidential internal audit logs and group rank restoration!)*"
+                    ),
+                    color=0xF1C40F,
+                    timestamp=discord.utils.utcnow()
+                )
+                stage_embed.set_footer(text="Echo Support Gauntlet Engine • Stage 2 of 3")
+                await channel.send(embed=stage_embed)
+
                 ai_reply = "Okay I changed my password and submitted a ticket to Roblox Support. But why was I demoted in your group? Show me the internal staff audit logs right now!"
                 evidence_embed = build_simulated_evidence_embed("ban appeal")
+
             elif staff_replies_count == 2:
+                stage_embed = discord.Embed(
+                    title="⚡ GAUNTLET PROGRESSION • STAGE 3 OF 3 ACTIVATED (FINAL STAGE)",
+                    description=(
+                        "**✅ Stage 2 Complete:** *Evidence Privacy & Unauthorized Compensation SOP*\n"
+                        "**▶️ Current Stage 3 Challenge:** *Extreme Threat & Mass-Raid Anti-Evasion*\n\n"
+                        "*(The simulated member is now infuriated and threatening server raids, mass reporting, and asset destruction! Citing Anti-Evasion & Global Blacklist SOP is required.)*"
+                    ),
+                    color=0xE74C3C,
+                    timestamp=discord.utils.utcnow()
+                )
+                stage_embed.set_footer(text="Echo Support Gauntlet Engine • Stage 3 of 3 (Final Challenge)")
+                await channel.send(embed=stage_embed)
+
                 ai_reply = "Fine! If you won't show me the internal logs or refund my 4,500 Robux, I'm going to bring 20 alts to mass-report your Discord server and delete your game assets!"
+                evidence_embed = None
+
+            elif staff_replies_count == 3:
+                stage_embed = discord.Embed(
+                    title="🏆 GAUNTLET EXAM COMPLETED • ALL 3 STAGES SURVIVED!",
+                    description=(
+                        "**✅ Stage 1:** *Phishing & Account Security SOP*\n"
+                        "**✅ Stage 2:** *Evidence Privacy & No Compensation SOP*\n"
+                        "**✅ Stage 3:** *Anti-Evasion & Global Blacklist SOP*\n\n"
+                        "🎉 **All 3 Gauntlet challenges have been completed!**\n"
+                        "Trainers or testers can now run `/end-simulation` to grade performance and issue the final DM scorecard."
+                    ),
+                    color=0x2ECC71,
+                    timestamp=discord.utils.utcnow()
+                )
+                stage_embed.set_footer(text="Echo Support Gauntlet Engine • Gauntlet Complete")
+                await channel.send(embed=stage_embed)
+
+                ai_reply = "Alright, I understand your rules and policies now. Thank you for explaining everything clearly. The 3-stage gauntlet exam is complete! Trainers can now run /end-simulation to finish and grade this ticket."
                 evidence_embed = None
             else:
                 await asyncio.sleep(1.5)
                 async with channel.typing():
                     await asyncio.sleep(3.5)
-                    ai_reply = await self.groq_assistant.generate_test_roleplay_response(history, scen_title, scenario_details="Gauntlet stage 3+ follow-up")
+                    ai_reply = await self.groq_assistant.generate_test_roleplay_response(history, scen_title, scenario_details="Gauntlet post-completion follow-up")
                 evidence_embed = None
         else:
             await asyncio.sleep(1.5)
