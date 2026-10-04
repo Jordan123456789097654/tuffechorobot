@@ -229,6 +229,15 @@ class RobloxVerificationBot(commands.Bot):
                     return ch
         return None
 
+    def get_primary_guild(self) -> Optional[discord.Guild]:
+        if config.GUILD_ID:
+            g = self.get_guild(config.GUILD_ID)
+            if g:
+                return g
+        if self.guilds:
+            return self.guilds[0]
+        return None
+
     async def create_support_ticket(
         self,
         user: discord.User,
@@ -1044,15 +1053,6 @@ def build_simulated_evidence_embed(scenario_title: str) -> Optional[discord.Embe
             except Exception as e:
                 logger.error(f"Error deleting ticket channel: {e}")
 
-    def get_primary_guild(self) -> Optional[discord.Guild]:
-        if config.GUILD_ID:
-            g = self.get_guild(config.GUILD_ID)
-            if g:
-                return g
-        if self.guilds:
-            return self.guilds[0]
-        return None
-
 bot = RobloxVerificationBot()
 
 # --- EVENTS ---
@@ -1235,7 +1235,7 @@ async def on_ready():
 
 
     # 2. Train AI from guild knowledge (#ai-trainer & embeds)
-    guild = bot.get_primary_guild()
+    guild = bot.get_guild(config.GUILD_ID) if config.GUILD_ID else (bot.guilds[0] if bot.guilds else None)
     if guild:
         report = await bot.ai_trainer.train_from_guild(guild)
         logger.info(f"AI Knowledge Initialized: {report['trainer_messages']} msgs, {report['embeds_parsed']} embeds parsed.")
