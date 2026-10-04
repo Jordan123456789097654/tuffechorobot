@@ -168,11 +168,14 @@ class AITrainer:
         }
 
     def get_knowledge_prompt(self) -> str:
-        """Returns the compiled knowledge base formatted for system prompt injection, including support templates & SOPs."""
+        """Returns the compiled knowledge base formatted for system prompt injection, including support & supervisor templates."""
         base_text = self.knowledge_text or "No server-specific knowledge trained yet. Answer helpfully using general Discord/Roblox best practices."
         try:
             from support_templates_system import get_combined_template_list
+            from supervisor_templates_system import get_combined_supervisor_template_list
             tpls = get_combined_template_list()
+            exec_tpls = get_combined_supervisor_template_list()
+
             if tpls:
                 tpl_lines = ["\n\n=== OFFICIAL SUPPORT TEAM TEMPLATES & STANDARD OPERATING PROCEDURES (SOP) ==="]
                 for t in tpls:
@@ -180,6 +183,14 @@ class AITrainer:
                     tpl_lines.append(f"  SOP Steps: {t.get('steps', 'N/A')}")
                     tpl_lines.append(f"  Official Response Template:\n{t['template']}\n")
                 base_text += "\n" + "\n".join(tpl_lines)
+
+            if exec_tpls:
+                exec_lines = ["\n\n=== EXECUTIVE SUPERVISOR & HR DIRECTIVES (STAFF DISCIPLINARY & PENALTIES) ==="]
+                for t in exec_tpls:
+                    exec_lines.append(f"• [{t.get('category', 'Executive HR')}] {t['title']} (Shortcut: {t['shortcut']})")
+                    exec_lines.append(f"  Executive Protocol: {t.get('steps', 'N/A')}")
+                    exec_lines.append(f"  Formal HR Notice:\n{t['template']}\n")
+                base_text += "\n" + "\n".join(exec_lines)
         except Exception as e:
-            logger.warning(f"Could not load support templates into AI knowledge prompt: {e}")
+            logger.warning(f"Could not load support/supervisor templates into AI knowledge prompt: {e}")
         return base_text

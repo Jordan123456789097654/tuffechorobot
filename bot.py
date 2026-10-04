@@ -109,6 +109,7 @@ from points_system import (
     build_shop_embed, PointsShopView
 )
 from support_templates_system import sync_support_templates_channel
+from supervisor_templates_system import sync_supervisor_templates_channel, SupervisorCategorySelectView
 
 
 
@@ -168,6 +169,7 @@ class RobloxVerificationBot(commands.Bot):
         self.add_view(InfractionAppealDMView())
         self.add_view(ModAppealReviewView())
         self.add_view(InviteCompControlView(self, 0))
+        self.add_view(SupervisorCategorySelectView())
 
 
         # Sync slash commands
@@ -5449,6 +5451,85 @@ async def setup_templates_channel_cmd(interaction: discord.Interaction):
         await interaction.followup.send("✅ Support templates guide & Roblox API status widget successfully synchronized in this channel!", ephemeral=True)
     else:
         await interaction.followup.send("❌ Failed to synchronize support templates channel.", ephemeral=True)
+
+
+supervisor_template_group = app_commands.Group(name="supervisor-template", description="Manage official supervisor & executive HR templates.")
+
+@supervisor_template_group.command(name="add", description="Add a new custom supervisor/executive template & SOP.")
+@app_commands.describe(
+    shortcut="Unique shortcut name (e.g. exec_notice)",
+    category="Category name (e.g. Disciplinary, Leadership)",
+    title="Template Title",
+    template_text="The formal text of the template sent to members (use {user} for mention)",
+    steps="Standard operating procedures / supervisor instructions"
+)
+async def exec_tpl_add_cmd(
+    interaction: discord.Interaction,
+    shortcut: str,
+    category: str,
+    title: str,
+    template_text: str,
+    steps: Optional[str] = ""
+):
+    await interaction.response.defer(ephemeral=True)
+    from supervisor_templates_system import add_custom_supervisor_template
+    success, msg = add_custom_supervisor_template(
+        shortcut=shortcut,
+        category=category,
+        title=title,
+        template_text=template_text,
+        steps=steps or "Custom executive supervisor template.",
+        created_by=interaction.user.id
+    )
+    if success:
+        embed = discord.Embed(
+            title="✅ Custom Supervisor Template Added",
+            description=f"**Shortcut:** `{shortcut}`\n**Title:** {title}\n**Category:** {category}\n\n**Template:**\n```\n{template_text}\n```",
+            color=0x9B59B6
+        )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+    else:
+        await interaction.followup.send(f"❌ {msg}", ephemeral=True)
+
+@supervisor_template_group.command(name="remove", description="Remove a custom supervisor template by shortcut.")
+@app_commands.describe(shortcut="Shortcut name of custom supervisor template to remove")
+async def exec_tpl_remove_cmd(interaction: discord.Interaction, shortcut: str):
+    await interaction.response.defer(ephemeral=True)
+    from supervisor_templates_system import delete_custom_supervisor_template
+    success, msg = delete_custom_supervisor_template(shortcut)
+    if success:
+        await interaction.followup.send(f"✅ Removed custom supervisor template `{shortcut}`.", ephemeral=True)
+    else:
+        await interaction.followup.send(f"❌ {msg}", ephemeral=True)
+
+@supervisor_template_group.command(name="list", description="List all built-in and custom supervisor templates.")
+async def exec_tpl_list_cmd(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    from supervisor_templates_system import get_combined_supervisor_template_list
+    tpls = get_combined_supervisor_template_list()
+    embed = discord.Embed(
+        title="👑 Echo Supervisor & Executive HR Templates Directory",
+        description=f"Total Supervisor Templates Available: **{len(tpls)}**\n\n",
+        color=0x9B59B6
+    )
+    for t in tpls[:25]:
+        embed.add_field(
+            name=f"{t.get('emoji', '👑')} {t['title']} (`{t['shortcut']}`)",
+            value=f"**Cat:** {t.get('category', 'Executive HR')}\n{t['template'][:100]}...",
+            inline=False
+        )
+    await interaction.followup.send(embed=embed, ephemeral=True)
+
+bot.tree.add_command(supervisor_template_group)
+
+@bot.tree.command(name="setup-supervisor-templates-channel", description="Initialize or refresh the #supervisor-templates channel guide.")
+async def setup_supervisor_templates_channel_cmd(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    success = await sync_supervisor_templates_channel(bot, channel=interaction.channel)
+    if success:
+        await interaction.followup.send("✅ Supervisor templates guide successfully synchronized in this channel!", ephemeral=True)
+    else:
+        await interaction.followup.send("❌ Failed to synchronize supervisor templates channel.", ephemeral=True)
 
 
 
