@@ -1,7 +1,7 @@
 import sqlite3
 import os
 from contextlib import contextmanager
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 class VerificationDatabase:
     """SQLite persistent storage for Roblox to Discord verifications."""
