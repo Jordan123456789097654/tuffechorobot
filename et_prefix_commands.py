@@ -154,6 +154,20 @@ COMMAND_HELP_MANUALS: Dict[str, Dict[str, str]] = {
         "usage": "`!et whois @member`",
         "example": "`!et whois @Jordan`",
         "permissions": "All Members"
+    },
+    "setstatus": {
+        "name": "!et setstatus <playing|watching|listening|competing|streaming|clear> <text>",
+        "description": "Sets the bot's rich presence activity status text.",
+        "usage": "`!et setstatus watching Echo Server` OR `!et setstatus playing Roblox` OR `!et setstatus clear`",
+        "example": "`!et setstatus watching Echo Technologies Server`",
+        "permissions": "Administrators Only"
+    },
+    "setvisibility": {
+        "name": "!et setvisibility <online|idle|dnd|invisible>",
+        "description": "Changes the bot's status indicator dot (Online [🟢], Idle [🌙], Do Not Disturb [🔴], Invisible [⚪]).",
+        "usage": "`!et setvisibility online` OR `!et setvisibility dnd` OR `!et setvisibility idle`",
+        "example": "`!et setvisibility dnd`",
+        "permissions": "Administrators Only"
     }
 }
 
@@ -260,6 +274,12 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     elif subcmd in ("shutdown", "stop", "stopbot", "kill"):
         await execute_shutdown(bot, message)
 
+    elif subcmd in ("setstatus", "status", "setactivity", "activity"):
+        await execute_setstatus(bot, message, args)
+
+    elif subcmd in ("setvisibility", "visibility", "setpresence", "presence"):
+        await execute_setvisibility(bot, message, args)
+
     elif subcmd in ("whois", "lookup"):
         member = message.mentions[0] if message.mentions else message.author
         await execute_whois(message, member)
@@ -281,8 +301,8 @@ async def send_et_help_directory(message: discord.Message):
     )
 
     embed.add_field(
-        name="📢 Announcements & Utility",
-        value="`!et say <message>` • `!et help [command]`",
+        name="📢 Announcements, Status & Bot Control",
+        value="`!et say <message>` • `!et setstatus <type> <text>` • `!et setvisibility <status>` • `!et shutdown` • `!et help [command]`",
         inline=False
     )
 
@@ -729,3 +749,119 @@ async def execute_shutdown(bot, message: discord.Message):
     await message.channel.send("🛑 **Echo Technologies Bot is shutting down gracefully. Logging off Discord...**")
     logger.info(f"Shutdown initiated via !et shutdown by {message.author.name} (ID: {message.author.id}).")
     await bot.close()
+
+def build_discord_activity(act_type: str, act_text: str) -> Optional[discord.BaseActivity]:
+    if not act_text or act_type in ("clear", "none", "off", "reset"):
+        return None
+
+    at_lower = act_type.lower()
+    if at_lower in ("playing", "game", "play"):
+        return discord.Game(name=act_text)
+    elif at_lower in ("streaming", "stream"):
+        return discord.Streaming(name=act_text, url="https://twitch.tv/echo_technologies")
+    elif at_lower in ("listening", "listen"):
+        return discord.Activity(type=discord.ActivityType.listening, name=act_text)
+    elif at_lower in ("watching", "watch"):
+        return discord.Activity(type=discord.ActivityType.watching, name=act_text)
+    elif at_lower in ("competing", "compete"):
+        return discord.Activity(type=discord.ActivityType.competing, name=act_text)
+    elif at_lower in ("custom",):
+        return discord.CustomActivity(name=act_text)
+    else:
+        full_text = f"{act_type} {act_text}".strip()
+        return discord.Game(name=full_text)
+
+def parse_discord_status(status_str: str) -> discord.Status:
+    s_lower = status_str.lower()
+    if s_lower in ("idle", "away", "yellow"):
+        return discord.Status.idle
+    elif s_lower in ("dnd", "do_not_disturb", "busy", "red"):
+        return discord.Status.dnd
+    elif s_lower in ("invisible", "offline", "hidden", "grey", "gray"):
+        return discord.Status.invisible
+    else:
+        return discord.Status.online
+
+async def execute_setstatus(bot, message: discord.Message, args: List[str]):
+    if not message.author.guild_permissions.administrator:
+        await message.channel.send("❌ Only Administrators can change the bot activity status.")
+        return
+
+    if not args:
+        await message.channel.send(
+            "❌ **Usage:** `!et setstatus <playing|watching|listening|competing|streaming|clear> <text>`\n"
+            "**Example:** `!et setstatus watching Echo Technologies Server`"
+        )
+        return
+
+    act_type = args[0].lower()
+    act_text = " ".join(args[1:]) if len(args) > 1 else ""
+
+    if act_type in ("clear", "none", "off", "reset"):
+        activity = None
+        act_type_save = "none"
+        act_text_save = ""
+    else:
+        if not act_text:
+            act_text = args[0]
+            act_type = "playing"
+        activity = build_discord_activity(act_type, act_text)
+        act_type_save = act_type
+        act_text_save = act_text
+
+    current_status = message.guild.me.status if message.guild and message.guild.me else discord.Status.online
+    if current_status == discord.Status.offline:
+        current_status = discord.Status.online
+
+    try:
+        await bot.change_presence(activity=activity, status=current_status)
+        if hasattr(bot, 'db') and hasattr(bot.db, 'save_bot_presence'):
+            stored = bot.db.get_bot_presence() if hasattr(bot.db, 'get_bot_presence') else {}
+            vis_save = stored.get("visibility", "online")
+            bot.db.save_bot_presence(act_type_save, act_text_save, vis_save)
+
+        if activity:
+            await message.channel.send(f"✅ **Bot Status Updated!** Activity set to: **{act_type.capitalize()}** `{act_text}`")
+        else:
+            await message.channel.send("✅ **Bot Status Cleared!** Activity cleared.")
+    except Exception as e:
+        await message.channel.send(f"❌ Failed to set status: `{e}`")
+
+async def execute_setvisibility(bot, message: discord.Message, args: List[str]):
+    if not message.author.guild_permissions.administrator:
+        await message.channel.send("❌ Only Administrators can change the bot visibility.")
+        return
+
+    if not args:
+        await message.channel.send(
+            "❌ **Usage:** `!et setvisibility <online|idle|dnd|invisible>`\n"
+            "**Example:** `!et setvisibility dnd` (🔴 Do Not Disturb)"
+        )
+        return
+
+    status_input = args[0].lower()
+    new_status = parse_discord_status(status_input)
+    status_names = {
+        discord.Status.online: "🟢 Online",
+        discord.Status.idle: "🌙 Idle (Away)",
+        discord.Status.dnd: "🔴 Do Not Disturb (DND)",
+        discord.Status.invisible: "⚪ Invisible (Offline)"
+    }
+    status_label = status_names.get(new_status, "🟢 Online")
+
+    try:
+        current_activity = None
+        if message.guild and message.guild.me and message.guild.me.activity:
+            current_activity = message.guild.me.activity
+
+        await bot.change_presence(activity=current_activity, status=new_status)
+
+        if hasattr(bot, 'db') and hasattr(bot.db, 'save_bot_presence'):
+            stored = bot.db.get_bot_presence() if hasattr(bot.db, 'get_bot_presence') else {}
+            act_type_save = stored.get("activity_type", "playing")
+            act_text_save = stored.get("activity_text", "Roblox | !et help")
+            bot.db.save_bot_presence(act_type_save, act_text_save, status_input)
+
+        await message.channel.send(f"✅ **Bot Visibility Updated!** Presence indicator set to **{status_label}**.")
+    except Exception as e:
+        await message.channel.send(f"❌ Failed to set visibility: `{e}`")

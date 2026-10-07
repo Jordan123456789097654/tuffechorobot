@@ -85,3 +85,43 @@ class VerificationDatabase:
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM verifications;")
             return cursor.fetchone()[0]
+
+    def save_bot_presence(self, activity_type: str, activity_text: str, visibility: str) -> None:
+        """Saves current bot status and visibility configuration."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS bot_presence (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    activity_type TEXT,
+                    activity_text TEXT,
+                    visibility TEXT DEFAULT 'online'
+                );
+            """)
+            cursor.execute("""
+                INSERT INTO bot_presence (id, activity_type, activity_text, visibility)
+                VALUES (1, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    activity_type = excluded.activity_type,
+                    activity_text = excluded.activity_text,
+                    visibility = excluded.visibility;
+            """, (activity_type, activity_text, visibility))
+            conn.commit()
+
+    def get_bot_presence(self) -> Dict[str, Any]:
+        """Retrieves stored bot presence configuration."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS bot_presence (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    activity_type TEXT,
+                    activity_text TEXT,
+                    visibility TEXT DEFAULT 'online'
+                );
+            """)
+            cursor.execute("SELECT * FROM bot_presence WHERE id = 1;")
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+            return {"activity_type": "playing", "activity_text": "Roblox | !et help", "visibility": "online"}

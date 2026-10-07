@@ -247,6 +247,22 @@ class RobloxVerificationBot(commands.Bot):
         await self.roblox_api.close()
         await super().close()
 
+    async def on_ready(self):
+        logger.info(f"Logged in as {self.user.name} (ID: {self.user.id})")
+        try:
+            stored = self.db.get_bot_presence() if hasattr(self.db, 'get_bot_presence') else {}
+            act_type = stored.get("activity_type", "playing")
+            act_text = stored.get("activity_text", "Roblox | !et help")
+            vis_str = stored.get("visibility", "online")
+
+            from et_prefix_commands import build_discord_activity, parse_discord_status
+            activity = build_discord_activity(act_type, act_text)
+            status = parse_discord_status(vis_str)
+            await self.change_presence(activity=activity, status=status)
+            logger.info(f"Restored presence on boot: status={status}, activity={act_type} '{act_text}'")
+        except Exception as e:
+            logger.warning(f"Could not restore custom presence on startup: {e}")
+
     async def get_escalated_channel(self, guild: discord.Guild) -> Optional[discord.TextChannel]:
         """Finds or retrieves the escalated tickets channel."""
         if config.ESCALATED_TICKETS_CHANNEL_ID:
