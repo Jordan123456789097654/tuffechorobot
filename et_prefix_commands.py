@@ -286,6 +286,30 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     elif subcmd in ("skip", "next"):
         await execute_music_skip_prefix(bot, message)
 
+    elif subcmd in ("filter", "eq"):
+        await execute_music_filter_prefix(bot, message, args)
+
+    elif subcmd == "autoplay":
+        await execute_music_autoplay_prefix(bot, message, args)
+
+    elif subcmd in ("lyrics", "lyric"):
+        await execute_music_lyrics_prefix(bot, message, args)
+
+    elif subcmd in ("seek", "jump"):
+        await execute_music_seek_prefix(bot, message, args)
+
+    elif subcmd in ("forward", "ff"):
+        await execute_music_forward_prefix(bot, message, args)
+
+    elif subcmd in ("rewind", "rw"):
+        await execute_music_rewind_prefix(bot, message, args)
+
+    elif subcmd in ("voteskip", "votesk"):
+        await execute_music_voteskip_prefix(bot, message)
+
+    elif subcmd in ("playlist", "pl"):
+        await execute_music_playlist_prefix(bot, message, args)
+
     elif subcmd in ("whois", "lookup"):
         member = message.mentions[0] if message.mentions else message.author
         await execute_whois(message, member)
@@ -925,3 +949,207 @@ async def execute_music_skip_prefix(bot, message: discord.Message):
         await message.channel.send("⏭️ Skipped current track.")
     else:
         await message.channel.send("❌ Nothing is playing.")
+
+async def execute_music_filter_prefix(bot, message: discord.Message, args: List[str]):
+    if not args:
+        await message.channel.send("❌ Usage: `!et filter <off|bassboost|nightcore|vaporwave|8d|reverb>`")
+        return
+    from music_system import get_music_player, AUDIO_FILTERS
+    player = get_music_player(bot)
+    target = args[0].lower()
+    if target not in AUDIO_FILTERS:
+        await message.channel.send(f"❌ Invalid filter. Available filters: `{', '.join(AUDIO_FILTERS.keys())}`")
+        return
+
+    player.active_filter = target
+    if player.current and (player.is_playing() or player.is_paused()):
+        import time
+        elapsed = int(time.time() - player.start_time) + player.seek_offset
+        await player.seek(elapsed)
+    else:
+        await player.update_panel()
+    await message.channel.send(f"🎛️ Audio EQ filter set to **{target.capitalize()}**.")
+
+async def execute_music_autoplay_prefix(bot, message: discord.Message, args: List[str]):
+    from music_system import get_music_player
+    player = get_music_player(bot)
+    if args and args[0].lower() in ("off", "disable", "false", "stop"):
+        player.autoplay = False
+    else:
+        player.autoplay = True
+    await player.update_panel()
+    status_str = "Enabled 📻" if player.autoplay else "Disabled 🛑"
+    await message.channel.send(f"📻 Autoplay Mode set to **{status_str}**.")
+
+async def execute_music_lyrics_prefix(bot, message: discord.Message, args: List[str]):
+    from music_system import get_music_player, fetch_lyrics
+    player = get_music_player(bot)
+    query = " ".join(args) if args else (f"{player.current.title} {player.current.uploader}" if player.current else "")
+    if not query:
+        await message.channel.send("❌ Usage: `!et lyrics <song name>`")
+        return
+
+    res = await fetch_lyrics(query)
+    if not res or not res.get("lyrics"):
+        await message.channel.send(f"❌ No lyrics found for **`{query}`**.")
+        return
+
+    lyrics_text = res["lyrics"]
+    if len(lyrics_text) > 4000:
+        lyrics_text = lyrics_text[:3990] + "\n..."
+
+    embed = discord.Embed(title=f"📜 Lyrics • {res['title']}", description=lyrics_text, color=0x9B59B6)
+    await message.channel.send(embed=embed)
+
+async def execute_music_seek_prefix(bot, message: discord.Message, args: List[str]):
+    if not args:
+        await message.channel.send("❌ Usage: `!et seek <MM:SS or seconds>` (e.g. `!et seek 1:30`)")
+        return
+    from music_system import get_music_player
+    player = get_music_player(bot)
+    if not player.current or not (player.is_playing() or player.is_paused()):
+        await message.channel.send("❌ Nothing is currently playing.")
+        return
+
+    timestamp = args[0]
+    seconds = 0
+    if ":" in timestamp:
+        parts = timestamp.split(":")
+        try:
+            seconds = int(parts[0]) * 60 + int(parts[1])
+        except Exception:
+            await message.channel.send("❌ Invalid timestamp format. Use `MM:SS` (e.g. `1:30`).")
+            return
+    elif timestamp.isdigit():
+        seconds = int(timestamp)
+    else:
+        await message.channel.send("❌ Invalid timestamp format.")
+        return
+
+    await player.seek(seconds)
+    await message.channel.send(f"⏩ Seeked to **{seconds//60}:{seconds%60:02d}**.")
+
+async def execute_music_forward_prefix(bot, message: discord.Message, args: List[str]):
+    from music_system import get_music_player
+    player = get_music_player(bot)
+    if not player.current or not (player.is_playing() or player.is_paused()):
+        await message.channel.send("❌ Nothing is currently playing.")
+        return
+    sec = int(args[0]) if args and args[0].isdigit() else 30
+    import time
+    elapsed = int(time.time() - player.start_time) + player.seek_offset
+    new_pos = elapsed + sec
+    await player.seek(new_pos)
+    await message.channel.send(f"⏩ Fast-forwarded {sec}s to **{new_pos//60}:{new_pos%60:02d}**.")
+
+async def execute_music_rewind_prefix(bot, message: discord.Message, args: List[str]):
+    from music_system import get_music_player
+    player = get_music_player(bot)
+    if not player.current or not (player.is_playing() or player.is_paused()):
+        await message.channel.send("❌ Nothing is currently playing.")
+        return
+    sec = int(args[0]) if args and args[0].isdigit() else 15
+    import time
+    elapsed = int(time.time() - player.start_time) + player.seek_offset
+    new_pos = max(0, elapsed - sec)
+    await player.seek(new_pos)
+    await message.channel.send(f"⏪ Rewound {sec}s to **{new_pos//60}:{new_pos%60:02d}**.")
+
+async def execute_music_voteskip_prefix(bot, message: discord.Message):
+    from music_system import get_music_player
+    player = get_music_player(bot)
+    if not player.current or not (player.is_playing() or player.is_paused()):
+        await message.channel.send("❌ Nothing is currently playing.")
+        return
+
+    member = message.author if isinstance(message.author, discord.Member) else message.guild.get_member(message.author.id)
+    is_admin = member.guild_permissions.administrator
+    is_requester = (player.current.requester and player.current.requester.id == member.id)
+    has_dj = any("dj" in r.name.lower() or "music" in r.name.lower() for r in member.roles)
+
+    if is_admin or is_requester or has_dj:
+        await player.skip()
+        await message.channel.send(f"⏭️ Instant skip executed by {member.mention}.")
+        return
+
+    player.voteskip_users.add(member.id)
+    vc = player.voice_client.channel if player.voice_client else None
+    vc_members = [m for m in vc.members if not m.bot] if vc else [member]
+    req_votes = max(1, (len(vc_members) + 1) // 2)
+
+    if len(player.voteskip_users) >= req_votes:
+        await player.skip()
+        await message.channel.send(f"⏭️ Vote skip passed! ({len(player.voteskip_users)}/{req_votes} votes). Skipped track.")
+    else:
+        await message.channel.send(f"🗳️ Vote recorded! **{len(player.voteskip_users)}/{req_votes}** votes required to skip.")
+
+async def execute_music_playlist_prefix(bot, message: discord.Message, args: List[str]):
+    if not args:
+        await message.channel.send("❌ Usage: `!et playlist <save/load/list/delete> [name]`")
+        return
+
+    from music_system import get_music_player, Track, ensure_voice_connection
+    player = get_music_player(bot)
+    action = args[0].lower()
+    name = " ".join(args[1:]) if len(args) > 1 else ""
+
+    if action == "save":
+        if not name:
+            await message.channel.send("❌ Please specify a playlist name: `!et playlist save my_vibe`")
+            return
+        tracks_to_save = []
+        if player.current:
+            tracks_to_save.append(player.current.to_dict())
+        for t in player.queue:
+            tracks_to_save.append(t.to_dict())
+
+        if hasattr(bot, 'db') and hasattr(bot.db, 'save_user_playlist'):
+            bot.db.save_user_playlist(message.author.id, name, tracks_to_save)
+            await message.channel.send(f"💾 **Playlist Saved!** Playlist **`{name}`** saved with **{len(tracks_to_save)} tracks**.")
+
+    elif action == "load":
+        if not name:
+            await message.channel.send("❌ Please specify a playlist name: `!et playlist load my_vibe`")
+            return
+        await ensure_voice_connection(bot)
+        if hasattr(bot, 'db') and hasattr(bot.db, 'get_user_playlist'):
+            tracks_data = bot.db.get_user_playlist(message.author.id, name)
+            if not tracks_data:
+                await message.channel.send(f"❌ Saved playlist **`{name}`** not found.")
+                return
+            count = 0
+            member = message.author if isinstance(message.author, discord.Member) else message.guild.get_member(message.author.id)
+            for td in tracks_data:
+                t = Track(
+                    title=td.get("title", "Unknown"),
+                    stream_url="",
+                    webpage_url=td.get("webpage_url", ""),
+                    duration=td.get("duration", 0),
+                    thumbnail=td.get("thumbnail", ""),
+                    uploader=td.get("uploader", "Unknown"),
+                    requester=member
+                )
+                await player.add_track(t)
+                count += 1
+            await message.channel.send(f"🎶 Loaded **{count} tracks** from playlist **`{name}`**!")
+
+    elif action == "list":
+        if hasattr(bot, 'db') and hasattr(bot.db, 'get_user_playlists_list'):
+            playlists = bot.db.get_user_playlists_list(message.author.id)
+            if not playlists:
+                await message.channel.send("📜 You have no saved playlists.")
+                return
+            embed = discord.Embed(title=f"💾 Saved Playlists • {message.author.display_name}", color=0x3498DB)
+            desc = ""
+            for p in playlists:
+                desc += f"• **`{p['playlist_name']}`** — `{p['track_count']} tracks` (created {p['created_at'][:10]})\n"
+            embed.description = desc
+            await message.channel.send(embed=embed)
+
+    elif action in ("delete", "remove"):
+        if hasattr(bot, 'db') and hasattr(bot.db, 'delete_user_playlist'):
+            success = bot.db.delete_user_playlist(message.author.id, name)
+            if success:
+                await message.channel.send(f"🗑️ Deleted playlist **`{name}`**.")
+            else:
+                await message.channel.send(f"❌ Saved playlist **`{name}`** not found.")

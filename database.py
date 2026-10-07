@@ -125,3 +125,89 @@ class VerificationDatabase:
             if row:
                 return dict(row)
             return {"activity_type": "playing", "activity_text": "Roblox | !et help", "visibility": "online"}
+
+    def save_user_playlist(self, discord_id: int, playlist_name: str, tracks_data: List[Dict[str, Any]]) -> None:
+        """Saves or updates a custom user playlist."""
+        import json
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_playlists (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    discord_id INTEGER NOT NULL,
+                    playlist_name TEXT NOT NULL,
+                    tracks_json TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(discord_id, playlist_name)
+                );
+            """)
+            cursor.execute("""
+                INSERT INTO user_playlists (discord_id, playlist_name, tracks_json, created_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(discord_id, playlist_name) DO UPDATE SET
+                    tracks_json = excluded.tracks_json,
+                    created_at = CURRENT_TIMESTAMP;
+            """, (discord_id, playlist_name.lower(), json.dumps(tracks_data)))
+            conn.commit()
+
+    def get_user_playlist(self, discord_id: int, playlist_name: str) -> Optional[List[Dict[str, Any]]]:
+        """Retrieves tracks for a saved playlist."""
+        import json
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_playlists (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    discord_id INTEGER NOT NULL,
+                    playlist_name TEXT NOT NULL,
+                    tracks_json TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(discord_id, playlist_name)
+                );
+            """)
+            cursor.execute("""
+                SELECT tracks_json FROM user_playlists WHERE discord_id = ? AND playlist_name = ?;
+            """, (discord_id, playlist_name.lower()))
+            row = cursor.fetchone()
+            if row:
+                return json.loads(row[0])
+            return None
+
+    def get_user_playlists_list(self, discord_id: int) -> List[Dict[str, Any]]:
+        """Lists all saved playlists for a user."""
+        import json
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_playlists (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    discord_id INTEGER NOT NULL,
+                    playlist_name TEXT NOT NULL,
+                    tracks_json TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(discord_id, playlist_name)
+                );
+            """)
+            cursor.execute("""
+                SELECT playlist_name, tracks_json, created_at FROM user_playlists WHERE discord_id = ? ORDER BY created_at DESC;
+            """, (discord_id,))
+            rows = cursor.fetchall()
+            results = []
+            for r in rows:
+                tracks = json.loads(r[1])
+                results.append({
+                    "playlist_name": r[0],
+                    "track_count": len(tracks),
+                    "created_at": r[2]
+                })
+            return results
+
+    def delete_user_playlist(self, discord_id: int, playlist_name: str) -> bool:
+        """Deletes a saved user playlist."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                DELETE FROM user_playlists WHERE discord_id = ? AND playlist_name = ?;
+            """, (discord_id, playlist_name.lower()))
+            conn.commit()
+            return cursor.rowcount > 0
