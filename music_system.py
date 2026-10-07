@@ -49,6 +49,13 @@ YTDL_OPTIONS = {
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0',
+    'no_color': True,
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['ios', 'android', 'mweb', 'web', 'tv'],
+            'player_skip': ['webpage', 'configs']
+        }
+    }
 }
 
 YTDL_AUTOCOMPLETE_OPTIONS = {
@@ -58,6 +65,13 @@ YTDL_AUTOCOMPLETE_OPTIONS = {
     'skip_download': True,
     'quiet': True,
     'no_warnings': True,
+    'no_color': True,
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['ios', 'android', 'mweb', 'web', 'tv'],
+            'player_skip': ['webpage', 'configs']
+        }
+    }
 }
 
 ytdl = yt_dlp.YoutubeDL(YTDL_OPTIONS)
@@ -168,9 +182,9 @@ class MusicPlayer:
         try:
             stream_url = track.stream_url
             if not stream_url or "manifest" in stream_url:
-                loop = asyncio.get_event_loop()
-                data = await loop.run_in_executor(None, lambda: ytdl.extract_info(track.webpage_url, download=False))
-                stream_url = data.get('url', track.stream_url)
+                fresh_tracks = await extract_tracks(track.webpage_url, track.requester)
+                if fresh_tracks and fresh_tracks[0].stream_url:
+                    stream_url = fresh_tracks[0].stream_url
 
             ffmpeg_opts = self.get_ffmpeg_options(seek_sec=seek_sec)
             audio_source = discord.FFmpegPCMAudio(stream_url, executable=FFMPEG_EXECUTABLE, **ffmpeg_opts)
@@ -318,13 +332,51 @@ async def music_play_autocomplete(interaction: discord.Interaction, current: str
 
 async def extract_tracks(query: str, requester: discord.Member) -> List[Track]:
     loop = asyncio.get_event_loop()
-    target_query = query if (query.startswith("http://") or query.startswith("https://") or query.startswith("ytsearch:")) else f"ytsearch:{query}"
+    target_query = query if (query.startswith("http://") or query.startswith("https://") or query.startswith("ytsearch:") or query.startswith("scsearch:")) else f"ytsearch:{query}"
 
-    def do_extract():
-        with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
-            return ydl.extract_info(target_query, download=False)
+    clients_to_try = [
+        ['ios', 'android', 'mweb'],
+        ['android', 'tv'],
+        ['web', 'mweb']
+    ]
 
-    data = await loop.run_in_executor(None, do_extract)
+    data = None
+    last_error = None
+
+    for client_list in clients_to_try:
+        opts = dict(YTDL_OPTIONS)
+        opts['extractor_args'] = {
+            'youtube': {
+                'player_client': client_list,
+                'player_skip': ['webpage', 'configs']
+            }
+        }
+        try:
+            def do_extract(current_opts=opts):
+                with yt_dlp.YoutubeDL(current_opts) as ydl:
+                    return ydl.extract_info(target_query, download=False)
+
+            data = await loop.run_in_executor(None, do_extract)
+            if data:
+                break
+        except Exception as e:
+            last_error = e
+
+    if not data and not query.startswith("http://") and not query.startswith("https://"):
+        try:
+            sc_query = f"scsearch:{query}"
+            def do_sc_extract():
+                with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
+                    return ydl.extract_info(sc_query, download=False)
+            data = await loop.run_in_executor(None, do_sc_extract)
+        except Exception as sc_err:
+            logger.warning(f"SoundCloud fallback failed: {sc_err}")
+
+    if not data:
+        import re
+        err_msg = str(last_error) if last_error else "Could not extract track data."
+        err_msg = re.sub(r'\x1b\[[0-9;]*m', '', err_msg)
+        raise Exception(err_msg)
 
     tracks = []
     if 'entries' in data and data['entries']:
