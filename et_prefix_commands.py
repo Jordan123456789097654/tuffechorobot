@@ -310,6 +310,10 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     elif subcmd in ("playlist", "pl"):
         await execute_music_playlist_prefix(bot, message, args)
 
+    elif subcmd in ("music-debug", "debug-music", "musicdebug"):
+        from music_system import debug_music_system
+        await debug_music_system(bot, message.channel)
+
     elif subcmd in ("whois", "lookup"):
         member = message.mentions[0] if message.mentions else message.author
         await execute_whois(message, member)

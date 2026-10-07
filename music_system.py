@@ -526,13 +526,14 @@ async def ensure_voice_connection(bot):
         if player.voice_client is None or not player.voice_client.is_connected():
             logger.info(f"Connecting to 24/7 Music Voice Channel: {channel.name} ({channel.id})...")
             guild = channel.guild
-            if guild.voice_client and guild.voice_client.is_connected():
-                player.voice_client = guild.voice_client
-                if player.voice_client.channel.id != channel.id:
-                    await player.voice_client.move_to(channel)
-            else:
-                player.voice_client = await channel.connect(reconnect=True, timeout=30.0)
+            if guild.voice_client:
+                try:
+                    await guild.voice_client.disconnect(force=True)
+                    await asyncio.sleep(0.5)
+                except Exception as ex:
+                    logger.debug(f"Disconnect previous voice client exception: {ex}")
 
+            player.voice_client = await channel.connect(reconnect=True, timeout=30.0)
             await player.update_panel()
     except Exception as e:
         logger.error(f"Error ensuring music voice connection: {e}")
@@ -544,6 +545,73 @@ async def voice_keepalive_loop(bot):
         await ensure_voice_connection(bot)
     except Exception as e:
         logger.error(f"Error in voice keepalive loop: {e}")
+
+async def debug_music_system(bot, target_channel: Optional[discord.TextChannel] = None) -> str:
+    import traceback
+    lines = ["🔍 **Echo Technologies • Music System Telemetry & Diagnostics**\n"]
+
+    # 1. Check PyNaCl voice support
+    try:
+        import nacl
+        lines.append("✅ **PyNaCl / Voice Library**: Installed & Loaded")
+    except Exception as e:
+        lines.append(f"❌ **PyNaCl / Voice Library ERROR**: `{e}`")
+
+    # 2. Check Voice Channel 1557213851173519460
+    vc_obj = bot.get_channel(MUSIC_VOICE_CHANNEL_ID)
+    if not vc_obj:
+        try:
+            vc_obj = await bot.fetch_channel(MUSIC_VOICE_CHANNEL_ID)
+            lines.append(f"✅ **Voice Channel Fetched**: `{vc_obj.name}` (`{vc_obj.id}`)")
+        except Exception as e:
+            lines.append(f"❌ **Voice Channel 1557213851173519460 Fetch ERROR**: `{e}`")
+    else:
+        lines.append(f"✅ **Voice Channel Found**: `{vc_obj.name}` (`{vc_obj.id}`)")
+
+    # 3. Check Text Channel 1557213895041486900
+    txt_obj = bot.get_channel(MUSIC_TEXT_CHANNEL_ID)
+    if not txt_obj:
+        try:
+            txt_obj = await bot.fetch_channel(MUSIC_TEXT_CHANNEL_ID)
+            lines.append(f"✅ **Text Channel Fetched**: `{txt_obj.name}` (`{txt_obj.id}`)")
+        except Exception as e:
+            lines.append(f"❌ **Text Channel 1557213895041486900 Fetch ERROR**: `{e}`")
+    else:
+        lines.append(f"✅ **Text Channel Found**: `{txt_obj.name}` (`{txt_obj.id}`)")
+
+    # 4. Check Bot Voice Permissions
+    if vc_obj and hasattr(vc_obj, 'guild') and vc_obj.guild:
+        me = vc_obj.guild.me
+        perms = vc_obj.permissions_for(me) if me else None
+        if perms:
+            lines.append(f"🔒 **Permissions**: Connect=`{perms.connect}`, Speak=`{perms.speak}`, ViewChannel=`{perms.view_channel}`")
+
+    # 5. Connection Test
+    if vc_obj and isinstance(vc_obj, (discord.VoiceChannel, discord.StageChannel)):
+        player = get_music_player(bot)
+        try:
+            if player.voice_client and player.voice_client.is_connected():
+                lines.append(f"🟢 **Voice State**: Currently Connected to `{player.voice_client.channel.name}`")
+            else:
+                lines.append("⏳ **Attempting Connection Test...**")
+                if vc_obj.guild.voice_client:
+                    try:
+                        await vc_obj.guild.voice_client.disconnect(force=True)
+                        await asyncio.sleep(0.5)
+                    except Exception:
+                        pass
+                player.voice_client = await vc_obj.connect(reconnect=True, timeout=15.0)
+                lines.append(f"🎉 **Connection SUCCESS!** Bot connected to `{vc_obj.name}`")
+                await player.update_panel()
+        except Exception as e:
+            tb_str = traceback.format_exc()
+            logger.error(f"Debug Music Connection Failure:\n{tb_str}")
+            lines.append(f"❌ **Connection FAILURE**: `{type(e).__name__}: {e}`")
+
+    result_msg = "\n".join(lines)
+    if target_channel:
+        await target_channel.send(result_msg)
+    return result_msg
 
 def register_music_commands(bot):
     """Registers music slash commands to the bot command tree."""
