@@ -74,6 +74,7 @@ from leveling_system import (
     set_member_level
 )
 from starboard_system import handle_star_reaction
+from sorry_system import handle_sorry_message
 from application_system import (
     APPLICATION_POSITIONS, build_career_panel_embed, CareerLaunchView,
     start_dm_application_flow, handle_applicant_dm_message,
@@ -1570,6 +1571,10 @@ async def on_raw_message_edit(payload: discord.RawMessageUpdateEvent):
 @bot.event
 async def on_message(message: discord.Message):
     if message.author.bot:
+        return
+
+    # Check and handle #say-sorry-100-times-to-get-unblacklisted counter
+    if await handle_sorry_message(bot, message):
         return
 
     # AI Watchlist & Staff Sensitivity Analyzer (#6)
