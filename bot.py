@@ -7014,6 +7014,8 @@ def ensure_single_instance(port: int = 47829):
         print("="*70 + "\n")
         sys.exit(0)
 
+import signal
+
 def main():
     ensure_single_instance()
     if not config.DISCORD_TOKEN or config.DISCORD_TOKEN == "YOUR_DISCORD_BOT_TOKEN_HERE":
@@ -7024,7 +7026,45 @@ def main():
         sys.exit(1)
 
     logger.info("Starting Roblox Verification & Multi-Category AI Ticket Bot...")
-    bot.run(config.DISCORD_TOKEN)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    async def runner():
+        try:
+            await bot.start(config.DISCORD_TOKEN)
+        finally:
+            if not bot.is_closed():
+                await bot.close()
+
+    def handle_signal(sig_num, frame):
+        logger.info(f"Received termination signal ({sig_num}). Closing Discord gateway connection...")
+        if loop.is_running() and not bot.is_closed():
+            fut = asyncio.run_coroutine_threadsafe(bot.close(), loop)
+            try:
+                fut.result(timeout=4)
+            except Exception:
+                pass
+        sys.exit(0)
+
+    for sig in (signal.SIGINT, getattr(signal, 'SIGTERM', None)):
+        if sig is not None:
+            try:
+                signal.signal(sig, handle_signal)
+            except Exception:
+                pass
+
+    try:
+        loop.run_until_complete(runner())
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Bot execution stopped.")
+    finally:
+        try:
+            if not bot.is_closed():
+                loop.run_until_complete(bot.close())
+        except Exception:
+            pass
+        loop.close()
 
 if __name__ == "__main__":
     main()

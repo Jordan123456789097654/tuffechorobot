@@ -257,6 +257,9 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     elif subcmd == "purge":
         await execute_purge(message, args)
 
+    elif subcmd in ("shutdown", "stop", "stopbot", "kill"):
+        await execute_shutdown(bot, message)
+
     elif subcmd in ("whois", "lookup"):
         member = message.mentions[0] if message.mentions else message.author
         await execute_whois(message, member)
@@ -717,3 +720,12 @@ async def execute_whois(message: discord.Message, member: discord.Member):
     )
     embed.set_thumbnail(url=member.display_avatar.url)
     await message.channel.send(embed=embed)
+
+async def execute_shutdown(bot, message: discord.Message):
+    if not message.author.guild_permissions.administrator:
+        await message.channel.send("❌ Only Administrators can shut down the bot.")
+        return
+
+    await message.channel.send("🛑 **Echo Technologies Bot is shutting down gracefully. Logging off Discord...**")
+    logger.info(f"Shutdown initiated via !et shutdown by {message.author.name} (ID: {message.author.id}).")
+    await bot.close()
