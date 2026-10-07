@@ -798,6 +798,18 @@ async def execute_shutdown(bot, message: discord.Message):
     logger.info(f"Shutdown initiated via !et shutdown by {message.author.name} (ID: {message.author.id}).")
     await bot.close()
 
+PREMADE_ACTIVITIES: Dict[str, Dict[str, str]] = {
+    "1": {"type": "playing", "text": "Roblox | !et help", "label": "🎮 Roblox & Account Verification"},
+    "2": {"type": "watching", "text": "Echo Technologies Server", "label": "🛡️ Server Moderation & Security"},
+    "3": {"type": "listening", "text": "24/7 Jukebox | /play", "label": "🎧 24/7 Music Jukebox"},
+    "4": {"type": "listening", "text": "Groq AI Support Tickets", "label": "🤖 Multi-Department AI Assistant"},
+    "5": {"type": "watching", "text": "Staff Shifts & Duty Timers", "label": "⏱️ Staff Shift & Duty Tracker"},
+    "6": {"type": "playing", "text": "Echo Development Studio", "label": "💻 Roblox Studio Development"},
+    "7": {"type": "competing", "text": "Recruitment & Invite Contests", "label": "🏆 Recruitment Leaderboard"},
+    "8": {"type": "streaming", "text": "Official Echo Technologies Stream", "label": "📡 Official Twitch Stream"},
+    "9": {"type": "watching", "text": "Community Verification Logs", "label": "🔒 Security Telemetry Logs"}
+}
+
 def build_discord_activity(act_type: str, act_text: str) -> Optional[discord.BaseActivity]:
     if not act_text or act_type in ("clear", "none", "off", "reset"):
         return None
@@ -837,20 +849,70 @@ async def execute_setstatus(bot, message: discord.Message, args: List[str]):
 
     if not args:
         await message.channel.send(
-            "❌ **Usage:** `!et setstatus <playing|watching|listening|competing|streaming|clear> <text>`\n"
-            "**Example:** `!et setstatus watching Echo Technologies Server`"
+            "❌ **Usage:** `!et setstatus <playing|watching|listening|competing|preset|rotate|clear> [text/id]`\n"
+            "• **Preset Menu:** `!et setstatus preset` (Lists all premade activities)\n"
+            "• **Apply Preset:** `!et setstatus preset 3` (Selects Jukebox status)\n"
+            "• **Auto-Rotate:** `!et setstatus rotate on` (Auto-cycles activities every 45s)"
         )
         return
 
     act_type = args[0].lower()
     act_text = " ".join(args[1:]) if len(args) > 1 else ""
 
+    # Preset Subcommand Routing
+    if act_type in ("preset", "presets", "list"):
+        if not act_text:
+            embed = discord.Embed(
+                title="✨ Echo Technologies • Premade Status Activity Presets",
+                description="Use **`!et setstatus preset <number>`** to activate any premade activity below!",
+                color=0x3498DB
+            )
+            for k, v in PREMADE_ACTIVITIES.items():
+                embed.add_field(
+                    name=f"Preset #{k} • {v['label']}",
+                    value=f"Type: `{v['type'].capitalize()}` | Text: **{v['text']}**",
+                    inline=False
+                )
+            embed.set_footer(text="Example: !et setstatus preset 3 • Auto-rotate: !et setstatus rotate on")
+            await message.channel.send(embed=embed)
+            return
+        else:
+            p_id = act_text.strip()
+            preset = PREMADE_ACTIVITIES.get(p_id)
+            if not preset:
+                for k, v in PREMADE_ACTIVITIES.items():
+                    if p_id.lower() in v['label'].lower() or p_id.lower() in v['text'].lower():
+                        preset = v
+                        break
+            if not preset:
+                await message.channel.send(f"❌ Invalid preset **`{act_text}`**. Type `!et setstatus preset` to view the list!")
+                return
+
+            act_type = preset['type']
+            act_text = preset['text']
+
+    # Rotate Subcommand Routing
+    rotate_mode = False
+    if act_type in ("rotate", "rotation"):
+        if act_text.lower() in ("on", "enable", "true", "start"):
+            rotate_mode = True
+            act_type = "playing"
+            act_text = "Roblox | !et help"
+            if hasattr(bot, 'rotation_enabled'):
+                bot.rotation_enabled = True
+            await message.channel.send("🔄 **Auto-Rotation Enabled!** The bot will now automatically cycle through all premade activities every 45 seconds.")
+        else:
+            rotate_mode = False
+            if hasattr(bot, 'rotation_enabled'):
+                bot.rotation_enabled = False
+            await message.channel.send("🛑 **Auto-Rotation Disabled.**")
+
     if act_type in ("clear", "none", "off", "reset"):
         activity = None
         act_type_save = "none"
         act_text_save = ""
     else:
-        if not act_text:
+        if not act_text and act_type not in ("rotate", "rotation"):
             act_text = args[0]
             act_type = "playing"
         activity = build_discord_activity(act_type, act_text)
@@ -866,12 +928,13 @@ async def execute_setstatus(bot, message: discord.Message, args: List[str]):
         if hasattr(bot, 'db') and hasattr(bot.db, 'save_bot_presence'):
             stored = bot.db.get_bot_presence() if hasattr(bot.db, 'get_bot_presence') else {}
             vis_save = stored.get("visibility", "online")
-            bot.db.save_bot_presence(act_type_save, act_text_save, vis_save)
+            bot.db.save_bot_presence(act_type_save, act_text_save, vis_save, rotate_mode=rotate_mode)
 
-        if activity:
-            await message.channel.send(f"✅ **Bot Status Updated!** Activity set to: **{act_type.capitalize()}** `{act_text}`")
-        else:
-            await message.channel.send("✅ **Bot Status Cleared!** Activity cleared.")
+        if act_type not in ("rotate", "rotation"):
+            if activity:
+                await message.channel.send(f"✅ **Bot Status Updated!** Activity set to: **{act_type.capitalize()}** `{act_text}`")
+            else:
+                await message.channel.send("✅ **Bot Status Cleared!** Activity cleared.")
     except Exception as e:
         await message.channel.send(f"❌ Failed to set status: `{e}`")
 

@@ -214,6 +214,8 @@ class RobloxVerificationBot(commands.Bot):
         self.ticket_manager = TicketManager()
         self.invite_cache = {}
         self.invite_lock = asyncio.Lock()
+        self.rotation_enabled = False
+        self.current_preset_idx = 0
 
     async def setup_hook(self):
         # Register persistent views
@@ -263,6 +265,11 @@ class RobloxVerificationBot(commands.Bot):
             status = parse_discord_status(vis_str)
             await self.change_presence(activity=activity, status=status)
             logger.info(f"Restored presence on boot: status={status}, activity={act_type} '{act_text}'")
+
+            if stored.get('rotate_mode'):
+                self.rotation_enabled = True
+                if not self.rotate_presence_task.is_running():
+                    self.rotate_presence_task.start()
         except Exception as e:
             logger.warning(f"Could not restore custom presence on startup: {e}")
 
@@ -271,6 +278,29 @@ class RobloxVerificationBot(commands.Bot):
             await ensure_voice_connection(self)
         except Exception as e:
             logger.error(f"Error connecting to 24/7 music voice channel on ready: {e}")
+
+    @tasks.loop(seconds=45)
+    async def rotate_presence_task(self):
+        if not self.rotation_enabled:
+            return
+        from et_prefix_commands import PREMADE_ACTIVITIES, build_discord_activity, parse_discord_status
+        keys = list(PREMADE_ACTIVITIES.keys())
+        if not keys:
+            return
+
+        self.current_preset_idx = (self.current_preset_idx + 1) % len(keys)
+        preset_key = keys[self.current_preset_idx]
+        preset = PREMADE_ACTIVITIES[preset_key]
+
+        try:
+            stored = self.db.get_bot_presence() if hasattr(self.db, 'get_bot_presence') else {}
+            vis_str = stored.get("visibility", "online")
+            activity = build_discord_activity(preset['type'], preset['text'])
+            status = parse_discord_status(vis_str)
+            await self.change_presence(activity=activity, status=status)
+            logger.info(f"Rotated bot activity preset #{preset_key}: {preset['type']} '{preset['text']}'")
+        except Exception as e:
+            logger.error(f"Error rotating bot activity: {e}")
 
     async def get_escalated_channel(self, guild: discord.Guild) -> Optional[discord.TextChannel]:
         """Finds or retrieves the escalated tickets channel."""

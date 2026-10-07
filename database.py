@@ -86,8 +86,8 @@ class VerificationDatabase:
             cursor.execute("SELECT COUNT(*) FROM verifications;")
             return cursor.fetchone()[0]
 
-    def save_bot_presence(self, activity_type: str, activity_text: str, visibility: str) -> None:
-        """Saves current bot status and visibility configuration."""
+    def save_bot_presence(self, activity_type: str, activity_text: str, visibility: str, rotate_mode: bool = False) -> None:
+        """Saves current bot status, visibility, and rotation configuration."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -95,17 +95,24 @@ class VerificationDatabase:
                     id INTEGER PRIMARY KEY CHECK (id = 1),
                     activity_type TEXT,
                     activity_text TEXT,
-                    visibility TEXT DEFAULT 'online'
+                    visibility TEXT DEFAULT 'online',
+                    rotate_mode INTEGER DEFAULT 0
                 );
             """)
+            try:
+                cursor.execute("ALTER TABLE bot_presence ADD COLUMN rotate_mode INTEGER DEFAULT 0;")
+            except Exception:
+                pass
+
             cursor.execute("""
-                INSERT INTO bot_presence (id, activity_type, activity_text, visibility)
-                VALUES (1, ?, ?, ?)
+                INSERT INTO bot_presence (id, activity_type, activity_text, visibility, rotate_mode)
+                VALUES (1, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     activity_type = excluded.activity_type,
                     activity_text = excluded.activity_text,
-                    visibility = excluded.visibility;
-            """, (activity_type, activity_text, visibility))
+                    visibility = excluded.visibility,
+                    rotate_mode = excluded.rotate_mode;
+            """, (activity_type, activity_text, visibility, 1 if rotate_mode else 0))
             conn.commit()
 
     def get_bot_presence(self) -> Dict[str, Any]:
@@ -117,14 +124,22 @@ class VerificationDatabase:
                     id INTEGER PRIMARY KEY CHECK (id = 1),
                     activity_type TEXT,
                     activity_text TEXT,
-                    visibility TEXT DEFAULT 'online'
+                    visibility TEXT DEFAULT 'online',
+                    rotate_mode INTEGER DEFAULT 0
                 );
             """)
+            try:
+                cursor.execute("ALTER TABLE bot_presence ADD COLUMN rotate_mode INTEGER DEFAULT 0;")
+            except Exception:
+                pass
+
             cursor.execute("SELECT * FROM bot_presence WHERE id = 1;")
             row = cursor.fetchone()
             if row:
-                return dict(row)
-            return {"activity_type": "playing", "activity_text": "Roblox | !et help", "visibility": "online"}
+                d = dict(row)
+                d['rotate_mode'] = bool(d.get('rotate_mode', 0))
+                return d
+            return {"activity_type": "playing", "activity_text": "Roblox | !et help", "visibility": "online", "rotate_mode": False}
 
     def save_user_playlist(self, discord_id: int, playlist_name: str, tracks_data: List[Dict[str, Any]]) -> None:
         """Saves or updates a custom user playlist."""
