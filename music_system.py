@@ -240,6 +240,12 @@ class MusicPlayer:
     async def update_panel(self):
         channel = self.bot.get_channel(MUSIC_TEXT_CHANNEL_ID)
         if not channel:
+            try:
+                channel = await self.bot.fetch_channel(MUSIC_TEXT_CHANNEL_ID)
+            except Exception as ex:
+                logger.warning(f"Could not fetch music text channel {MUSIC_TEXT_CHANNEL_ID}: {ex}")
+                channel = None
+        if not channel:
             return
 
         embed = build_music_panel_embed(self)
@@ -534,7 +540,8 @@ async def ensure_voice_connection(bot):
                     logger.debug(f"Disconnect previous voice client exception: {ex}")
 
             player.voice_client = await channel.connect(reconnect=True, timeout=30.0)
-            await player.update_panel()
+        
+        await player.update_panel()
     except Exception as e:
         logger.error(f"Error ensuring music voice connection: {e}")
 
