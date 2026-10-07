@@ -973,7 +973,8 @@ async def execute_setvisibility(bot, message: discord.Message, args: List[str]):
         await bot.change_presence(activity=activity, status=new_status)
 
         if hasattr(bot, 'db') and hasattr(bot.db, 'save_bot_presence'):
-            bot.db.save_bot_presence(act_type_save, act_text_save, status_input)
+            rot_mode = stored.get("rotate_mode", True)
+            bot.db.save_bot_presence(act_type_save, act_text_save, status_input, rotate_mode=rot_mode)
 
         await message.channel.send(f"✅ **Bot Visibility Updated!** Presence indicator set to **{status_label}**.")
     except Exception as e:
