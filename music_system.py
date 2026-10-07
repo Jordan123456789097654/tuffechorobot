@@ -50,6 +50,8 @@ YTDL_OPTIONS = {
     'default_search': 'auto',
     'source_address': '0.0.0.0',
     'no_color': True,
+    'js_runtimes': {'node': {}},
+    'remote_components': ['ejs:github'],
     'extractor_args': {
         'youtube': {
             'player_client': ['android', 'ios', 'mweb', 'tv'],
@@ -66,6 +68,8 @@ YTDL_AUTOCOMPLETE_OPTIONS = {
     'quiet': True,
     'no_warnings': True,
     'no_color': True,
+    'js_runtimes': {'node': {}},
+    'remote_components': ['ejs:github'],
     'extractor_args': {
         'youtube': {
             'player_client': ['android', 'ios', 'mweb', 'tv'],
