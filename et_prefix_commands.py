@@ -301,7 +301,7 @@ async def send_et_help_directory(message: discord.Message):
         title="🤖 Echo Technologies • Master Command Directory",
         description=(
             "Welcome to the official **Echo Technologies** Command System!\n"
-            "Use **`!et help [command]`** for detailed usage instructions & examples for any command (e.g. `!et help say`, `!et help duty`)."
+            "Use **`!et help [command]`** for detailed usage instructions & examples for any command (e.g. `!et help say`, `!et help duty`, `!et help play`)."
         ),
         color=0x3498DB
     )
@@ -313,42 +313,60 @@ async def send_et_help_directory(message: discord.Message):
     )
 
     embed.add_field(
-        name="⏱️ Duty & Shift Commands",
-        value="`!et duty [on/off]` • `!et shift-stats [@user]`",
+        name="🎧 24/7 Jukebox & Music Suite",
+        value="`/play <song/link>` • `/skip` • `/pause` • `/resume` • `/stop` • `/queue` • `/nowplaying` • `/volume <1-100>` • `/loop <mode>`",
         inline=False
     )
 
     embed.add_field(
-        name="💼 HR & Staff Administration",
-        value="`!et commend @user [reason]` • `!et dossier [@user]` • `!et promote @user` • `!et demote @user` • `!et strike @user <1-3> <reason>`",
+        name="⏱️ Staff Duty & Shift Tracking",
+        value="`!et duty [on/off]` (or `!duty`) • `!et shift-stats [@user]`",
         inline=False
     )
 
     embed.add_field(
-        name="🛡️ Moderation Commands",
-        value="`!et warn @user <reason>` • `!et kick @user <reason>` • `!et ban @user <reason>` • `!et purge <count>`",
+        name="💼 HR Administration & Personnel Files",
+        value="`!et commend @user <reason>` • `!et dossier [@user]` • `!et promote @user [reason]` • `!et demote @user [reason]` • `!et strike @user <1-3> <reason>` • `!et pardon <strike_id> <reason>` • `!et eval @user <score> <feedback>` • `!et eval-history [@user]`",
         inline=False
     )
 
     embed.add_field(
-        name="📅 Staff Meetings",
-        value="`!et meeting announce [topic]` • `!et meeting cancel <id> <reason>` • `!et meeting end <id> <notes>`",
+        name="🛡️ Moderation & Server Security",
+        value="`!et warn @user <reason>` • `!et warnings [@user]` • `!et clear-warnings @user` • `!et kick @user <reason>` • `!et ban @user <reason>` • `!et unban <user_id>` • `!et global-ban @user <reason>` • `!et purge <count>` • `!et lock` • `!et unlock` • `!et slowmode <sec>` • `!et mod-case <id>`",
         inline=False
     )
 
     embed.add_field(
-        name="📢 Hiring & Campaigns",
-        value="`!et campaign start [positions]` • `!et campaign cancel <id> <reason>` • `!et interview open @candidate`",
+        name="📅 Staff Meetings & RSVPs",
+        value="`!et meeting announce [topic]` • `!et meeting cancel <id> <reason>` • `!et meeting end <id> <notes>` • `!et meeting rsvp <id> <yes/no/maybe>`",
         inline=False
     )
 
     embed.add_field(
-        name="🛡️ Roblox & Verification",
-        value="`!et verify` • `!et whois [@user]`",
+        name="📢 Hiring, Recruitment & ATS Suite",
+        value="`!et campaign start [positions]` • `!et campaign cancel <id> <reason>` • `!et interview open @candidate` • `!et offer create @candidate <role> [salary]` • `!et onboard start @candidate` • `!et ats note @candidate <notes>` • `!et ats flag @candidate <reason>`",
         inline=False
     )
 
-    embed.set_footer(text="Type '!et help [command]' for specific details • Echo Technologies")
+    embed.add_field(
+        name="🎟️ AI Support Tickets & Staff Exams",
+        value="`!et ticket panel` • `!et ticket force-open @user` • `!et ticket test-staff @user` • `!et ticket close [reason]` • `!et supervisor-request <reason>`",
+        inline=False
+    )
+
+    embed.add_field(
+        name="🏆 Community Points, Rewards & Leveling",
+        value="`!et points [@user]` • `!et shop` • `!et tip @user <points>` • `!et rank [@user]` • `!et top` (or `!et leaderboard`)",
+        inline=False
+    )
+
+    embed.add_field(
+        name="🤝 Partnerships, Verification & Utility",
+        value="`!et partner add <name> <category>` • `!et ad` • `!et suggest <idea>` • `!et verify` • `!et whois [@user]` • `!et check-alt @user`",
+        inline=False
+    )
+
+    embed.set_footer(text="Type '!et help [command]' for specific manual & syntax • Echo Technologies")
     embed.timestamp = datetime.now(timezone.utc)
 
     await message.channel.send(embed=embed)
@@ -856,16 +874,14 @@ async def execute_setvisibility(bot, message: discord.Message, args: List[str]):
     status_label = status_names.get(new_status, "🟢 Online")
 
     try:
-        current_activity = None
-        if message.guild and message.guild.me and message.guild.me.activity:
-            current_activity = message.guild.me.activity
+        stored = bot.db.get_bot_presence() if hasattr(bot, 'db') and hasattr(bot.db, 'get_bot_presence') else {}
+        act_type_save = stored.get("activity_type", "playing")
+        act_text_save = stored.get("activity_text", "Roblox | !et help")
 
-        await bot.change_presence(activity=current_activity, status=new_status)
+        activity = build_discord_activity(act_type_save, act_text_save)
+        await bot.change_presence(activity=activity, status=new_status)
 
         if hasattr(bot, 'db') and hasattr(bot.db, 'save_bot_presence'):
-            stored = bot.db.get_bot_presence() if hasattr(bot.db, 'get_bot_presence') else {}
-            act_type_save = stored.get("activity_type", "playing")
-            act_text_save = stored.get("activity_text", "Roblox | !et help")
             bot.db.save_bot_presence(act_type_save, act_text_save, status_input)
 
         await message.channel.send(f"✅ **Bot Visibility Updated!** Presence indicator set to **{status_label}**.")
