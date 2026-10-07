@@ -6417,22 +6417,6 @@ async def end_simulation_cmd(
     await conclude_and_grade_staff_exam(bot, ticket, interaction.channel, interaction.user, grade_and_log=grade_and_log)
 
 
-@bot.tree.command(name="end-exam", description="[Foundership Only] Alias for /end-simulation.")
-@app_commands.describe(grade_and_log="Auto-grade staff performance and log report card (default: True)")
-async def end_exam_cmd(interaction: discord.Interaction, grade_and_log: Optional[bool] = True):
-    await end_simulation_cmd.callback(interaction, grade_and_log)
-
-@bot.tree.command(name="stop-simulation", description="[Foundership Only] Alias for /end-simulation.")
-@app_commands.describe(grade_and_log="Auto-grade staff performance and log report card (default: True)")
-async def stop_simulation_cmd(interaction: discord.Interaction, grade_and_log: Optional[bool] = True):
-    await end_simulation_cmd.callback(interaction, grade_and_log)
-
-@bot.tree.command(name="finish-exam", description="[Foundership Only] Alias for /end-simulation.")
-@app_commands.describe(grade_and_log="Auto-grade staff performance and log report card (default: True)")
-async def finish_exam_cmd(interaction: discord.Interaction, grade_and_log: Optional[bool] = True):
-    await end_simulation_cmd.callback(interaction, grade_and_log)
-
-
 # ==========================================
 # 🧪 STAFF EVALUATION & EXAM LOGGING SYSTEM
 # ==========================================
@@ -6599,56 +6583,6 @@ async def staff_eval_log_cmd(
         f"📩 **DM Status:** {trainee_status} | {trainer_status}",
         ephemeral=True
     )
-
-
-@bot.tree.command(name="log-test-result", description="[Foundership Only] Alias for /staff-eval-log.")
-@app_commands.describe(
-    target_staff="Support team member evaluated",
-    score="Numerical score (0 to 100)",
-    verdict="Final exam verdict",
-    scenario="Evaluation scenario title",
-    feedback_notes="Optional feedback notes (or leave empty to open modal)"
-)
-@app_commands.choices(verdict=[
-    app_commands.Choice(name="Exceptional (95-100)", value="Exceptional"),
-    app_commands.Choice(name="Pass (85-94)", value="Pass"),
-    app_commands.Choice(name="Conditional Pass (70-84)", value="Conditional Pass"),
-    app_commands.Choice(name="Fail (0-69)", value="Fail")
-])
-async def log_test_result_cmd(
-    interaction: discord.Interaction,
-    target_staff: discord.Member,
-    score: int,
-    verdict: Optional[str] = "Pass",
-    scenario: Optional[str] = "Hostile Member Wrongful Ban & SOP Exam",
-    feedback_notes: Optional[str] = None
-):
-    await staff_eval_log_cmd.callback(interaction, target_staff, score, verdict, scenario, feedback_notes)
-
-
-@bot.tree.command(name="staff-test-log", description="[Foundership Only] Alias for /staff-eval-log.")
-@app_commands.describe(
-    target_staff="Support team member evaluated",
-    score="Numerical score (0 to 100)",
-    verdict="Final exam verdict",
-    scenario="Evaluation scenario title",
-    feedback_notes="Optional feedback notes (or leave empty to open modal)"
-)
-@app_commands.choices(verdict=[
-    app_commands.Choice(name="Exceptional (95-100)", value="Exceptional"),
-    app_commands.Choice(name="Pass (85-94)", value="Pass"),
-    app_commands.Choice(name="Conditional Pass (70-84)", value="Conditional Pass"),
-    app_commands.Choice(name="Fail (0-69)", value="Fail")
-])
-async def staff_test_log_cmd(
-    interaction: discord.Interaction,
-    target_staff: discord.Member,
-    score: int,
-    verdict: Optional[str] = "Pass",
-    scenario: Optional[str] = "Hostile Member Wrongful Ban & SOP Exam",
-    feedback_notes: Optional[str] = None
-):
-    await staff_eval_log_cmd.callback(interaction, target_staff, score, verdict, scenario, feedback_notes)
 
 
 @bot.tree.command(name="staff-eval-history", description="View historical evaluation scores and feedback for a staff member.")
