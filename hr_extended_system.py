@@ -44,7 +44,7 @@ def init_hr_extended_db():
         );
     """)
 
-    # Staff Meetings table
+    # Staff Meetings table with Advanced Fields
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS hr_staff_meetings (
             meeting_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,6 +53,10 @@ def init_hr_extended_db():
             topic TEXT NOT NULL,
             is_mandatory BOOLEAN NOT NULL,
             notes TEXT,
+            location TEXT DEFAULT 'Staff Voice Channel',
+            agenda TEXT,
+            status TEXT DEFAULT 'Scheduled',
+            summary_notes TEXT,
             message_id INTEGER,
             channel_id INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -112,7 +116,6 @@ def clock_in_staff(discord_id: int) -> bool:
         conn.close()
 
 def clock_out_staff(discord_id: int) -> Optional[int]:
-    """Clocks out staff member and returns duration in seconds."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT clock_in FROM hr_active_duty WHERE discord_id = ?", (discord_id,))
@@ -138,18 +141,14 @@ def clock_out_staff(discord_id: int) -> Optional[int]:
 def get_staff_shift_stats(discord_id: int) -> Dict[str, Any]:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
-    # Check if currently active
     cursor.execute("SELECT clock_in FROM hr_active_duty WHERE discord_id = ?", (discord_id,))
     active_row = cursor.fetchone()
 
-    # Total lifetime duration
     cursor.execute("SELECT SUM(duration_seconds), COUNT(id) FROM hr_shifts WHERE discord_id = ?", (discord_id,))
     total_row = cursor.fetchone()
     total_sec = total_row[0] or 0
     total_shifts = total_row[1] or 0
 
-    # Past 7 days duration
     seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
     cursor.execute("""
         SELECT SUM(duration_seconds) FROM hr_shifts
@@ -198,14 +197,22 @@ def get_user_commendations(discord_id: int) -> List[Dict[str, Any]]:
         for r in rows
     ]
 
-# --- MEETING & RSVP FUNCTIONS ---
-def create_staff_meeting(title: str, date_time: str, topic: str, is_mandatory: bool, notes: Optional[str] = None) -> int:
+# --- ADVANCED MEETING FUNCTIONS ---
+def create_staff_meeting(
+    title: str,
+    date_time: str,
+    topic: str,
+    is_mandatory: bool,
+    notes: Optional[str] = None,
+    location: str = "Staff Voice Channel",
+    agenda: Optional[str] = None
+) -> int:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO hr_staff_meetings (title, date_time, topic, is_mandatory, notes)
-        VALUES (?, ?, ?, ?, ?)
-    """, (title, date_time, topic, is_mandatory, notes))
+        INSERT INTO hr_staff_meetings (title, date_time, topic, is_mandatory, notes, location, agenda)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (title, date_time, topic, is_mandatory, notes, location, agenda))
     m_id = cursor.lastrowid
     conn.commit()
     conn.close()
@@ -217,6 +224,40 @@ def set_meeting_message(meeting_id: int, channel_id: int, message_id: int):
     cursor.execute("""
         UPDATE hr_staff_meetings SET channel_id = ?, message_id = ? WHERE meeting_id = ?
     """, (channel_id, message_id, meeting_id))
+    conn.commit()
+    conn.close()
+
+def get_staff_meeting(meeting_id: int) -> Optional[Dict[str, Any]]:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM hr_staff_meetings WHERE meeting_id = ?", (meeting_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return {
+            "meeting_id": row[0],
+            "title": row[1],
+            "date_time": row[2],
+            "topic": row[3],
+            "is_mandatory": row[4],
+            "notes": row[5],
+            "location": row[6],
+            "agenda": row[7],
+            "status": row[8],
+            "summary_notes": row[9],
+            "channel_id": row[10],
+            "message_id": row[11],
+            "created_at": row[12]
+        }
+    return None
+
+def update_meeting_status(meeting_id: int, status: str, summary_notes: Optional[str] = None):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    if summary_notes:
+        cursor.execute("UPDATE hr_staff_meetings SET status = ?, summary_notes = ? WHERE meeting_id = ?", (status, summary_notes, meeting_id))
+    else:
+        cursor.execute("UPDATE hr_staff_meetings SET status = ? WHERE meeting_id = ?", (status, meeting_id))
     conn.commit()
     conn.close()
 
@@ -247,6 +288,14 @@ def get_meeting_rsvp_counts(meeting_id: int) -> Dict[str, int]:
             counts[status] = count
     return counts
 
+def get_meeting_rsvp_details(meeting_id: int) -> List[Dict[str, Any]]:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT discord_id, status, reason FROM hr_meeting_rsvps WHERE meeting_id = ?", (meeting_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [{"discord_id": r[0], "status": r[1], "reason": r[2]} for r in rows]
+
 # --- MEETING RSVP INTERACTIVE VIEW ---
 class StaffMeetingRSVPView(discord.ui.View):
     def __init__(self, meeting_id: int):
@@ -275,7 +324,6 @@ class StaffMeetingRSVPView(discord.ui.View):
             counts = get_meeting_rsvp_counts(self.meeting_id)
             embed = interaction.message.embeds[0]
 
-            # Update RSVP field if present
             for i, f in enumerate(embed.fields):
                 if "RSVP Status" in f.name:
                     embed.set_field_at(

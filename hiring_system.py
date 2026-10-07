@@ -83,6 +83,8 @@ def init_hiring_db():
             title TEXT NOT NULL,
             positions TEXT NOT NULL,
             deadline TEXT,
+            status TEXT DEFAULT 'Active',
+            cancel_reason TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
@@ -217,3 +219,32 @@ def start_hiring_campaign(title: str, positions: str, deadline: Optional[str] = 
     conn.commit()
     conn.close()
     return c_id
+
+def cancel_hiring_campaign(campaign_id: int, reason: str) -> bool:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE hiring_campaigns SET status = 'Cancelled', cancel_reason = ? WHERE id = ?
+    """, (reason, campaign_id))
+    affected = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return affected
+
+def get_hiring_campaign(campaign_id: int) -> Optional[Dict[str, Any]]:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM hiring_campaigns WHERE id = ?", (campaign_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return {
+            "id": row[0],
+            "title": row[1],
+            "positions": row[2],
+            "deadline": row[3],
+            "status": row[4],
+            "cancel_reason": row[5],
+            "created_at": row[6]
+        }
+    return None

@@ -9,7 +9,7 @@ import config
 from hiring_system import (
     add_ats_note, get_ats_notes, flag_application, get_application_flags,
     schedule_interview, log_interview_scorecard, create_custom_offer, update_offer_status,
-    start_onboarding, get_onboarding_status, start_hiring_campaign
+    start_onboarding, get_onboarding_status, start_hiring_campaign, cancel_hiring_campaign, get_hiring_campaign
 )
 from application_system import get_application
 
@@ -357,6 +357,37 @@ def register_hiring_commands(bot: commands.Bot):
                 f"⚠️ Campaign registered (`#CAMP-{c_id:03d}`), but failed to post in {announce_ch.mention}: `{e}`",
                 ephemeral=True
             )
+
+    # 10b. /hiring-campaign-cancel
+    @bot.tree.command(name="hiring-campaign-cancel", description="[ADMIN] Cancel an active recruitment drive.")
+    @app_commands.describe(campaign_id="The Campaign ID to cancel (e.g. 1)", reason="Cancellation reason")
+    async def hiring_campaign_cancel_cmd(interaction: discord.Interaction, campaign_id: int, reason: str):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ Only Administrators can cancel hiring campaigns.", ephemeral=True)
+            return
+
+        camp = get_hiring_campaign(campaign_id)
+        if not camp:
+            await interaction.response.send_message(f"❌ Hiring Campaign `#CAMP-{campaign_id:03d}` not found.", ephemeral=True)
+            return
+
+        success = cancel_hiring_campaign(campaign_id, reason)
+
+        cancel_embed = discord.Embed(
+            title=f"🔴 HIRING CAMPAIGN CANCELLED — #CAMP-{campaign_id:03d}",
+            description=(
+                f"**Recruitment Campaign `#CAMP-{campaign_id:03d}` has been officially CANCELLED.**\n\n"
+                f"📌 **Campaign Title:** {camp['title']}\n"
+                f"💼 **Positions:** `{camp['positions']}`\n\n"
+                f"📋 **Cancellation Reason:** *\"{reason}\"*\n"
+                f"👤 **Cancelled By:** {interaction.user.mention}"
+            ),
+            color=0xED4245
+        )
+        cancel_embed.set_footer(text="Echo Technologies • Recruitment Operations")
+        cancel_embed.timestamp = discord.utils.utcnow()
+
+        await interaction.response.send_message(embed=cancel_embed)
 
     # 11. /hiring-stats
     @bot.tree.command(name="hiring-stats", description="[ADMIN/HR] View complete recruitment pipeline statistics & candidate conversion rates.")

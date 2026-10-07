@@ -178,25 +178,44 @@ def register_hr_commands(bot: commands.Bot):
             pass
 
     # 4. /staff-meeting-announce
-    @bot.tree.command(name="staff-meeting-announce", description="[ADMIN] Announce an official staff meeting with interactive RSVP buttons.")
+    @bot.tree.command(name="staff-meeting-announce", description="[ADMIN] Announce an official staff meeting in #staff-announcements with RSVP buttons.")
     @app_commands.describe(
         date_time="Date and time of meeting (e.g. Saturday Oct 10 @ 5:00 PM EST)",
         topic="Primary topic of discussion",
         mandatory="Whether attendance is mandatory for staff",
-        notes="Optional additional meeting notes or location"
+        location="Voice/Text channel location (e.g. Staff Voice Channel #1)",
+        agenda="Key agenda points to cover",
+        notes="Optional additional meeting notes",
+        target_channel="Channel to send announcement (defaults to #staff-announcements)"
     )
     async def staff_meeting_announce_cmd(
         interaction: discord.Interaction,
         date_time: str,
         topic: str,
         mandatory: bool = True,
-        notes: Optional[str] = None
+        location: str = "Staff Voice Channel #1",
+        agenda: Optional[str] = None,
+        notes: Optional[str] = None,
+        target_channel: Optional[discord.TextChannel] = None
     ):
         if not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message("❌ Only Administrators can announce staff meetings.", ephemeral=True)
             return
 
-        m_id = create_staff_meeting("Official Staff Meeting", date_time, topic, mandatory, notes)
+        guild = interaction.guild
+        announce_ch = target_channel
+        if not announce_ch and guild:
+            announce_ch = discord.utils.get(guild.text_channels, name="staff-announcements")
+            if not announce_ch:
+                for ch in guild.text_channels:
+                    if "staff-announc" in ch.name.lower() or "staff_announc" in ch.name.lower():
+                        announce_ch = ch
+                        break
+
+        if not announce_ch:
+            announce_ch = interaction.channel
+
+        m_id = create_staff_meeting("Official Staff Meeting", date_time, topic, mandatory, notes, location, agenda)
         view = StaffMeetingRSVPView(m_id)
 
         embed = discord.Embed(
@@ -209,7 +228,10 @@ def register_hr_commands(bot: commands.Bot):
         )
         embed.add_field(name="🕒 Date & Time", value=f"```\n{date_time}\n```", inline=False)
         embed.add_field(name="📌 Primary Topic", value=topic, inline=False)
+        embed.add_field(name="📍 Location", value=f"`{location}`", inline=True)
         embed.add_field(name="⚠️ Attendance Policy", value="`🔴 MANDATORY ATTENDANCE`" if mandatory else "`🟢 OPTIONAL ATTENDANCE`", inline=True)
+        if agenda:
+            embed.add_field(name="📋 Meeting Agenda", value=agenda, inline=False)
         if notes:
             embed.add_field(name="📝 Additional Notes", value=notes, inline=False)
 
@@ -222,9 +244,89 @@ def register_hr_commands(bot: commands.Bot):
         embed.set_footer(text=f"Echo Technologies • Staff Meeting #M-{m_id:03d}")
         embed.timestamp = discord.utils.utcnow()
 
-        await interaction.response.send_message(content="📢 **ATTENTION ALL STAFF MEMBERS:**", embed=embed, view=view)
-        msg = await interaction.original_response()
-        set_meeting_message(m_id, msg.channel.id, msg.id)
+        msg = await announce_ch.send(content="📢 **ATTENTION ALL STAFF MEMBERS:**", embed=embed, view=view)
+        set_meeting_message(m_id, announce_ch.id, msg.id)
+
+        await interaction.response.send_message(
+            f"✅ **Staff Meeting `#M-{m_id:03d}` Announced!**\n"
+            f"Embed posted in {announce_ch.mention}! (Message ID: `{msg.id}`)",
+            ephemeral=True
+        )
+
+    # 4b. /staff-meeting-cancel
+    @bot.tree.command(name="staff-meeting-cancel", description="[ADMIN] Cancel a scheduled staff meeting and notify staff.")
+    @app_commands.describe(meeting_id="The Meeting ID to cancel (e.g. 1)", reason="Cancellation reason")
+    async def staff_meeting_cancel_cmd(interaction: discord.Interaction, meeting_id: int, reason: str):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ Only Administrators can cancel staff meetings.", ephemeral=True)
+            return
+
+        from hr_extended_system import get_staff_meeting, update_meeting_status
+        m = get_staff_meeting(meeting_id)
+        if not m:
+            await interaction.response.send_message(f"❌ Meeting `#M-{meeting_id:03d}` not found.", ephemeral=True)
+            return
+
+        update_meeting_status(meeting_id, "Cancelled", reason)
+
+        # Try to edit original message
+        if m["channel_id"] and m["message_id"]:
+            try:
+                ch = interaction.guild.get_channel(m["channel_id"]) or await interaction.guild.fetch_channel(m["channel_id"])
+                msg = await ch.fetch_message(m["message_id"])
+
+                cancel_embed = discord.Embed(
+                    title=f"🔴 MEETING CANCELLED — #M-{meeting_id:03d}",
+                    description=(
+                        f"**This staff meeting has been officially CANCELLED.**\n\n"
+                        f"📌 **Original Topic:** {m['topic']}\n"
+                        f"🕒 **Scheduled Date:** `{m['date_time']}`\n\n"
+                        f"📋 **Cancellation Reason:** *\"{reason}\"*\n"
+                        f"👤 **Cancelled By:** {interaction.user.mention}"
+                    ),
+                    color=0xED4245
+                )
+                cancel_embed.set_footer(text="Echo Technologies • Staff HR Administration")
+                cancel_embed.timestamp = discord.utils.utcnow()
+
+                await msg.edit(content="🚨 **MEETING CANCELLED NOTICE:**", embed=cancel_embed, view=None)
+            except Exception as e:
+                logger.error(f"Error editing meeting embed: {e}")
+
+        await interaction.response.send_message(f"✅ Staff Meeting `#M-{meeting_id:03d}` has been officially cancelled!", ephemeral=True)
+
+    # 4c. /staff-meeting-end
+    @bot.tree.command(name="staff-meeting-end", description="[ADMIN] Conclude a staff meeting and publish official meeting minutes.")
+    @app_commands.describe(meeting_id="The Meeting ID (e.g. 1)", summary_notes="Meeting summary notes / key takeaways")
+    async def staff_meeting_end_cmd(interaction: discord.Interaction, meeting_id: int, summary_notes: str):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ Only Administrators can conclude staff meetings.", ephemeral=True)
+            return
+
+        from hr_extended_system import get_staff_meeting, update_meeting_status, get_meeting_rsvp_counts
+        m = get_staff_meeting(meeting_id)
+        if not m:
+            await interaction.response.send_message(f"❌ Meeting `#M-{meeting_id:03d}` not found.", ephemeral=True)
+            return
+
+        update_meeting_status(meeting_id, "Completed", summary_notes)
+        counts = get_meeting_rsvp_counts(meeting_id)
+
+        minutes_embed = discord.Embed(
+            title=f"📜 OFFICIAL MEETING MINUTES — #M-{meeting_id:03d}",
+            description=(
+                f"**Staff Meeting Concluded & Summary Logged**\n\n"
+                f"📌 **Topic:** {m['topic']}\n"
+                f"🕒 **Held On:** `{m['date_time']}`\n"
+                f"📊 **Attendance:** `{counts['attending']}` Attended | `{counts['cannot_attend']}` Absent\n\n"
+                f"📝 **Meeting Minutes & Key Takeaways:**\n*{summary_notes}*"
+            ),
+            color=0x57F287
+        )
+        minutes_embed.set_footer(text="Echo Technologies • HR Records Archive")
+        minutes_embed.timestamp = discord.utils.utcnow()
+
+        await interaction.response.send_message(embed=minutes_embed)
 
     # 5. /promote
     @bot.tree.command(name="promote", description="[ADMIN] Formally promote a staff member and log to HR.")
