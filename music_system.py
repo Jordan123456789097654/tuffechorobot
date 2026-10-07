@@ -511,17 +511,39 @@ async def ensure_voice_connection(bot):
     """Auto-connects and stays in the 24/7 music voice channel 1557213851173519460."""
     try:
         channel = bot.get_channel(MUSIC_VOICE_CHANNEL_ID)
-        if not channel or not isinstance(channel, discord.VoiceChannel):
-            logger.warning(f"Music voice channel {MUSIC_VOICE_CHANNEL_ID} not found.")
+        if not channel:
+            try:
+                channel = await bot.fetch_channel(MUSIC_VOICE_CHANNEL_ID)
+            except Exception as ex:
+                logger.warning(f"Could not fetch music voice channel {MUSIC_VOICE_CHANNEL_ID}: {ex}")
+                channel = None
+
+        if not channel or not isinstance(channel, (discord.VoiceChannel, discord.StageChannel)):
+            logger.warning(f"Music voice channel {MUSIC_VOICE_CHANNEL_ID} not found or not a voice channel.")
             return
 
         player = get_music_player(bot)
         if player.voice_client is None or not player.voice_client.is_connected():
             logger.info(f"Connecting to 24/7 Music Voice Channel: {channel.name} ({channel.id})...")
-            player.voice_client = await channel.connect(reconnect=True, timeout=30.0)
+            guild = channel.guild
+            if guild.voice_client and guild.voice_client.is_connected():
+                player.voice_client = guild.voice_client
+                if player.voice_client.channel.id != channel.id:
+                    await player.voice_client.move_to(channel)
+            else:
+                player.voice_client = await channel.connect(reconnect=True, timeout=30.0)
+
             await player.update_panel()
     except Exception as e:
         logger.error(f"Error ensuring music voice connection: {e}")
+
+@tasks.loop(seconds=15)
+async def voice_keepalive_loop(bot):
+    """Background keep-alive loop to enforce 24/7 voice channel presence."""
+    try:
+        await ensure_voice_connection(bot)
+    except Exception as e:
+        logger.error(f"Error in voice keepalive loop: {e}")
 
 def register_music_commands(bot):
     """Registers music slash commands to the bot command tree."""

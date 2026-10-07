@@ -260,6 +260,15 @@ class RobloxVerificationBot(commands.Bot):
 
             if rotate_mode:
                 self.rotation_enabled = True
+                try:
+                    from et_prefix_commands import PREMADE_ACTIVITIES, build_discord_activity, parse_discord_status
+                    preset = PREMADE_ACTIVITIES.get("1")
+                    if preset:
+                        vis_str = stored.get("visibility", "online")
+                        await self.change_presence(activity=build_discord_activity(preset['type'], preset['text']), status=parse_discord_status(vis_str))
+                except Exception as ex:
+                    logger.warning(f"Could not apply initial rotation preset: {ex}")
+
                 if not self.rotate_presence_task.is_running():
                     self.rotate_presence_task.start()
                 logger.info("Auto-rotation mode enabled on startup (cycling premade activities every 45s).")
@@ -276,9 +285,12 @@ class RobloxVerificationBot(commands.Bot):
         except Exception as e:
             logger.warning(f"Could not restore custom presence on startup: {e}")
 
-        # Auto-connect to 24/7 music voice channel 1557213851173519460
+        # Auto-connect to 24/7 music voice channel 1557213851173519460 & start keep-alive loop
         try:
+            from music_system import voice_keepalive_loop
             await ensure_voice_connection(self)
+            if not voice_keepalive_loop.is_running():
+                voice_keepalive_loop.start(self)
         except Exception as e:
             logger.error(f"Error connecting to 24/7 music voice channel on ready: {e}")
 
