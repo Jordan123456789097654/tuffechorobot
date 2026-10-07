@@ -47,17 +47,9 @@ YTDL_OPTIONS = {
     'logtostderr': False,
     'quiet': True,
     'no_warnings': True,
-    'default_search': 'auto',
+    'default_search': 'scsearch',
     'source_address': '0.0.0.0',
     'no_color': True,
-    'js_runtimes': {'node': {}},
-    'remote_components': ['ejs:github'],
-    'extractor_args': {
-        'youtube': {
-            'player_client': ['android', 'ios', 'mweb', 'tv'],
-            'player_skip': ['webpage', 'configs']
-        }
-    }
 }
 
 YTDL_AUTOCOMPLETE_OPTIONS = {
@@ -68,14 +60,7 @@ YTDL_AUTOCOMPLETE_OPTIONS = {
     'quiet': True,
     'no_warnings': True,
     'no_color': True,
-    'js_runtimes': {'node': {}},
-    'remote_components': ['ejs:github'],
-    'extractor_args': {
-        'youtube': {
-            'player_client': ['android', 'ios', 'mweb', 'tv'],
-            'player_skip': ['webpage', 'configs']
-        }
-    }
+    'default_search': 'scsearch',
 }
 
 ytdl = yt_dlp.YoutubeDL(YTDL_OPTIONS)
@@ -290,23 +275,44 @@ def get_music_player(bot) -> MusicPlayer:
         global_music_player = MusicPlayer(bot)
     return global_music_player
 
+async def fetch_spotify_info(spotify_url: str) -> Optional[Dict[str, Any]]:
+    """Fetches Spotify metadata using official Spotify oEmbed API."""
+    try:
+        encoded_url = urllib.parse.quote(spotify_url, safe='')
+        oembed_endpoint = f"https://open.spotify.com/oembed?url={encoded_url}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(oembed_endpoint, timeout=5) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return {
+                        "title": data.get("title", "Unknown Track"),
+                        "thumbnail": data.get("thumbnail_url", ""),
+                        "author": data.get("provider_name", "Spotify"),
+                        "webpage_url": spotify_url
+                    }
+    except Exception as e:
+        logger.error(f"Error fetching Spotify oEmbed info for {spotify_url}: {e}")
+    return None
+
 async def music_play_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     if not current or len(current.strip()) < 2:
         return [
-            app_commands.Choice(name="🎵 Type a song name or paste a YouTube / Spotify / SoundCloud URL...", value="https://www.youtube.com/watch?v=kffacxfA7G4")
+            app_commands.Choice(name="🟢 Type a song name or paste a Spotify / SoundCloud link...", value="Blinding Lights The Weeknd")
         ]
 
     query = current.strip()
 
     if query.startswith("http://") or query.startswith("https://"):
-        return [app_commands.Choice(name=f"🔗 Play Direct URL: {query[:80]}", value=query)]
+        if "spotify.com" in query:
+            return [app_commands.Choice(name=f"🟢 Play Spotify Link: {query[:80]}", value=query)]
+        return [app_commands.Choice(name=f"🔗 Play Direct Link: {query[:80]}", value=query)]
 
     choices = []
     try:
         loop = asyncio.get_event_loop()
         def search_fn():
             with yt_dlp.YoutubeDL(YTDL_AUTOCOMPLETE_OPTIONS) as ydl:
-                return ydl.extract_info(f"ytsearch10:{query}", download=False)
+                return ydl.extract_info(f"scsearch10:{query}", download=False)
 
         data = await loop.run_in_executor(None, search_fn)
         entries = data.get('entries', []) if data else []
@@ -316,87 +322,96 @@ async def music_play_autocomplete(interaction: discord.Interaction, current: str
                 continue
             title = entry.get('title', 'Unknown Title')
             duration = entry.get('duration')
-            dur_str = f"{int(duration)//60}:{int(duration)%60:02d}" if duration else "LIVE"
-            webpage_url = entry.get('webpage_url') or entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+            dur_str = f"{int(duration)//60}:{int(duration)%60:02d}" if duration else "Track"
+            uploader = entry.get('uploader') or (entry.get('user', {}).get('username') if isinstance(entry.get('user'), dict) else '')
+            webpage_url = entry.get('webpage_url') or entry.get('url') or ''
 
-            label = f"{title} ({dur_str})"
+            label = f"🟢 {title}"
+            if uploader and uploader.lower() not in title.lower():
+                label += f" — {uploader}"
+            label += f" ({dur_str})"
+
             if len(label) > 100:
                 label = label[:97] + "..."
 
-            choices.append(app_commands.Choice(name=label, value=webpage_url))
+            val = webpage_url if webpage_url else title
+            choices.append(app_commands.Choice(name=label, value=val))
             if len(choices) >= 10:
                 break
     except Exception as e:
         logger.error(f"Error in music autocomplete: {e}")
 
     if not choices:
-        choices.append(app_commands.Choice(name=f"🔍 Search YouTube for: '{query[:80]}'", value=f"ytsearch:{query}"))
+        choices.append(app_commands.Choice(name=f"🔍 Search Spotify & SoundCloud for: '{query[:80]}'", value=query))
 
     return choices
 
 async def extract_tracks(query: str, requester: discord.Member) -> List[Track]:
     loop = asyncio.get_event_loop()
-    target_query = query if (query.startswith("http://") or query.startswith("https://") or query.startswith("ytsearch:") or query.startswith("scsearch:")) else f"ytsearch:{query}"
+    clean_query = query.strip()
 
-    clients_to_try = [
-        ['ios', 'android', 'mweb'],
-        ['android', 'tv'],
-        ['web', 'mweb']
-    ]
+    # Spotify Link handling via Spotify oEmbed + SoundCloud stream
+    if "spotify.com" in clean_query:
+        sp_info = await fetch_spotify_info(clean_query)
+        search_term = sp_info["title"] if sp_info else clean_query
+        target_sc_query = f"scsearch1:{search_term}"
+
+        def do_sp_extract():
+            with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
+                return ydl.extract_info(target_sc_query, download=False)
+
+        data = await loop.run_in_executor(None, do_sp_extract)
+        entries = data.get('entries', []) if (data and 'entries' in data) else ([data] if data else [])
+        if entries and entries[0]:
+            entry = entries[0]
+            stream_url = entry.get('url') or ''
+            duration = int(entry.get('duration', 0))
+            sp_title = sp_info["title"] if sp_info else entry.get('title', 'Unknown Track')
+            sp_thumb = sp_info["thumbnail"] if (sp_info and sp_info.get("thumbnail")) else (entry.get('thumbnail') or "")
+            sp_uploader = sp_info["author"] if sp_info else "Spotify Artist"
+
+            return [Track(
+                title=sp_title,
+                stream_url=stream_url,
+                webpage_url=clean_query,
+                duration=duration,
+                thumbnail=sp_thumb,
+                uploader=sp_uploader,
+                requester=requester
+            )]
+
+    # SoundCloud / Direct Link / General Text Search handling
+    if clean_query.startswith("http://") or clean_query.startswith("https://") or clean_query.startswith("scsearch:"):
+        target_query = clean_query
+    else:
+        target_query = f"scsearch1:{clean_query}"
+
+    def do_sc_extract():
+        with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
+            return ydl.extract_info(target_query, download=False)
 
     data = None
-    last_error = None
-
-    for client_list in clients_to_try:
-        opts = dict(YTDL_OPTIONS)
-        opts['extractor_args'] = {
-            'youtube': {
-                'player_client': client_list,
-                'player_skip': ['webpage', 'configs']
-            }
-        }
-        try:
-            def do_extract(current_opts=opts):
-                with yt_dlp.YoutubeDL(current_opts) as ydl:
-                    return ydl.extract_info(target_query, download=False)
-
-            data = await loop.run_in_executor(None, do_extract)
-            if data:
-                break
-        except Exception as e:
-            last_error = e
-
-    if not data and not query.startswith("http://") and not query.startswith("https://"):
-        try:
-            sc_query = f"scsearch:{query}"
-            def do_sc_extract():
-                with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
-                    return ydl.extract_info(sc_query, download=False)
-            data = await loop.run_in_executor(None, do_sc_extract)
-        except Exception as sc_err:
-            logger.warning(f"SoundCloud fallback failed: {sc_err}")
+    try:
+        data = await loop.run_in_executor(None, do_sc_extract)
+    except Exception as e:
+        logger.error(f"SoundCloud extraction error for '{clean_query}': {e}")
+        data = None
 
     if not data:
-        import re
-        err_msg = str(last_error) if last_error else "Could not extract track data."
-        err_msg = re.sub(r'\x1b\[[0-9;]*m', '', err_msg)
-        raise Exception(err_msg)
+        raise Exception(f"Could not find any audio for query: `{clean_query}`")
 
     tracks = []
-    if 'entries' in data and data['entries']:
-        entries = data['entries']
-    else:
-        entries = [data]
+    entries = data.get('entries', []) if ('entries' in data and data['entries']) else [data]
 
     for entry in entries:
         if not entry:
             continue
         title = entry.get('title', 'Unknown Title')
         stream_url = entry.get('url') or ''
-        webpage_url = entry.get('webpage_url') or entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+        webpage_url = entry.get('webpage_url') or entry.get('url') or clean_query
         duration = int(entry.get('duration', 0))
         thumbnail = entry.get('thumbnail') or ""
-        uploader = entry.get('uploader') or entry.get('channel') or "Unknown Artist"
+        uploader = entry.get('uploader') or (entry.get('user', {}).get('username') if isinstance(entry.get('user'), dict) else "Artist")
 
         tracks.append(Track(
             title=title,
@@ -433,8 +448,8 @@ async def fetch_lyrics(query: str) -> Optional[Dict[str, str]]:
 
 def build_music_panel_embed(player: MusicPlayer) -> discord.Embed:
     embed = discord.Embed(
-        title="🎵 Echo Technologies • Official 24/7 Music Control Panel",
-        color=0x9B59B6
+        title="🎵 Echo Technologies • Official 24/7 Spotify & SoundCloud Jukebox",
+        color=0x1DB954
     )
 
     if player.current:
@@ -464,8 +479,8 @@ def build_music_panel_embed(player: MusicPlayer) -> discord.Embed:
     else:
         embed.description = (
             "**No track currently playing.**\n\n"
-            "Use **/play <song or URL>** in chat to add music to the queue!\n"
-            "Supports YouTube, YouTube Music, Spotify, SoundCloud, and direct stream links."
+            "Use **/play <song or Spotify URL>** in chat to add music to the queue!\n"
+            "Supports Spotify tracks, SoundCloud, Bandcamp, and direct audio stream links."
         )
 
     if player.queue:
