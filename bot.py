@@ -229,16 +229,17 @@ class RobloxVerificationBot(commands.Bot):
         self.add_view(SupervisorCategorySelectView())
 
 
-        # Sync slash commands
+        # Slash commands lowered to 0 — all commands handled via prefix system (!et, ?et, .et, etc.)
         try:
+            self.tree.clear_commands(guild=None)
             if config.GUILD_ID:
                 guild_obj = discord.Object(id=config.GUILD_ID)
-                self.tree.copy_global_to(guild=guild_obj)
+                self.tree.clear_commands(guild=guild_obj)
                 synced = await self.tree.sync(guild=guild_obj)
-                logger.info(f"Synced {len(synced)} slash commands to guild {config.GUILD_ID}.")
+                logger.info(f"Cleared slash commands (synced {len(synced)} commands to guild {config.GUILD_ID}).")
             else:
                 synced = await self.tree.sync()
-                logger.info(f"Synced {len(synced)} global slash commands.")
+                logger.info(f"Cleared slash commands (synced {len(synced)} global commands).")
         except Exception as e:
             logger.error(f"Error syncing application commands: {e}")
 

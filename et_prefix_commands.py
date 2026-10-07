@@ -1,6 +1,7 @@
 import discord
 import logging
 import sqlite3
+import asyncio
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 
@@ -25,6 +26,13 @@ logger = logging.getLogger("roblox_bot.et_prefix")
 
 # DICTIONARY OF DETAILED COMMAND HELP MANUALS
 COMMAND_HELP_MANUALS: Dict[str, Dict[str, str]] = {
+    "say": {
+        "name": "!et say <message>",
+        "description": "Bot says the specified message directly into the channel.",
+        "usage": "`!et say <message>` OR `!et say #channel <message>`",
+        "example": "`!et say Hello everyone!`",
+        "permissions": "Foundership / Executive Leadership"
+    },
     "duty": {
         "name": "!et duty [on/off]",
         "description": "Clock in or out of your active support staff shift. Manages your timer and assigns/removes the '@On Duty Staff' role.",
@@ -105,6 +113,34 @@ COMMAND_HELP_MANUALS: Dict[str, Dict[str, str]] = {
         "example": "`!et strike @Alex 2 Missed mandatory staff meeting`",
         "permissions": "HR / Administrators Only"
     },
+    "warn": {
+        "name": "!et warn @member <reason>",
+        "description": "Issues an official warning to a server member and logs it.",
+        "usage": "`!et warn @member <reason>`",
+        "example": "`!et warn @User Spamming in chat`",
+        "permissions": "Moderators / Staff"
+    },
+    "kick": {
+        "name": "!et kick @member <reason>",
+        "description": "Kicks a member from the server.",
+        "usage": "`!et kick @member <reason>`",
+        "example": "`!et kick @User Inappropriate behavior`",
+        "permissions": "Moderators / Staff"
+    },
+    "ban": {
+        "name": "!et ban @member <reason>",
+        "description": "Bans a member from the server.",
+        "usage": "`!et ban @member <reason>`",
+        "example": "`!et ban @User Severe violation`",
+        "permissions": "Administrators / Leadership"
+    },
+    "purge": {
+        "name": "!et purge <amount>",
+        "description": "Bulk deletes messages in the current channel.",
+        "usage": "`!et purge <amount>`",
+        "example": "`!et purge 20`",
+        "permissions": "Moderators / Staff"
+    },
     "verify": {
         "name": "!et verify",
         "description": "Displays verification instructions for linking your Roblox account to Discord.",
@@ -118,17 +154,18 @@ COMMAND_HELP_MANUALS: Dict[str, Dict[str, str]] = {
         "usage": "`!et whois @member`",
         "example": "`!et whois @Jordan`",
         "permissions": "All Members"
-    },
-    "say": {
-        "name": "!et say <message>",
-        "description": "Send a formal announcement embed or text on behalf of the bot into the current channel.",
-        "usage": "`!et say <message>`",
-        "example": "`!et say Server maintenance will begin in 10 minutes.`",
-        "permissions": "Foundership / Executive Leadership"
     }
 }
 
 ALLOWED_PREFIXES = ("!et", "?et", ".et", "e!", "et!", "!echo", "?echo", ".echo", "!duty", "?duty", ".duty")
+MODERATION_COMMANDS = ("say", "warn", "kick", "ban", "timeout", "purge", "lock", "unlock", "strike", "demote", "promote")
+
+async def delete_trigger_message(message: discord.Message):
+    """Safely deletes the user's trigger message for moderation actions."""
+    try:
+        await message.delete()
+    except Exception:
+        pass
 
 async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     """
@@ -167,6 +204,10 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     subcmd = parts[1].lower()
     args = parts[2:]
 
+    # Auto-delete trigger message if it is a moderation action or !et say
+    if subcmd in MODERATION_COMMANDS:
+        await delete_trigger_message(message)
+
     # Help router: !et help [command_name]
     if subcmd in ("help", "commands", "manual"):
         if args:
@@ -177,7 +218,10 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
         return True
 
     # Subcommand routing
-    if subcmd in ("duty", "on-duty", "off-duty"):
+    if subcmd == "say":
+        await execute_say(message, args)
+
+    elif subcmd in ("duty", "on-duty", "off-duty"):
         action = args[0].lower() if args else ("off" if subcmd == "off-duty" else "on")
         await execute_duty(message, action)
 
@@ -207,12 +251,15 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     elif subcmd in ("strike", "warn"):
         await execute_strike(message, args)
 
+    elif subcmd in ("kick", "ban"):
+        await execute_mod_action(message, subcmd, args)
+
+    elif subcmd == "purge":
+        await execute_purge(message, args)
+
     elif subcmd in ("whois", "lookup"):
         member = message.mentions[0] if message.mentions else message.author
         await execute_whois(message, member)
-
-    elif subcmd == "say":
-        await execute_say(message, args)
 
     else:
         await send_et_help_directory(message)
@@ -225,9 +272,15 @@ async def send_et_help_directory(message: discord.Message):
         title="🤖 Echo Technologies • Master Command Directory",
         description=(
             "Welcome to the official **Echo Technologies** Command System!\n"
-            "Use **`!et help [command]`** for detailed usage instructions & examples for any command (e.g. `!et help duty`)."
+            "Use **`!et help [command]`** for detailed usage instructions & examples for any command (e.g. `!et help say`, `!et help duty`)."
         ),
         color=0x3498DB
+    )
+
+    embed.add_field(
+        name="📢 Announcements & Utility",
+        value="`!et say <message>` • `!et help [command]`",
+        inline=False
     )
 
     embed.add_field(
@@ -239,6 +292,12 @@ async def send_et_help_directory(message: discord.Message):
     embed.add_field(
         name="💼 HR & Staff Administration",
         value="`!et commend @user [reason]` • `!et dossier [@user]` • `!et promote @user` • `!et demote @user` • `!et strike @user <1-3> <reason>`",
+        inline=False
+    )
+
+    embed.add_field(
+        name="🛡️ Moderation Commands",
+        value="`!et warn @user <reason>` • `!et kick @user <reason>` • `!et ban @user <reason>` • `!et purge <count>`",
         inline=False
     )
 
@@ -256,7 +315,7 @@ async def send_et_help_directory(message: discord.Message):
 
     embed.add_field(
         name="🛡️ Roblox & Verification",
-        value="`!et verify` • `!et whois [@user]` • `!et say <message>`",
+        value="`!et verify` • `!et whois [@user]`",
         inline=False
     )
 
@@ -268,7 +327,6 @@ async def send_et_help_directory(message: discord.Message):
 async def send_command_specific_help(message: discord.Message, cmd_name: str):
     manual = COMMAND_HELP_MANUALS.get(cmd_name)
     if not manual:
-        # Search partial matches
         for k, v in COMMAND_HELP_MANUALS.items():
             if cmd_name in k or k in cmd_name:
                 manual = v
@@ -295,6 +353,25 @@ async def send_command_specific_help(message: discord.Message, cmd_name: str):
     await message.channel.send(embed=embed)
 
 # --- COMMAND EXECUTORS ---
+async def execute_say(message: discord.Message, args: List[str]):
+    if not message.author.guild_permissions.administrator:
+        await message.channel.send("❌ Only Administrators can use !et say.")
+        return
+
+    if not args:
+        await message.channel.send("❌ Usage: `!et say <message>`")
+        return
+
+    target_ch = message.channel
+    say_text = " ".join(args)
+
+    if message.channel_mentions and args[0].startswith("<#"):
+        target_ch = message.channel_mentions[0]
+        say_text = " ".join(args[1:])
+
+    if say_text:
+        await target_ch.send(say_text)
+
 async def execute_duty(message: discord.Message, action: str):
     member = message.author
     guild = message.guild
@@ -593,6 +670,45 @@ async def execute_strike(message: discord.Message, args: List[str]):
     )
     await message.channel.send(embed=embed)
 
+async def execute_mod_action(message: discord.Message, action: str, args: List[str]):
+    if not message.author.guild_permissions.kick_members:
+        await message.channel.send("❌ Only Staff / Moderators can execute moderation actions.")
+        return
+
+    if not message.mentions:
+        await message.channel.send(f"❌ Usage: `!et {action} @member <reason>`")
+        return
+
+    member = message.mentions[0]
+    reason = " ".join([a for a in args if not a.startswith("<@")]) or f"Moderation action executed by {message.author.name}"
+
+    try:
+        if action == "kick":
+            await member.kick(reason=reason)
+            await message.channel.send(f"👢 Kicked {member.mention} | Reason: *\"{reason}\"*")
+        elif action == "ban":
+            await member.ban(reason=reason)
+            await message.channel.send(f"🔨 Banned {member.mention} | Reason: *\"{reason}\"*")
+    except Exception as e:
+        await message.channel.send(f"❌ Failed to execute {action}: `{e}`")
+
+async def execute_purge(message: discord.Message, args: List[str]):
+    if not message.author.guild_permissions.manage_messages:
+        await message.channel.send("❌ Only Staff / Moderators can purge messages.")
+        return
+
+    count = 10
+    if args and args[0].isdigit():
+        count = int(args[0])
+
+    try:
+        deleted = await message.channel.purge(limit=min(count + 1, 100))
+        msg = await message.channel.send(f"🧹 Purged `{len(deleted)-1}` messages.")
+        await asyncio.sleep(3)
+        await msg.delete()
+    except Exception as e:
+        await message.channel.send(f"❌ Failed to purge messages: `{e}`")
+
 async def execute_whois(message: discord.Message, member: discord.Member):
     embed = discord.Embed(
         title=f"👤 Roblox Link Profile — {member.display_name}",
@@ -601,27 +717,3 @@ async def execute_whois(message: discord.Message, member: discord.Member):
     )
     embed.set_thumbnail(url=member.display_avatar.url)
     await message.channel.send(embed=embed)
-
-async def execute_say(message: discord.Message, args: List[str]):
-    if not message.author.guild_permissions.administrator:
-        await message.channel.send("❌ Only Administrators can use !et say.")
-        return
-
-    content_text = " ".join(args)
-    if not content_text:
-        await message.channel.send("❌ Usage: `!et say <message>`")
-        return
-
-    embed = discord.Embed(
-        title="📢 Echo Technologies Official Announcement",
-        description=content_text,
-        color=0xF1C40F
-    )
-    embed.set_footer(text="Echo Technologies Official Announcement")
-    embed.timestamp = datetime.now(timezone.utc)
-
-    await message.channel.send(embed=embed)
-    try:
-        await message.delete()
-    except Exception:
-        pass
