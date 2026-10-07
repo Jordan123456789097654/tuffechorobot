@@ -52,7 +52,7 @@ YTDL_OPTIONS = {
     'no_color': True,
     'extractor_args': {
         'youtube': {
-            'player_client': ['ios', 'android', 'mweb', 'web', 'tv'],
+            'player_client': ['android', 'ios', 'mweb', 'tv'],
             'player_skip': ['webpage', 'configs']
         }
     }
@@ -68,7 +68,7 @@ YTDL_AUTOCOMPLETE_OPTIONS = {
     'no_color': True,
     'extractor_args': {
         'youtube': {
-            'player_client': ['ios', 'android', 'mweb', 'web', 'tv'],
+            'player_client': ['android', 'ios', 'mweb', 'tv'],
             'player_skip': ['webpage', 'configs']
         }
     }
