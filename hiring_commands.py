@@ -305,14 +305,28 @@ def register_hiring_commands(bot: commands.Bot):
         await interaction.response.send_message(embed=embed)
 
     # 10. /hiring-campaign-start
-    @bot.tree.command(name="hiring-campaign-start", description="[ADMIN] Launch an official hiring drive with announcement embeds.")
-    @app_commands.describe(title="Campaign Title", positions="Open positions (comma separated)", deadline="Optional application deadline")
-    async def hiring_campaign_start_cmd(interaction: discord.Interaction, title: str, positions: str, deadline: Optional[str] = None):
+    @bot.tree.command(name="hiring-campaign-start", description="[ADMIN] Launch an official hiring drive & post announcement to announcements/careers.")
+    @app_commands.describe(
+        title="Campaign Title",
+        positions="Open positions (comma separated)",
+        deadline="Optional application deadline",
+        target_channel="Channel to post announcement embed into (defaults to current channel)",
+        ping_everyone="Whether to ping @everyone in the announcement"
+    )
+    async def hiring_campaign_start_cmd(
+        interaction: discord.Interaction,
+        title: str,
+        positions: str,
+        deadline: Optional[str] = None,
+        target_channel: Optional[discord.TextChannel] = None,
+        ping_everyone: bool = False
+    ):
         if not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message("❌ Only Administrators can launch hiring campaigns.", ephemeral=True)
             return
 
         c_id = start_hiring_campaign(title, positions, deadline)
+        announce_ch = target_channel or interaction.channel
 
         embed = discord.Embed(
             title=f"📢 OFFICIAL HIRING CAMPAIGN: {title.upper()}",
@@ -327,7 +341,22 @@ def register_hiring_commands(bot: commands.Bot):
         embed.set_footer(text=f"Echo Technologies • Recruitment Campaign #CAMP-{c_id:03d}")
         embed.timestamp = discord.utils.utcnow()
 
-        await interaction.response.send_message(content="📢 **RECRUITMENT DRIVE ANNOUNCEMENT:**", embed=embed)
+        content_str = "📢 **OFFICIAL RECRUITMENT DRIVE ANNOUNCEMENT:**"
+        if ping_everyone:
+            content_str = "@everyone " + content_str
+
+        try:
+            msg = await announce_ch.send(content=content_str, embed=embed)
+            await interaction.response.send_message(
+                f"✅ **Hiring Campaign `#CAMP-{c_id:03d}` Launched!**\n"
+                f"Announcement embed posted to {announce_ch.mention}! (Message ID: `{msg.id}`)",
+                ephemeral=True
+            )
+        except Exception as e:
+            await interaction.response.send_message(
+                f"⚠️ Campaign registered (`#CAMP-{c_id:03d}`), but failed to post in {announce_ch.mention}: `{e}`",
+                ephemeral=True
+            )
 
     # 11. /hiring-stats
     @bot.tree.command(name="hiring-stats", description="[ADMIN/HR] View complete recruitment pipeline statistics & candidate conversion rates.")
