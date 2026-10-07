@@ -229,19 +229,19 @@ class RobloxVerificationBot(commands.Bot):
         self.add_view(SupervisorCategorySelectView())
 
 
-        # Slash commands lowered to 0 — all commands handled via prefix system (!et, ?et, .et, etc.)
+        # Slash commands lowered to 0 — purge BOTH global and guild slash commands from Discord API
         try:
             self.tree.clear_commands(guild=None)
+            synced_global = await self.tree.sync(guild=None)
+            logger.info(f"Purged global slash commands from Discord API (synced {len(synced_global)} global commands).")
+
             if config.GUILD_ID:
                 guild_obj = discord.Object(id=config.GUILD_ID)
                 self.tree.clear_commands(guild=guild_obj)
-                synced = await self.tree.sync(guild=guild_obj)
-                logger.info(f"Cleared slash commands (synced {len(synced)} commands to guild {config.GUILD_ID}).")
-            else:
-                synced = await self.tree.sync()
-                logger.info(f"Cleared slash commands (synced {len(synced)} global commands).")
+                synced_guild = await self.tree.sync(guild=guild_obj)
+                logger.info(f"Purged guild slash commands from Discord API (synced {len(synced_guild)} guild commands).")
         except Exception as e:
-            logger.error(f"Error syncing application commands: {e}")
+            logger.error(f"Error purging application commands: {e}")
 
     async def close(self):
         await self.roblox_api.close()
@@ -1908,7 +1908,7 @@ async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
 # ==========================================
 
 
-@bot.tree.command(name="manual-verify", description="Manually verify a user with a Roblox username (bypasses bio code).")
+# @bot.tree.command(name="manual-verify", description="Manually verify a user with a Roblox username (bypasses bio code).")
 @app_commands.describe(member="Discord member to verify", roblox_username="Exact Roblox username")
 @app_commands.default_permissions(manage_roles=True)
 async def manual_verify(interaction: discord.Interaction, member: discord.Member, roblox_username: str):
@@ -1976,7 +1976,7 @@ async def manual_verify(interaction: discord.Interaction, member: discord.Member
     asyncio.create_task(send_verification_announcement(bot, member, rbx_info))
 
 
-@bot.tree.command(name="force-verify", description="Verify a member directly using a numeric Roblox User ID.")
+# @bot.tree.command(name="force-verify", description="Verify a member directly using a numeric Roblox User ID.")
 @app_commands.describe(member="Discord member to verify", roblox_id="Numeric Roblox User ID")
 @app_commands.default_permissions(manage_roles=True)
 async def force_verify(interaction: discord.Interaction, member: discord.Member, roblox_id: int):
@@ -2015,7 +2015,7 @@ async def force_verify(interaction: discord.Interaction, member: discord.Member,
     await interaction.followup.send(f"✅ Force verified {member.mention} as **{display_name}** (`@{username}`) [ID: `{roblox_id}`]!", ephemeral=True)
 
 
-@bot.tree.command(name="update", description="Re-sync your Roblox username, display name, and nickname/roles.")
+# @bot.tree.command(name="update", description="Re-sync your Roblox username, display name, and nickname/roles.")
 @app_commands.describe(member="Member to update (leave blank for self)")
 async def update(interaction: discord.Interaction, member: Optional[discord.Member] = None):
     target = member or interaction.user
@@ -2065,7 +2065,7 @@ async def update(interaction: discord.Interaction, member: Optional[discord.Memb
     await interaction.followup.send(f"🔄 Updated {target.mention}! Linked as **{new_display}** (`@{new_username}`).", ephemeral=True)
 
 
-@bot.tree.command(name="reverify", description="Unlink your current account and reverify.")
+# @bot.tree.command(name="reverify", description="Unlink your current account and reverify.")
 async def reverify(interaction: discord.Interaction):
     bot.db.unlink_user(interaction.user.id)
     if config.VERIFIED_ROLE_ID:
@@ -2081,7 +2081,7 @@ async def reverify(interaction: discord.Interaction):
     )
 
 
-@bot.tree.command(name="lookup-roblox", description="Reverse lookup: Find which Discord user owns a Roblox account.")
+# @bot.tree.command(name="lookup-roblox", description="Reverse lookup: Find which Discord user owns a Roblox account.")
 @app_commands.describe(query="Roblox username or Roblox ID")
 @app_commands.default_permissions(manage_roles=True)
 async def lookup_roblox(interaction: discord.Interaction, query: str):
@@ -2113,7 +2113,7 @@ async def lookup_roblox(interaction: discord.Interaction, query: str):
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="check-alt", description="Check account age and Roblox creation date to detect alt accounts.")
+# @bot.tree.command(name="check-alt", description="Check account age and Roblox creation date to detect alt accounts.")
 @app_commands.describe(member="Member to inspect")
 @app_commands.default_permissions(manage_roles=True)
 async def check_alt(interaction: discord.Interaction, member: discord.Member):
@@ -2145,7 +2145,7 @@ async def check_alt(interaction: discord.Interaction, member: discord.Member):
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="verify-stats", description="View server Roblox verification statistics.")
+# @bot.tree.command(name="verify-stats", description="View server Roblox verification statistics.")
 async def verify_stats(interaction: discord.Interaction):
     with bot.db._get_connection() as conn:
         cursor = conn.cursor()
@@ -2632,7 +2632,7 @@ bot.tree.add_command(ticket_group)
 # 🤖 AI COMMANDS
 # ==========================================
 
-@bot.tree.command(name="ai-summarize", description="Ask Groq AI to generate a quick summary of this ticket.")
+# @bot.tree.command(name="ai-summarize", description="Ask Groq AI to generate a quick summary of this ticket.")
 async def ai_summarize(interaction: discord.Interaction):
     ticket = bot.ticket_manager.get_ticket_by_channel(interaction.channel_id)
     if not ticket:
@@ -2652,7 +2652,7 @@ async def ai_summarize(interaction: discord.Interaction):
     await interaction.followup.send(embed=embed)
 
 
-@bot.tree.command(name="ai-inspect", description="Inspect currently loaded AI knowledge base statistics.")
+# @bot.tree.command(name="ai-inspect", description="Inspect currently loaded AI knowledge base statistics.")
 @app_commands.default_permissions(manage_guild=True)
 async def ai_inspect(interaction: discord.Interaction):
     text_len = len(bot.ai_trainer.knowledge_text)
@@ -2665,7 +2665,7 @@ async def ai_inspect(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="ai-add-note", description="Add a quick temporary fact or rule to the AI knowledge base.")
+# @bot.tree.command(name="ai-add-note", description="Add a quick temporary fact or rule to the AI knowledge base.")
 @app_commands.describe(note="The knowledge or rule note to inject")
 @app_commands.default_permissions(manage_guild=True)
 async def ai_add_note(interaction: discord.Interaction, note: str):
@@ -2678,7 +2678,7 @@ async def ai_add_note(interaction: discord.Interaction, note: str):
 # ⚙️ ADMIN DEPLOYMENT COMMANDS
 # ==========================================
 
-@bot.tree.command(name="send-panel", description="Post the Roblox verification embed panel.")
+# @bot.tree.command(name="send-panel", description="Post the Roblox verification embed panel.")
 @app_commands.describe(channel="Target channel to send the verification panel (defaults to config channel)")
 @app_commands.default_permissions(manage_guild=True)
 async def send_panel(interaction: discord.Interaction, channel: Optional[discord.TextChannel] = None):
@@ -2697,7 +2697,7 @@ async def send_panel(interaction: discord.Interaction, channel: Optional[discord
         await interaction.response.send_message(f"❌ Failed to send panel: {e}", ephemeral=True)
 
 
-@bot.tree.command(name="send-ticket-panel", description="Post the multi-department AI Support Ticket embed panel.")
+# @bot.tree.command(name="send-ticket-panel", description="Post the multi-department AI Support Ticket embed panel.")
 @app_commands.describe(channel="Target channel to send the ticket panel")
 @app_commands.default_permissions(manage_guild=True)
 async def send_ticket_panel(interaction: discord.Interaction, channel: Optional[discord.TextChannel] = None):
@@ -2715,7 +2715,7 @@ async def send_ticket_panel(interaction: discord.Interaction, channel: Optional[
         await interaction.response.send_message(f"❌ Failed to send ticket panel: {e}", ephemeral=True)
 
 
-@bot.tree.command(name="train-ai", description="Re-train the AI on #ai-trainer messages and server embeds.")
+# @bot.tree.command(name="train-ai", description="Re-train the AI on #ai-trainer messages and server embeds.")
 @app_commands.default_permissions(manage_guild=True)
 async def train_ai(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
@@ -2734,7 +2734,7 @@ async def train_ai(interaction: discord.Interaction):
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="whois", description="View Roblox verification details for a Discord member.")
+# @bot.tree.command(name="whois", description="View Roblox verification details for a Discord member.")
 @app_commands.describe(member="The Discord member to look up (defaults to you)")
 async def whois(interaction: discord.Interaction, member: Optional[discord.Member] = None):
     target_member = member or interaction.user
@@ -2759,7 +2759,7 @@ async def whois(interaction: discord.Interaction, member: Optional[discord.Membe
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="unlink", description="Unlink a Discord user's Roblox verification.")
+# @bot.tree.command(name="unlink", description="Unlink a Discord user's Roblox verification.")
 @app_commands.describe(member="Member to unlink")
 @app_commands.default_permissions(manage_roles=True)
 async def unlink(interaction: discord.Interaction, member: discord.Member):
@@ -2787,7 +2787,7 @@ async def unlink(interaction: discord.Interaction, member: discord.Member):
 # 🏢 ECHO TECHNOLOGIES HR & HIRING COMMANDS
 # ==========================================
 
-@bot.tree.command(name="hire", description="Send an official Echo Technologies employment/role offer to a member via DM.")
+# @bot.tree.command(name="hire", description="Send an official Echo Technologies employment/role offer to a member via DM.")
 @app_commands.describe(
     member="The member to extend an offer to",
     role="The role being offered to the candidate",
@@ -3154,7 +3154,7 @@ async def staff_unsuspend_cmd(interaction: discord.Interaction, staff: discord.M
         await interaction.followup.send(f"❌ {msg}", ephemeral=True)
 
 
-@bot.tree.command(name="invite-comp", description="Host a new recruitment invite competition.")
+# @bot.tree.command(name="invite-comp", description="Host a new recruitment invite competition.")
 @app_commands.describe(
     title="Competition title (e.g., Autumn Recruitment Race)",
     prize="Reward or prize description (e.g., 1000 Robux + Custom Role)",
@@ -3202,7 +3202,7 @@ async def invite_comp_cmd(
         await interaction.followup.send(f"❌ Failed to post competition embed: {e}", ephemeral=True)
 
 
-@bot.tree.command(name="invite-comp-edit", description="[HOST/ADMIN] Edit an active invite competition's details or extend duration.")
+# @bot.tree.command(name="invite-comp-edit", description="[HOST/ADMIN] Edit an active invite competition's details or extend duration.")
 @app_commands.describe(
     comp_id="Competition ID number",
     new_title="Updated competition title",
@@ -3225,7 +3225,7 @@ async def invite_comp_edit_cmd(
         await interaction.response.send_message(f"❌ Could not edit competition #{comp_id} (not found or already ended).", ephemeral=True)
 
 
-@bot.tree.command(name="invite-comp-end", description="[HOST/ADMIN] Prematurely conclude an invite competition and announce winners.")
+# @bot.tree.command(name="invite-comp-end", description="[HOST/ADMIN] Prematurely conclude an invite competition and announce winners.")
 @app_commands.describe(comp_id="Competition ID number")
 @app_commands.default_permissions(manage_guild=True)
 async def invite_comp_end_cmd(interaction: discord.Interaction, comp_id: int):
@@ -3238,7 +3238,7 @@ async def invite_comp_end_cmd(interaction: discord.Interaction, comp_id: int):
     await interaction.followup.send(f"🏆 **Competition #{comp_id} concluded!** Winners announced in the contest channel.", ephemeral=True)
 
 
-@bot.tree.command(name="invite-disqualify", description="[HOST/ADMIN] Disqualify a member from invite competitions for cheating/alt spam.")
+# @bot.tree.command(name="invite-disqualify", description="[HOST/ADMIN] Disqualify a member from invite competitions for cheating/alt spam.")
 @app_commands.describe(member="Member to disqualify")
 @app_commands.default_permissions(manage_guild=True)
 async def invite_disqualify_cmd(interaction: discord.Interaction, member: discord.Member):
@@ -3246,7 +3246,7 @@ async def invite_disqualify_cmd(interaction: discord.Interaction, member: discor
     await interaction.response.send_message(f"❌ {member.mention} (`@{member.name}`) has been **Disqualified** from invite competitions.", ephemeral=True)
 
 
-@bot.tree.command(name="my-invite", description="Generate your trackable personal vanity invite link and view your stats card.")
+# @bot.tree.command(name="my-invite", description="Generate your trackable personal vanity invite link and view your stats card.")
 async def my_invite_cmd(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     guild = interaction.guild
@@ -3287,7 +3287,7 @@ async def my_invite_cmd(interaction: discord.Interaction):
     await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
 
-@bot.tree.command(name="invite-stats", description="View your personal invite statistics or another member's invites.")
+# @bot.tree.command(name="invite-stats", description="View your personal invite statistics or another member's invites.")
 @app_commands.describe(member="Member to inspect (leave empty for self)")
 async def invite_stats_cmd(interaction: discord.Interaction, member: Optional[discord.Member] = None):
     target = member or interaction.user
@@ -3326,7 +3326,7 @@ async def invite_stats_cmd(interaction: discord.Interaction, member: Optional[di
     await interaction.response.send_message(embed=embed)
 
 
-@bot.tree.command(name="invite-leaderboard", description="View the current recruitment leaderboard.")
+# @bot.tree.command(name="invite-leaderboard", description="View the current recruitment leaderboard.")
 async def invite_leaderboard_cmd(interaction: discord.Interaction):
     lb = get_inviter_counts(interaction.guild.id)
     if not lb:
@@ -3488,7 +3488,7 @@ bot.tree.add_command(staff_group)
 # 💡 COMMUNITY SUGGESTIONS & VOTING DESK
 # ==========================================
 
-@bot.tree.command(name="suggest", description="Submit a community suggestion or idea for Echo Technologies.")
+# @bot.tree.command(name="suggest", description="Submit a community suggestion or idea for Echo Technologies.")
 @app_commands.describe(
     idea="Your idea, feature request, or suggestion",
     attachment="Optional screenshot, mockup, or image attachment"
@@ -3543,7 +3543,7 @@ async def suggest_command(
 # 🧠 AI KNOWLEDGE BASE RETRAIN (/ai-retrain)
 # ==========================================
 
-@bot.tree.command(name="ai-retrain", description="[ADMIN] Instantly retrain and resync Groq AI knowledge base from #ai-trainer.")
+# @bot.tree.command(name="ai-retrain", description="[ADMIN] Instantly retrain and resync Groq AI knowledge base from #ai-trainer.")
 @app_commands.default_permissions(administrator=True)
 async def ai_retrain_cmd(interaction: discord.Interaction):
     if not interaction.guild:
@@ -3673,7 +3673,7 @@ bot.tree.add_command(bug_group)
 # 🎨 WELCOME TEST COMMAND (/welcome-test)
 # ==========================================
 
-@bot.tree.command(name="welcome-test", description="[ADMIN] Preview a welcome greeting card in #welcome.")
+# @bot.tree.command(name="welcome-test", description="[ADMIN] Preview a welcome greeting card in #welcome.")
 @app_commands.describe(member="Member to preview card for (defaults to you)")
 @app_commands.default_permissions(administrator=True)
 async def welcome_test(interaction: discord.Interaction, member: Optional[discord.Member] = None):
@@ -4084,7 +4084,7 @@ bot.tree.add_command(loa_group)
 # 💬 LEVELING & RANK COMMANDS (/rank, /top)
 # ==========================================
 
-@bot.tree.command(name="rank", description="Check your or another member's chat level, rank, and XP progress.")
+# @bot.tree.command(name="rank", description="Check your or another member's chat level, rank, and XP progress.")
 @app_commands.describe(member="Member to view (defaults to you)")
 async def rank_cmd(interaction: discord.Interaction, member: Optional[discord.Member] = None):
     target = member or interaction.user
@@ -4108,7 +4108,7 @@ async def rank_cmd(interaction: discord.Interaction, member: Optional[discord.Me
     )
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="top", description="View the top 10 most active members on the server XP leaderboard.")
+# @bot.tree.command(name="top", description="View the top 10 most active members on the server XP leaderboard.")
 async def top_cmd(interaction: discord.Interaction):
     await interaction.response.defer()
     top_users = get_guild_leaderboard(interaction.guild.id if interaction.guild else 0, limit=10)
@@ -4135,13 +4135,13 @@ async def _post_career_panel_logic(interaction: discord.Interaction, channel: Op
     except Exception as e:
         await interaction.followup.send(f"❌ Failed to post career panel: {e}", ephemeral=True)
 
-@bot.tree.command(name="post-career-panel", description="[ADMIN] Post the interactive career recruitment panel.")
+# @bot.tree.command(name="post-career-panel", description="[ADMIN] Post the interactive career recruitment panel.")
 @app_commands.describe(channel="Target channel to post in (defaults to #career-opportunities)")
 @app_commands.default_permissions(administrator=True)
 async def post_career_panel_cmd(interaction: discord.Interaction, channel: Optional[discord.TextChannel] = None):
     await _post_career_panel_logic(interaction, channel)
 
-@bot.tree.command(name="apply", description="Apply for an open position at Echo Technologies via Direct Message.")
+# @bot.tree.command(name="apply", description="Apply for an open position at Echo Technologies via Direct Message.")
 @app_commands.describe(position="Position you are applying for")
 @app_commands.choices(position=[
     app_commands.Choice(name="🛠️ Product Development", value="product_development"),
@@ -4227,7 +4227,7 @@ async def _execute_open_applications(
     embed.set_footer(text="Echo Technologies Recruitment Management")
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="close-applications", description="Close staff and developer applications.")
+# @bot.tree.command(name="close-applications", description="Close staff and developer applications.")
 @app_commands.describe(
     position="The position to close (or all positions)",
     reason="Optional reason for closing (e.g. Positions filled, hiring freeze)"
@@ -4247,7 +4247,7 @@ async def close_applications_cmd(
 ):
     await _execute_close_applications(interaction, position, reason)
 
-@bot.tree.command(name="open-applications", description="Re-open staff and developer applications.")
+# @bot.tree.command(name="open-applications", description="Re-open staff and developer applications.")
 @app_commands.describe(
     position="The position to open (or all positions)"
 )
@@ -4265,7 +4265,7 @@ async def open_applications_cmd(
 ):
     await _execute_open_applications(interaction, position)
 
-@bot.tree.command(name="application-transcript", description="[STAFF] Export an HTML transcript of an application dossier.")
+# @bot.tree.command(name="application-transcript", description="[STAFF] Export an HTML transcript of an application dossier.")
 @app_commands.describe(app_id="The application ID to export")
 @app_commands.default_permissions(manage_roles=True)
 async def application_transcript_cmd(interaction: discord.Interaction, app_id: int):
@@ -4381,7 +4381,7 @@ async def app_grp_panel(interaction: discord.Interaction, channel: Optional[disc
 bot.tree.add_command(applications_group)
 
 
-@bot.tree.command(name="poll", description="Create an interactive community vote poll.")
+# @bot.tree.command(name="poll", description="Create an interactive community vote poll.")
 @app_commands.describe(
     question="The topic or question for the poll",
     option1="Option 1",
@@ -4419,7 +4419,7 @@ async def poll_cmd(
         except Exception:
             pass
 
-@bot.tree.command(name="post-support-templates", description="[ADMIN] Post or refresh support guidelines and response templates in #support-templates.")
+# @bot.tree.command(name="post-support-templates", description="[ADMIN] Post or refresh support guidelines and response templates in #support-templates.")
 @app_commands.describe(channel="Target channel (defaults to #support-templates)")
 @app_commands.default_permissions(administrator=True)
 async def post_support_templates_cmd(interaction: discord.Interaction, channel: Optional[discord.TextChannel] = None):
@@ -4439,7 +4439,7 @@ async def post_support_templates_cmd(interaction: discord.Interaction, channel: 
 # 🛡️ ADVANCED MODERATION & SECURITY SYSTEM
 # ==========================================
 
-@bot.tree.command(name="warn", description="Issue an official warning to a server member.")
+# @bot.tree.command(name="warn", description="Issue an official warning to a server member.")
 @app_commands.describe(member="Member to warn", reason="Reason for warning")
 @app_commands.default_permissions(moderate_members=True)
 async def warn_cmd(interaction: discord.Interaction, member: discord.Member, reason: str):
@@ -4475,7 +4475,7 @@ async def warn_cmd(interaction: discord.Interaction, member: discord.Member, rea
     embed.set_footer(text=f"Audit logged in #{config.MOD_LOGS_CHANNEL_ID}")
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="warnings", description="View all warnings issued to a member.")
+# @bot.tree.command(name="warnings", description="View all warnings issued to a member.")
 @app_commands.describe(member="Member to check")
 @app_commands.default_permissions(moderate_members=True)
 async def warnings_cmd(interaction: discord.Interaction, member: discord.Member):
@@ -4501,7 +4501,7 @@ async def warnings_cmd(interaction: discord.Interaction, member: discord.Member)
         embed.set_footer(text=f"Showing 10 of {len(warns)} total warnings")
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="clear-warnings", description="Clear all warnings from a member.")
+# @bot.tree.command(name="clear-warnings", description="Clear all warnings from a member.")
 @app_commands.describe(member="Member whose warnings will be wiped")
 @app_commands.default_permissions(manage_messages=True)
 async def clear_warnings_cmd(interaction: discord.Interaction, member: discord.Member):
@@ -4528,7 +4528,7 @@ async def clear_warnings_cmd(interaction: discord.Interaction, member: discord.M
     )
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="timeout", description="Timeout (mute) a member for a specified duration.")
+# @bot.tree.command(name="timeout", description="Timeout (mute) a member for a specified duration.")
 @app_commands.describe(
     member="Member to timeout",
     duration="Duration (e.g. 10m, 1h, 1d, 7d)",
@@ -4577,7 +4577,7 @@ async def timeout_cmd(interaction: discord.Interaction, member: discord.Member, 
     embed.set_footer(text=f"Audit logged in #{config.MOD_LOGS_CHANNEL_ID}")
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="untimeout", description="Remove timeout from a member.")
+# @bot.tree.command(name="untimeout", description="Remove timeout from a member.")
 @app_commands.describe(member="Member to remove timeout from", reason="Reason for removal")
 @app_commands.default_permissions(moderate_members=True)
 async def untimeout_cmd(interaction: discord.Interaction, member: discord.Member, reason: Optional[str] = None):
@@ -4608,7 +4608,7 @@ async def untimeout_cmd(interaction: discord.Interaction, member: discord.Member
     )
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="kick", description="Kick a member from the server.")
+# @bot.tree.command(name="kick", description="Kick a member from the server.")
 @app_commands.describe(member="Member to kick", reason="Reason for kick")
 @app_commands.default_permissions(kick_members=True)
 async def kick_cmd(interaction: discord.Interaction, member: discord.Member, reason: str):
@@ -4645,7 +4645,7 @@ async def kick_cmd(interaction: discord.Interaction, member: discord.Member, rea
     embed.set_footer(text=f"Audit logged in #{config.MOD_LOGS_CHANNEL_ID}")
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="ban", description="Ban a member or user from the server.")
+# @bot.tree.command(name="ban", description="Ban a member or user from the server.")
 @app_commands.describe(
     user="User to ban",
     reason="Reason for ban",
@@ -4691,7 +4691,7 @@ async def ban_cmd(interaction: discord.Interaction, user: discord.User, reason: 
     embed.set_footer(text=f"Audit logged in #{config.MOD_LOGS_CHANNEL_ID}")
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="unban", description="Unban a user by Discord User ID.")
+# @bot.tree.command(name="unban", description="Unban a user by Discord User ID.")
 @app_commands.describe(user_id="Discord User ID to unban", reason="Reason for unban")
 @app_commands.default_permissions(ban_members=True)
 async def unban_cmd(interaction: discord.Interaction, user_id: str, reason: Optional[str] = None):
@@ -4734,7 +4734,7 @@ async def unban_cmd(interaction: discord.Interaction, user_id: str, reason: Opti
     )
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="global-ban", description="[ADMIN] Ban a malicious user across all servers and blacklist permanently.")
+# @bot.tree.command(name="global-ban", description="[ADMIN] Ban a malicious user across all servers and blacklist permanently.")
 @app_commands.describe(user_id="Discord User ID to globally ban", reason="Reason for the network security ban")
 @app_commands.default_permissions(administrator=True)
 async def global_ban_cmd(interaction: discord.Interaction, user_id: str, reason: str):
@@ -4768,7 +4768,7 @@ async def global_ban_cmd(interaction: discord.Interaction, user_id: str, reason:
     embed.set_footer(text=f"Security Audit Logged in #{config.MOD_LOGS_CHANNEL_ID}")
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="global-unban", description="[ADMIN] Revoke a global ban from a user across all servers.")
+# @bot.tree.command(name="global-unban", description="[ADMIN] Revoke a global ban from a user across all servers.")
 @app_commands.describe(user_id="Discord User ID to globally unban", reason="Reason for revoking global ban")
 @app_commands.default_permissions(administrator=True)
 async def global_unban_cmd(interaction: discord.Interaction, user_id: str, reason: Optional[str] = None):
@@ -4795,7 +4795,7 @@ async def global_unban_cmd(interaction: discord.Interaction, user_id: str, reaso
     )
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="global-ban-list", description="[ADMIN] View all permanently blacklisted global ban records.")
+# @bot.tree.command(name="global-ban-list", description="[ADMIN] View all permanently blacklisted global ban records.")
 @app_commands.default_permissions(administrator=True)
 async def global_ban_list_cmd(interaction: discord.Interaction):
     bans = get_all_global_bans()
@@ -4819,7 +4819,7 @@ async def global_ban_list_cmd(interaction: discord.Interaction):
         embed.set_footer(text=f"Showing 15 of {len(bans)} total blacklisted users")
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="mod-case", description="Look up details of a moderation case by ID.")
+# @bot.tree.command(name="mod-case", description="Look up details of a moderation case by ID.")
 @app_commands.describe(case_id="Case ID number")
 @app_commands.default_permissions(moderate_members=True)
 async def mod_case_cmd(interaction: discord.Interaction, case_id: int):
@@ -4845,7 +4845,7 @@ async def mod_case_cmd(interaction: discord.Interaction, case_id: int):
         embed.add_field(name="Log Message ID", value=f"`{case['log_message_id']}`", inline=True)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="slowmode", description="Set slowmode delay for a channel (0 to disable).")
+# @bot.tree.command(name="slowmode", description="Set slowmode delay for a channel (0 to disable).")
 @app_commands.describe(
     seconds="Slowmode duration in seconds (0 to 21600)",
     channel="Channel to configure (defaults to current channel)"
@@ -4873,7 +4873,7 @@ async def slowmode_cmd(interaction: discord.Interaction, seconds: int, channel: 
     msg = f"⏲️ Slowmode disabled in {target_ch.mention}." if sec == 0 else f"⏲️ Slowmode set to **{sec} seconds** in {target_ch.mention}."
     await interaction.response.send_message(f"✅ {msg} (Case `#{case_id}`)", ephemeral=True)
 
-@bot.tree.command(name="lock", description="Lock a channel to prevent regular members from sending messages.")
+# @bot.tree.command(name="lock", description="Lock a channel to prevent regular members from sending messages.")
 @app_commands.describe(
     channel="Channel to lock (defaults to current channel)",
     reason="Optional reason for the lockdown"
@@ -4906,7 +4906,7 @@ async def lock_cmd(interaction: discord.Interaction, channel: Optional[discord.T
     )
     await interaction.response.send_message(f"🔒 {target_ch.mention} has been locked. (Case `#{case_id}`)", ephemeral=True)
 
-@bot.tree.command(name="unlock", description="Unlock a previously locked channel.")
+# @bot.tree.command(name="unlock", description="Unlock a previously locked channel.")
 @app_commands.describe(channel="Channel to unlock (defaults to current channel)")
 @app_commands.default_permissions(manage_channels=True)
 async def unlock_cmd(interaction: discord.Interaction, channel: Optional[discord.TextChannel] = None):
@@ -4935,7 +4935,7 @@ async def unlock_cmd(interaction: discord.Interaction, channel: Optional[discord
     )
     await interaction.response.send_message(f"🔓 {target_ch.mention} has been unlocked. (Case `#{case_id}`)", ephemeral=True)
 
-@bot.tree.command(name="purge", description="Bulk delete messages in the current channel.")
+# @bot.tree.command(name="purge", description="Bulk delete messages in the current channel.")
 @app_commands.describe(
     amount="Number of messages to delete (1-100)",
     member="Only delete messages sent by this member",
@@ -5222,7 +5222,7 @@ async def partner_pr_stats_cmd(interaction: discord.Interaction):
 
 bot.tree.add_command(partner_group)
 
-@bot.tree.command(name="our-ad", description="Copy Echo Technologies' official partnership advertisement.")
+# @bot.tree.command(name="our-ad", description="Copy Echo Technologies' official partnership advertisement.")
 async def our_ad_top_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(
         f"📋 **Echo Technologies Official Partnership Ad Copy**\n```markdown\n{ECHO_AD_COPY}\n```",
@@ -5508,7 +5508,7 @@ async def points_claim_cmd(interaction: discord.Interaction, member: discord.Mem
 
 bot.tree.add_command(points_group)
 
-@bot.tree.command(name="mypoints", description="Quick check of your community points and reward progress.")
+# @bot.tree.command(name="mypoints", description="Quick check of your community points and reward progress.")
 async def mypoints_cmd(interaction: discord.Interaction):
     pts = get_user_points(interaction.user.id)
     balance = pts["points"]
@@ -5701,7 +5701,7 @@ async def points_history_cmd(interaction: discord.Interaction, member: Optional[
     embed.set_footer(text=f"Current Balance: {pts['points']} Points • Total Earned: {pts['total_earned']}")
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="tip", description="Tip Community Points to a fellow server member who helped you.")
+# @bot.tree.command(name="tip", description="Tip Community Points to a fellow server member who helped you.")
 @app_commands.describe(
     member="The member you want to tip",
     amount="Number of points to tip (minimum 1)",
@@ -5715,7 +5715,7 @@ async def top_level_tip_cmd(
 ):
     await points_tip_cmd.callback(interaction, member, amount, note)
 
-@bot.tree.command(name="shop", description="Browse and redeem exclusive rewards in the Community Points Shop.")
+# @bot.tree.command(name="shop", description="Browse and redeem exclusive rewards in the Community Points Shop.")
 async def top_level_shop_cmd(interaction: discord.Interaction):
     await points_shop_cmd.callback(interaction)
 
@@ -5724,7 +5724,7 @@ async def top_level_shop_cmd(interaction: discord.Interaction):
 # 🚨 SUPERVISOR & SUPPORT TEMPLATES COMMANDS
 # ==========================================
 
-@bot.tree.command(name="supervisor-request", description="Request emergency supervisor & foundership escalation for your ticket.")
+# @bot.tree.command(name="supervisor-request", description="Request emergency supervisor & foundership escalation for your ticket.")
 @app_commands.describe(reason="Reason for requesting supervisor assistance")
 async def supervisor_request_cmd(interaction: discord.Interaction, reason: Optional[str] = "Requesting Foundership / Supervisor Assistance"):
     await interaction.response.defer(ephemeral=False)
@@ -5816,7 +5816,7 @@ async def tpl_list_cmd(interaction: discord.Interaction):
 
 bot.tree.add_command(support_template_group)
 
-@bot.tree.command(name="setup-templates-channel", description="Initialize or refresh the #support-templates channel guide & status widget.")
+# @bot.tree.command(name="setup-templates-channel", description="Initialize or refresh the #support-templates channel guide & status widget.")
 async def setup_templates_channel_cmd(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     success = await sync_support_templates_channel(bot, channel=interaction.channel)
@@ -5895,7 +5895,7 @@ async def exec_tpl_list_cmd(interaction: discord.Interaction):
 
 bot.tree.add_command(supervisor_template_group)
 
-@bot.tree.command(name="setup-supervisor-templates", description="Initialize or refresh the #supervisor-templates channel guide.")
+# @bot.tree.command(name="setup-supervisor-templates", description="Initialize or refresh the #supervisor-templates channel guide.")
 async def setup_supervisor_templates_channel_cmd(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     success = await sync_supervisor_templates_channel(bot, channel=interaction.channel)
@@ -5909,7 +5909,7 @@ async def setup_supervisor_templates_channel_cmd(interaction: discord.Interactio
 # 👑 FOUNDERSHIP FORCE OPEN TICKET COMMANDS
 # ==========================================
 
-@bot.tree.command(name="force-open-ticket", description="[Foundership Only] Force open a support/modmail ticket on behalf of a member or staff.")
+# @bot.tree.command(name="force-open-ticket", description="[Foundership Only] Force open a support/modmail ticket on behalf of a member or staff.")
 @app_commands.describe(
     user="Target member or staff to open ticket for",
     section="Support category section",
@@ -6004,7 +6004,7 @@ async def force_open_ticket_cmd(
         ephemeral=True
     )
 
-@bot.tree.command(name="ticket-force-open", description="[Foundership Only] Alias for /force-open-ticket.")
+# @bot.tree.command(name="ticket-force-open", description="[Foundership Only] Alias for /force-open-ticket.")
 @app_commands.describe(
     user="Target member or staff to open ticket for",
     section="Support category section",
@@ -6025,7 +6025,7 @@ async def ticket_force_open_cmd(
     await force_open_ticket_cmd.callback(interaction, user, section, subject)
 
 
-@bot.tree.command(name="ticket-request-close", description="Request to close an active support ticket by sending a DM prompt to the member.")
+# @bot.tree.command(name="ticket-request-close", description="Request to close an active support ticket by sending a DM prompt to the member.")
 @app_commands.describe(reason="Reason or notes for requesting ticket closure")
 async def ticket_request_close_cmd(interaction: discord.Interaction, reason: Optional[str] = "Your support inquiry has been marked as resolved."):
     await interaction.response.defer(ephemeral=True)
@@ -6040,7 +6040,7 @@ async def ticket_request_close_cmd(interaction: discord.Interaction, reason: Opt
     await interaction.followup.send(f"🔔 Dispatched Close Request dialog for Ticket #{ticket['id']}!", ephemeral=True)
 
 
-@bot.tree.command(name="test-ticket", description="[Foundership Only] Open practical assessment ticket for support staff (AI disabled).")
+# @bot.tree.command(name="test-ticket", description="[Foundership Only] Open practical assessment ticket for support staff (AI disabled).")
 @app_commands.describe(
     target_staff="Support team member to test",
     scenario_title="Preset assessment scenario",
@@ -6120,7 +6120,7 @@ async def test_ticket_cmd(
         ephemeral=True
     )
 
-@bot.tree.command(name="ticket-test-staff", description="[Foundership Only] Alias for /test-ticket.")
+# @bot.tree.command(name="ticket-test-staff", description="[Foundership Only] Alias for /test-ticket.")
 @app_commands.describe(
     target_staff="Support team member to test",
     scenario_title="Preset assessment scenario",
@@ -6144,7 +6144,7 @@ async def ticket_test_staff_cmd(
 ):
     await test_ticket_cmd.callback(interaction, target_staff, scenario_title, custom_details)
 
-@bot.tree.command(name="staff-test-ticket", description="[Foundership Only] Alias for /test-ticket.")
+# @bot.tree.command(name="staff-test-ticket", description="[Foundership Only] Alias for /test-ticket.")
 @app_commands.describe(
     target_staff="Support team member to test",
     scenario_title="Preset assessment scenario",
@@ -6169,7 +6169,7 @@ async def staff_test_ticket_cmd(
     await test_ticket_cmd.callback(interaction, target_staff, scenario_title, custom_details)
 
 
-@bot.tree.command(name="say", description="[Foundership Only] Send a message or embed on behalf of the bot into any channel.")
+# @bot.tree.command(name="say", description="[Foundership Only] Send a message or embed on behalf of the bot into any channel.")
 @app_commands.describe(
     message="The text message content to send as the bot",
     channel="Target text channel (defaults to current channel)",
@@ -6243,7 +6243,7 @@ async def say_cmd(
         await interaction.followup.send(f"❌ Failed to send message: `{e}`", ephemeral=True)
 
 
-@bot.tree.command(name="blacklist-test-set-count", description="[ADMIN] Set a member's apology count in #say-sorry-100-times-to-get-unblacklisted.")
+# @bot.tree.command(name="blacklist-test-set-count", description="[ADMIN] Set a member's apology count in #say-sorry-100-times-to-get-unblacklisted.")
 @app_commands.describe(member="The member to set apology count for", count="The new apology count (0-100)")
 async def blacklist_test_set_count(interaction: discord.Interaction, member: discord.Member, count: int):
     if not interaction.user.guild_permissions.administrator:
@@ -6257,7 +6257,7 @@ async def blacklist_test_set_count(interaction: discord.Interaction, member: dis
         ephemeral=True
     )
 
-@bot.tree.command(name="blacklist-test-assign", description="[ADMIN] Assign or remove the Blacklisted role from a member for testing.")
+# @bot.tree.command(name="blacklist-test-assign", description="[ADMIN] Assign or remove the Blacklisted role from a member for testing.")
 @app_commands.describe(member="The member to test", apply="True to add role, False to remove")
 async def blacklist_test_assign(interaction: discord.Interaction, member: discord.Member, apply: bool = True):
     if not interaction.user.guild_permissions.administrator:
@@ -6283,7 +6283,7 @@ async def blacklist_test_assign(interaction: discord.Interaction, member: discor
 
 
 
-@bot.tree.command(name="exam-status", description="[Foundership Only] Get an instant live AI telemetry report DM for an active exam.")
+# @bot.tree.command(name="exam-status", description="[Foundership Only] Get an instant live AI telemetry report DM for an active exam.")
 async def exam_status_cmd(interaction: discord.Interaction):
     foundership_role = interaction.guild.get_role(config.FOUNDERSHIP_ROLE_ID) if interaction.guild else None
     is_foundership = (
@@ -6397,7 +6397,7 @@ async def conclude_and_grade_staff_exam(
         pass
 
 
-@bot.tree.command(name="end-simulation", description="[Foundership Only] Conclude active staff test ticket & generate AI report.")
+# @bot.tree.command(name="end-simulation", description="[Foundership Only] Conclude active staff test ticket & generate AI report.")
 @app_commands.describe(
     grade_and_log="Auto-grade staff performance and log report card (default: True)"
 )
@@ -6500,7 +6500,7 @@ class LogStaffEvaluationModal(discord.ui.Modal, title="Log Staff Evaluation & Fe
         )
 
 
-@bot.tree.command(name="staff-eval-log", description="[Foundership Only] Log staff test results with score & feedback.")
+# @bot.tree.command(name="staff-eval-log", description="[Foundership Only] Log staff test results with score & feedback.")
 @app_commands.describe(
     target_staff="Support team member evaluated",
     score="Numerical score (0 to 100)",
@@ -6591,7 +6591,7 @@ async def staff_eval_log_cmd(
     )
 
 
-@bot.tree.command(name="staff-eval-history", description="View historical evaluation scores and feedback for a staff member.")
+# @bot.tree.command(name="staff-eval-history", description="View historical evaluation scores and feedback for a staff member.")
 @app_commands.describe(target_staff="Support team member to inspect")
 async def staff_eval_history_cmd(interaction: discord.Interaction, target_staff: discord.Member):
     await interaction.response.defer(ephemeral=False)
@@ -6637,7 +6637,7 @@ async def staff_eval_history_cmd(interaction: discord.Interaction, target_staff:
     await interaction.followup.send(embed=embed)
 
 
-@bot.tree.command(name="staff-test-history", description="[Foundership Only] Alias for /staff-eval-history.")
+# @bot.tree.command(name="staff-test-history", description="[Foundership Only] Alias for /staff-eval-history.")
 @app_commands.describe(target_staff="Support team member to inspect")
 async def staff_test_history_cmd(interaction: discord.Interaction, target_staff: discord.Member):
     await staff_eval_history_cmd.callback(interaction, target_staff)
