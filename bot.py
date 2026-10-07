@@ -77,6 +77,7 @@ from starboard_system import handle_star_reaction
 from sorry_system import handle_sorry_message, set_sorry_count, get_sorry_count, reset_sorry_count
 from hr_commands import register_hr_commands
 from hiring_commands import register_hiring_commands
+from et_prefix_commands import handle_et_prefix_command
 from application_system import (
     APPLICATION_POSITIONS, build_career_panel_embed, CareerLaunchView,
     start_dm_application_flow, handle_applicant_dm_message,
@@ -1579,6 +1580,10 @@ async def on_message(message: discord.Message):
 
     # Check and handle #say-sorry-100-times-to-get-unblacklisted counter
     if await handle_sorry_message(bot, message):
+        return
+
+    # Check and handle !et prefix commands
+    if await handle_et_prefix_command(bot, message):
         return
 
     # AI Watchlist & Staff Sensitivity Analyzer (#6)
