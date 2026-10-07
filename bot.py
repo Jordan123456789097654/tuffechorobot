@@ -74,7 +74,7 @@ from leveling_system import (
     set_member_level
 )
 from starboard_system import handle_star_reaction
-from sorry_system import handle_sorry_message
+from sorry_system import handle_sorry_message, set_sorry_count, get_sorry_count, reset_sorry_count
 from application_system import (
     APPLICATION_POSITIONS, build_career_panel_embed, CareerLaunchView,
     start_dm_application_flow, handle_applicant_dm_message,
@@ -6231,6 +6231,46 @@ async def say_cmd(
     except Exception as e:
         logger.error(f"Error executing /say command: {e}")
         await interaction.followup.send(f"❌ Failed to send message: `{e}`", ephemeral=True)
+
+
+@bot.tree.command(name="blacklist-test-set-count", description="[ADMIN] Set a member's apology count in #say-sorry-100-times-to-get-unblacklisted.")
+@app_commands.describe(member="The member to set apology count for", count="The new apology count (0-100)")
+async def blacklist_test_set_count(interaction: discord.Interaction, member: discord.Member, count: int):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ Only Administrators can use this test command.", ephemeral=True)
+        return
+
+    set_sorry_count(member.id, count)
+    await interaction.response.send_message(
+        f"✅ Set apology count for {member.mention} to **`{count} / 100`**.\n"
+        f"They can now test typing `sorry` in <#1557203224317005967>!",
+        ephemeral=True
+    )
+
+@bot.tree.command(name="blacklist-test-assign", description="[ADMIN] Assign or remove the Blacklisted role from a member for testing.")
+@app_commands.describe(member="The member to test", apply="True to add role, False to remove")
+async def blacklist_test_assign(interaction: discord.Interaction, member: discord.Member, apply: bool = True):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ Only Administrators can use this test command.", ephemeral=True)
+        return
+
+    role = discord.utils.get(interaction.guild.roles, name="Blacklisted")
+    if not role:
+        await interaction.response.send_message("❌ Role `Blacklisted` not found.", ephemeral=True)
+        return
+
+    if apply:
+        await member.add_roles(role, reason="Blacklist test assignment")
+        await interaction.response.send_message(
+            f"✅ Assigned **Blacklisted** role to {member.mention}.\n"
+            f"Test channel: <#1557203224317005967>",
+            ephemeral=True
+        )
+    else:
+        await member.remove_roles(role, reason="Blacklist test removal")
+        reset_sorry_count(member.id)
+        await interaction.response.send_message(f"✅ Removed **Blacklisted** role from {member.mention} and reset counter.", ephemeral=True)
+
 
 
 @bot.tree.command(name="exam-status", description="[Foundership Only] Get an instant live AI telemetry report DM for an active exam.")
