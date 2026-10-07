@@ -128,23 +128,33 @@ COMMAND_HELP_MANUALS: Dict[str, Dict[str, str]] = {
     }
 }
 
+ALLOWED_PREFIXES = ("!et", "?et", ".et", "e!", "et!", "!echo", "?echo", ".echo", "!duty", "?duty", ".duty")
+
 async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     """
-    Handles !et prefix commands, subcommands, and !et help [command].
+    Handles prefix commands and subcommands for !et, ?et, .et, e!, et!, !echo, etc.
     Returns True if handled.
     """
     if message.author.bot or not message.content:
         return False
 
     content = message.content.strip()
-    if not (content.lower().startswith("!et") or content.lower().startswith("!duty")):
+    matched_prefix = None
+    content_lower = content.lower()
+
+    for p in ALLOWED_PREFIXES:
+        if content_lower.startswith(p):
+            matched_prefix = p
+            break
+
+    if not matched_prefix:
         return False
 
     parts = content.split()
     cmd = parts[0].lower()
 
-    # Shortcut: !duty [on/off]
-    if cmd == "!duty":
+    # Shortcut: !duty, ?duty, .duty [on/off]
+    if cmd in ("!duty", "?duty", ".duty"):
         sub = parts[1].lower() if len(parts) > 1 else "on"
         await execute_duty(message, sub)
         return True
