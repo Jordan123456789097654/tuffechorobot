@@ -256,20 +256,23 @@ class RobloxVerificationBot(commands.Bot):
         logger.info(f"Logged in as {self.user.name} (ID: {self.user.id})")
         try:
             stored = self.db.get_bot_presence() if hasattr(self.db, 'get_bot_presence') else {}
-            act_type = stored.get("activity_type", "playing")
-            act_text = stored.get("activity_text", "Roblox | !et help")
-            vis_str = stored.get("visibility", "online")
+            rotate_mode = stored.get('rotate_mode', True)
 
-            from et_prefix_commands import build_discord_activity, parse_discord_status
-            activity = build_discord_activity(act_type, act_text)
-            status = parse_discord_status(vis_str)
-            await self.change_presence(activity=activity, status=status)
-            logger.info(f"Restored presence on boot: status={status}, activity={act_type} '{act_text}'")
-
-            if stored.get('rotate_mode'):
+            if rotate_mode:
                 self.rotation_enabled = True
                 if not self.rotate_presence_task.is_running():
                     self.rotate_presence_task.start()
+                logger.info("Auto-rotation mode enabled on startup (cycling premade activities every 45s).")
+            else:
+                act_type = stored.get("activity_type", "playing")
+                act_text = stored.get("activity_text", "Roblox | !et help")
+                vis_str = stored.get("visibility", "online")
+
+                from et_prefix_commands import build_discord_activity, parse_discord_status
+                activity = build_discord_activity(act_type, act_text)
+                status = parse_discord_status(vis_str)
+                await self.change_presence(activity=activity, status=status)
+                logger.info(f"Restored fixed presence on boot: status={status}, activity={act_type} '{act_text}'")
         except Exception as e:
             logger.warning(f"Could not restore custom presence on startup: {e}")
 
