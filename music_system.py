@@ -360,11 +360,23 @@ async def extract_tracks(query: str, requester: discord.Member) -> List[Track]:
             with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
                 return ydl.extract_info(target_sc_query, download=False)
 
-        data = await loop.run_in_executor(None, do_sp_extract)
-        entries = data.get('entries', []) if (data and 'entries' in data) else ([data] if data else [])
+        try:
+            data = await loop.run_in_executor(None, do_sp_extract)
+        except Exception as ex:
+            logger.error(f"Error extracting Spotify fallback for '{clean_query}': {ex}")
+            data = None
+
+        entries_raw = data.get('entries') if isinstance(data, dict) else None
+        entries = list(entries_raw) if entries_raw is not None else ([data] if data else [])
+
         if entries and entries[0]:
             entry = entries[0]
             stream_url = entry.get('url') or ''
+            if not stream_url and entry.get('formats'):
+                audio_formats = [f for f in entry.get('formats', []) if f.get('acodec') != 'none' and f.get('url')]
+                if audio_formats:
+                    stream_url = audio_formats[-1].get('url', '')
+
             duration = int(entry.get('duration', 0))
             sp_title = sp_info["title"] if sp_info else entry.get('title', 'Unknown Track')
             sp_thumb = sp_info["thumbnail"] if (sp_info and sp_info.get("thumbnail")) else (entry.get('thumbnail') or "")
@@ -400,14 +412,20 @@ async def extract_tracks(query: str, requester: discord.Member) -> List[Track]:
     if not data:
         raise Exception(f"Could not find any audio for query: `{clean_query}`")
 
-    tracks = []
-    entries = data.get('entries', []) if ('entries' in data and data['entries']) else [data]
+    entries_raw = data.get('entries') if isinstance(data, dict) else None
+    entries = list(entries_raw) if entries_raw is not None else ([data] if data else [])
 
+    tracks = []
     for entry in entries:
         if not entry:
             continue
         title = entry.get('title', 'Unknown Title')
         stream_url = entry.get('url') or ''
+        if not stream_url and entry.get('formats'):
+            audio_formats = [f for f in entry.get('formats', []) if f.get('acodec') != 'none' and f.get('url')]
+            if audio_formats:
+                stream_url = audio_formats[-1].get('url', '')
+
         webpage_url = entry.get('webpage_url') or entry.get('url') or clean_query
         duration = int(entry.get('duration', 0))
         thumbnail = entry.get('thumbnail') or ""
