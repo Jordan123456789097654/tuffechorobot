@@ -76,6 +76,7 @@ from leveling_system import (
 from starboard_system import handle_star_reaction
 from sorry_system import handle_sorry_message, set_sorry_count, get_sorry_count, reset_sorry_count
 from hr_commands import register_hr_commands
+from hiring_commands import register_hiring_commands
 from application_system import (
     APPLICATION_POSITIONS, build_career_panel_embed, CareerLaunchView,
     start_dm_application_flow, handle_applicant_dm_message,
@@ -1151,6 +1152,7 @@ class RobloxVerificationBot(commands.Bot):
 
 bot = RobloxVerificationBot()
 register_hr_commands(bot)
+register_hiring_commands(bot)
 
 # --- EVENTS ---
 
