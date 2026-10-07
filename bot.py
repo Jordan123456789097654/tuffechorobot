@@ -116,6 +116,7 @@ from points_system import (
 )
 from support_templates_system import sync_support_templates_channel
 from supervisor_templates_system import sync_supervisor_templates_channel, SupervisorCategorySelectView
+from music_system import register_music_commands, ensure_voice_connection, MusicControlView, get_music_player
 
 
 
@@ -227,21 +228,23 @@ class RobloxVerificationBot(commands.Bot):
         self.add_view(ModAppealReviewView())
         self.add_view(InviteCompControlView(self, 0))
         self.add_view(SupervisorCategorySelectView())
+        self.add_view(MusicControlView(get_music_player(self)))
 
 
-        # Slash commands lowered to 0 — purge BOTH global and guild slash commands from Discord API
+        # Register & sync Music Slash Commands (/play, /skip, /pause, /resume, /stop, /queue, /nowplaying, /volume, /loop)
         try:
             self.tree.clear_commands(guild=None)
-            synced_global = await self.tree.sync(guild=None)
-            logger.info(f"Purged global slash commands from Discord API (synced {len(synced_global)} global commands).")
-
+            register_music_commands(self)
             if config.GUILD_ID:
                 guild_obj = discord.Object(id=config.GUILD_ID)
-                self.tree.clear_commands(guild=guild_obj)
-                synced_guild = await self.tree.sync(guild=guild_obj)
-                logger.info(f"Purged guild slash commands from Discord API (synced {len(synced_guild)} guild commands).")
+                self.tree.copy_global_to(guild=guild_obj)
+                synced = await self.tree.sync(guild=guild_obj)
+                logger.info(f"Synced {len(synced)} music slash commands to guild {config.GUILD_ID}.")
+            else:
+                synced = await self.tree.sync()
+                logger.info(f"Synced {len(synced)} global music slash commands.")
         except Exception as e:
-            logger.error(f"Error purging application commands: {e}")
+            logger.error(f"Error syncing music slash commands: {e}")
 
     async def close(self):
         await self.roblox_api.close()
@@ -262,6 +265,12 @@ class RobloxVerificationBot(commands.Bot):
             logger.info(f"Restored presence on boot: status={status}, activity={act_type} '{act_text}'")
         except Exception as e:
             logger.warning(f"Could not restore custom presence on startup: {e}")
+
+        # Auto-connect to 24/7 music voice channel 1557213851173519460
+        try:
+            await ensure_voice_connection(self)
+        except Exception as e:
+            logger.error(f"Error connecting to 24/7 music voice channel on ready: {e}")
 
     async def get_escalated_channel(self, guild: discord.Guild) -> Optional[discord.TextChannel]:
         """Finds or retrieves the escalated tickets channel."""

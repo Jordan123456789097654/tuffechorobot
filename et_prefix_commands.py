@@ -280,6 +280,12 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     elif subcmd in ("setvisibility", "visibility", "setpresence", "presence"):
         await execute_setvisibility(bot, message, args)
 
+    elif subcmd in ("play", "p"):
+        await execute_music_play_prefix(bot, message, args)
+
+    elif subcmd in ("skip", "next"):
+        await execute_music_skip_prefix(bot, message)
+
     elif subcmd in ("whois", "lookup"):
         member = message.mentions[0] if message.mentions else message.author
         await execute_whois(message, member)
@@ -865,3 +871,41 @@ async def execute_setvisibility(bot, message: discord.Message, args: List[str]):
         await message.channel.send(f"✅ **Bot Visibility Updated!** Presence indicator set to **{status_label}**.")
     except Exception as e:
         await message.channel.send(f"❌ Failed to set visibility: `{e}`")
+
+async def execute_music_play_prefix(bot, message: discord.Message, args: List[str]):
+    if not args:
+        await message.channel.send("❌ Usage: `!et play <song name or link>`")
+        return
+
+    from music_system import ensure_voice_connection, get_music_player, extract_tracks
+    await ensure_voice_connection(bot)
+    player = get_music_player(bot)
+    query = " ".join(args)
+
+    member = message.author if isinstance(message.author, discord.Member) else message.guild.get_member(message.author.id)
+
+    try:
+        tracks = await extract_tracks(query, member)
+        if not tracks:
+            await message.channel.send("❌ Could not find any audio for that query.")
+            return
+
+        if len(tracks) == 1:
+            track = tracks[0]
+            await player.add_track(track)
+            await message.channel.send(f"🎵 Added **[{track.title}]({track.webpage_url})** (`{track.format_duration()}`) to the queue!")
+        else:
+            for t in tracks:
+                await player.add_track(t)
+            await message.channel.send(f"🎶 Added **{len(tracks)} tracks** to the queue!")
+    except Exception as e:
+        await message.channel.send(f"❌ Error adding track: `{e}`")
+
+async def execute_music_skip_prefix(bot, message: discord.Message):
+    from music_system import get_music_player
+    player = get_music_player(bot)
+    if player.is_playing() or player.is_paused():
+        await player.skip()
+        await message.channel.send("⏭️ Skipped current track.")
+    else:
+        await message.channel.send("❌ Nothing is playing.")
