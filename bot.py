@@ -137,6 +137,7 @@ async def safe_fetch_user(client, user_id: int):
 async def post_official_shutdown_announcement(bot):
     """Posts official final shutdown announcement to announcement text channels."""
     channels_to_notify = [
+        1556000095411904552,  # Primary Announcements Channel
         getattr(config, "ANNOUNCEMENTS_CHANNEL_ID", None),
         getattr(config, "PUBLIC_LOGS_CHANNEL_ID", None),
         getattr(config, "CAREER_OPPORTUNITIES_CHANNEL_ID", None),
