@@ -134,6 +134,62 @@ async def safe_fetch_user(client, user_id: int):
         return None
 
 
+async def post_official_shutdown_announcement(bot):
+    """Posts official final shutdown announcement to announcement text channels."""
+    channels_to_notify = [
+        getattr(config, "ANNOUNCEMENTS_CHANNEL_ID", None),
+        getattr(config, "PUBLIC_LOGS_CHANNEL_ID", None),
+        getattr(config, "CAREER_OPPORTUNITIES_CHANNEL_ID", None),
+        getattr(config, "SUPPORT_TEMPLATES_CHANNEL_ID", None),
+        1557213895041486900
+    ]
+    embed = discord.Embed(
+        title="🔴 ECHO TECHNOLOGIES • OFFICIAL FINAL SHUTDOWN ANNOUNCEMENT",
+        description=(
+            "**Echo Technologies (2026 – 2026) has officially shut down.**\n\n"
+            "We would like to extend our deepest gratitude to all of our community members, staff, developers, and partners for your support throughout our journey.\n\n"
+            "**Status of Services & Bot Operations:**\n"
+            "• ❌ **All Bot Commands Disabled:** All slash commands, prefix commands (`!et`, `!`, `?`, `.`), and interactive features have been permanently deactivated.\n"
+            "• ❌ **Support & Ticket Operations Closed:** Ticket creation, HR management, application processing, and voice/music operations have ceased.\n"
+            "• 🔒 **Systems Archived:** All internal systems, logs, and databases are now in permanent read-only archive mode.\n\n"
+            "Thank you for being part of Echo Technologies 2026 – 2026."
+        ),
+        color=0xED4245,
+        timestamp=discord.utils.utcnow()
+    )
+    embed.set_footer(text="Echo Technologies 2026-2026 • Decommissioned & Shut Down")
+
+    sent_count = 0
+    for cid in channels_to_notify:
+        if not cid:
+            continue
+        try:
+            ch = bot.get_channel(cid)
+            if not ch:
+                try:
+                    ch = await bot.fetch_channel(cid)
+                except Exception:
+                    ch = None
+            if ch and isinstance(ch, discord.TextChannel):
+                await ch.send(embed=embed)
+                sent_count += 1
+                logger.info(f"Posted official shutdown announcement to #{ch.name} ({ch.id}).")
+        except Exception as e:
+            logger.warning(f"Could not post shutdown announcement to channel {cid}: {e}")
+
+    if sent_count == 0:
+        guild = bot.get_primary_guild()
+        if guild:
+            for ch in guild.text_channels:
+                if "announcement" in ch.name.lower() or "general" in ch.name.lower():
+                    try:
+                        await ch.send(embed=embed)
+                        logger.info(f"Posted fallback shutdown announcement to #{ch.name}.")
+                        break
+                    except Exception:
+                        pass
+
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -254,45 +310,24 @@ class RobloxVerificationBot(commands.Bot):
 
     async def on_ready(self):
         logger.info(f"Logged in as {self.user.name} (ID: {self.user.id})")
+        self.rotation_enabled = False
+
+        # Set fixed presence: Playing Echo Technologies 2026-2026 & status=dnd
+        activity = discord.Game(name="Echo Technologies 2026-2026")
+        status = discord.Status.dnd
         try:
-            stored = self.db.get_bot_presence() if hasattr(self.db, 'get_bot_presence') else {}
-            rotate_mode = stored.get('rotate_mode', True)
-
-            if rotate_mode:
-                self.rotation_enabled = True
-                try:
-                    from et_prefix_commands import PREMADE_ACTIVITIES, build_discord_activity, parse_discord_status
-                    preset = PREMADE_ACTIVITIES.get("1")
-                    if preset:
-                        vis_str = stored.get("visibility", "online")
-                        await self.change_presence(activity=build_discord_activity(preset['type'], preset['text']), status=parse_discord_status(vis_str))
-                except Exception as ex:
-                    logger.warning(f"Could not apply initial rotation preset: {ex}")
-
-                if not self.rotate_presence_task.is_running():
-                    self.rotate_presence_task.start()
-                logger.info("Auto-rotation mode enabled on startup (cycling premade activities every 45s).")
-            else:
-                act_type = stored.get("activity_type", "playing")
-                act_text = stored.get("activity_text", "Roblox | !et help")
-                vis_str = stored.get("visibility", "online")
-
-                from et_prefix_commands import build_discord_activity, parse_discord_status
-                activity = build_discord_activity(act_type, act_text)
-                status = parse_discord_status(vis_str)
-                await self.change_presence(activity=activity, status=status)
-                logger.info(f"Restored fixed presence on boot: status={status}, activity={act_type} '{act_text}'")
+            await self.change_presence(activity=activity, status=status)
+            if hasattr(self.db, 'save_bot_presence'):
+                self.db.save_bot_presence("playing", "Echo Technologies 2026-2026", "dnd", rotate_mode=False)
+            logger.info("Permanently locked bot presence to 'Playing Echo Technologies 2026-2026' (DND).")
         except Exception as e:
-            logger.warning(f"Could not restore custom presence on startup: {e}")
+            logger.error(f"Error setting shutdown presence: {e}")
 
-        # Auto-connect to 24/7 music voice channel 1557213851173519460 & start keep-alive loop
+        # Post official shutdown announcement
         try:
-            from music_system import voice_keepalive_loop
-            await ensure_voice_connection(self)
-            if not voice_keepalive_loop.is_running():
-                voice_keepalive_loop.start(self)
+            await post_official_shutdown_announcement(self)
         except Exception as e:
-            logger.error(f"Error connecting to 24/7 music voice channel on ready: {e}")
+            logger.error(f"Error posting shutdown announcement: {e}")
 
     @tasks.loop(seconds=45)
     async def rotate_presence_task(self):
@@ -6715,356 +6750,39 @@ async def staff_test_history_cmd(interaction: discord.Interaction, target_staff:
 
 
 # ==========================================
-# 🔄 UNIFIED PERSISTENT COMPONENT LISTENER
+# 🔄 UNIFIED PERSISTENT COMPONENT & INTERACTION LISTENER
 # ==========================================
 
-
+@bot.tree.interaction_check
+async def global_shutdown_interaction_check(interaction: discord.Interaction) -> bool:
+    embed = discord.Embed(
+        title="❌ Echo Technologies Has Shut Down",
+        description="Echo Technologies (2026 – 2026) has permanently shut down. All bot commands, slash commands, prefix commands, and interactive services have been permanently disabled.",
+        color=0xED4245
+    )
+    embed.set_footer(text="Echo Technologies 2026-2026 • Decommissioned")
+    try:
+        if not interaction.response.is_done():
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+    except Exception:
+        pass
+    return False
 
 
 @bot.listen("on_interaction")
 async def on_persistent_components_listener(interaction: discord.Interaction):
-    if interaction.type == discord.InteractionType.component:
-        cid = interaction.data.get("custom_id", "")
-        # 1. Hire System
-        if cid.startswith("hire_acc:") or cid.startswith("hire_dec:"):
-            parts = cid.split(":")
-            if len(parts) >= 2:
-                action = "accept" if parts[0] == "hire_acc" else "decline"
-                try:
-                    offer_id = int(parts[1])
-                    await handle_hire_action(
-                        bot=bot,
-                        interaction=interaction,
-                        offer_id=offer_id,
-                        action=action
-                    )
-                except Exception as e:
-                    logger.error(f"Error executing hire interaction: {e}")
-
-        # 1b. Ticket Close Request System
-        elif cid.startswith("req_close_acc:") or cid.startswith("req_close_keep:"):
-            parts = cid.split(":")
-            if len(parts) >= 2:
-                try:
-                    ticket_id = int(parts[1])
-                    action = "accept" if parts[0] == "req_close_acc" else "keep"
-                    ticket = bot.ticket_manager.get_ticket_by_id(ticket_id)
-                    if not ticket or ticket["status"] == "closed":
-                        await interaction.response.send_message("ℹ️ This ticket has already been closed.", ephemeral=True)
-                    else:
-                        if action == "accept":
-                            await interaction.response.defer()
-                            channel = bot.get_channel(ticket["channel_id"])
-                            await interaction.followup.send("✅ Thank you! Your ticket has been closed. Please rate your experience below:", ephemeral=False)
-                            await bot.close_support_ticket(ticket, channel, closed_by=interaction.user)
-                        else:
-                            await interaction.response.defer()
-                            channel = bot.get_channel(ticket["channel_id"])
-                            if channel:
-                                keep_embed = discord.Embed(
-                                    title="💬 Member Requested to Keep Ticket Open",
-                                    description=f"Member {interaction.user.mention} rejected the close request and requested to keep **Ticket #{ticket_id}** open.",
-                                    color=0xFEE75C
-                                )
-                                await channel.send(embed=keep_embed)
-                            bot.ticket_manager.set_ai_enabled(ticket_id, True)
-                            await interaction.followup.send("💬 Your request to keep the ticket open has been sent to our team! Reply here anytime to continue.", ephemeral=False)
-                except Exception as e:
-                    logger.error(f"Error handling close request interaction: {e}")
-
-        # 2. Suggestions System
-        elif cid.startswith("sug_up:") or cid.startswith("sug_dn:") or cid.startswith("sug_rev:"):
-            parts = cid.split(":")
-            if len(parts) >= 2:
-                try:
-                    sug_id = int(parts[1])
-                    if parts[0] == "sug_up":
-                        ups, downs, msg = vote_suggestion(sug_id, interaction.user.id, 1)
-                        sug = get_suggestion(sug_id)
-                        if sug:
-                            author = bot.get_user(sug["author_id"])
-                            reviewer = bot.get_user(sug.get("reviewed_by") or 0)
-                            new_embed = build_suggestion_embed(sug, ups, downs, author, reviewer)
-                            view = SuggestionVoteView(bot, sug_id, ups, downs)
-                            await interaction.response.edit_message(embed=new_embed, view=view)
-                    elif parts[0] == "sug_dn":
-                        ups, downs, msg = vote_suggestion(sug_id, interaction.user.id, -1)
-                        sug = get_suggestion(sug_id)
-                        if sug:
-                            author = bot.get_user(sug["author_id"])
-                            reviewer = bot.get_user(sug.get("reviewed_by") or 0)
-                            new_embed = build_suggestion_embed(sug, ups, downs, author, reviewer)
-                            view = SuggestionVoteView(bot, sug_id, ups, downs)
-                            await interaction.response.edit_message(embed=new_embed, view=view)
-                    elif parts[0] == "sug_rev":
-                        is_admin = interaction.user.guild_permissions.manage_guild or interaction.user.guild_permissions.administrator
-                        if not is_admin:
-                            await interaction.response.send_message("❌ Only management staff can review suggestions.", ephemeral=True)
-                        else:
-                            modal = ReviewSuggestionModal(bot, sug_id)
-                            await interaction.response.send_modal(modal)
-                except Exception as e:
-                    logger.error(f"Error handling suggestion interaction: {e}")
-
-        # 3. Bug Tracker System
-        elif cid.startswith("bug_clm:") or cid.startswith("bug_prg:") or cid.startswith("bug_res:") or cid.startswith("bug_cls:"):
-            parts = cid.split(":")
-            if len(parts) >= 2:
-                try:
-                    bug_id = int(parts[1])
-                    if parts[0] == "bug_clm":
-                        claim_bug(bug_id, interaction.user.id)
-                        report = get_bug_report(bug_id)
-                        if report:
-                            reporter = bot.get_user(report["reporter_id"])
-                            embed = build_bug_embed(report, reporter, interaction.user)
-                            view = BugReportControlView(bot, bug_id)
-                            await interaction.response.edit_message(embed=embed, view=view)
-                            await interaction.followup.send(f"📌 {interaction.user.mention} has claimed Bug #{bug_id}!", ephemeral=False)
-                    elif parts[0] == "bug_prg":
-                        update_bug_status(bug_id, "In Progress", interaction.user.id)
-                        report = get_bug_report(bug_id)
-                        if report:
-                            reporter = bot.get_user(report["reporter_id"])
-                            embed = build_bug_embed(report, reporter, interaction.user)
-                            view = BugReportControlView(bot, bug_id)
-                            await interaction.response.edit_message(embed=embed, view=view)
-                            await interaction.followup.send(f"🚧 Bug #{bug_id} marked **In Progress** by {interaction.user.mention}.", ephemeral=False)
-                    elif parts[0] == "bug_res":
-                        modal = ResolveBugModal(bot, bug_id)
-                        await interaction.response.send_modal(modal)
-                    elif parts[0] == "bug_cls":
-                        update_bug_status(bug_id, "Closed", interaction.user.id, "Closed / Won't Fix")
-                        report = get_bug_report(bug_id)
-                        if report:
-                            reporter = bot.get_user(report["reporter_id"])
-                            embed = build_bug_embed(report, reporter, interaction.user)
-                            view = BugReportControlView(bot, bug_id)
-                            await interaction.response.edit_message(embed=embed, view=view)
-                            await interaction.followup.send(f"❌ Bug #{bug_id} has been marked **Closed** by {interaction.user.mention}.", ephemeral=False)
-                except Exception as e:
-                    logger.error(f"Error handling bug interaction: {e}")
-
-        # 4. Giveaway System
-        elif cid.startswith("g_enter:"):
-            parts = cid.split(":")
-            if len(parts) >= 2:
-                try:
-                    gw_id = int(parts[1])
-                    gw = get_giveaway(gw_id)
-                    if not gw or gw.get("ended"):
-                        await interaction.response.send_message("❌ This giveaway has already ended!", ephemeral=True)
-                    else:
-                        entered, new_count = toggle_giveaway_entry(gw_id, interaction.user.id)
-                        new_embed = build_giveaway_embed(gw, new_count, is_ended=False)
-                        new_view = GiveawayView(gw_id, new_count, ended=False)
-                        await interaction.response.edit_message(embed=new_embed, view=new_view)
-                        msg_text = (
-                            f"🎉 **Entered!** You are now entered in the giveaway for **{gw['prize']}**!"
-                            if entered
-                            else f"👋 **Removed!** You left the giveaway for **{gw['prize']}**."
-                        )
-                        await interaction.followup.send(msg_text, ephemeral=True)
-                except Exception as e:
-                    logger.error(f"Error handling giveaway interaction: {e}")
-
-        # 5. Event RSVP System
-        elif cid.startswith("ev_att:") or cid.startswith("ev_myb:") or cid.startswith("ev_dec:"):
-            parts = cid.split(":")
-            if len(parts) >= 2:
-                try:
-                    ev_id = int(parts[1])
-                    ev_data = get_event(ev_id)
-                    if not ev_data or ev_data.get("status") != "scheduled":
-                        await interaction.response.send_message("❌ This event is no longer active.", ephemeral=True)
-                    else:
-                        status_map = {"ev_att": "attending", "ev_myb": "maybe", "ev_dec": "declined"}
-                        status = status_map.get(parts[0], "attending")
-                        final_status, counts = set_event_rsvp(ev_id, interaction.user.id, status)
-                        new_embed = build_event_embed(ev_data, counts)
-                        new_view = EventRsvpView(ev_id, counts)
-                        await interaction.response.edit_message(embed=new_embed, view=new_view)
-
-                        responses = {
-                            "attending": "✅ You are registered as **Attending**! You will receive a reminder DM 15 minutes before the event.",
-                            "maybe": "❓ You are marked as **Maybe**! You will receive a reminder DM 15 minutes before the event.",
-                            "declined": "❌ You are marked as **Can't Make It**.",
-                            "none": "👋 Your RSVP has been cleared."
-                        }
-                        await interaction.followup.send(responses.get(final_status, "RSVP updated!"), ephemeral=True)
-                except Exception as e:
-                    logger.error(f"Error handling event RSVP: {e}")
-
-        # 6. Leave of Absence (LOA) Management
-        elif cid.startswith("loa_app:") or cid.startswith("loa_den:"):
-            parts = cid.split(":")
-            if len(parts) >= 2:
-                try:
-                    loa_id = int(parts[1])
-                    is_admin = interaction.user.guild_permissions.manage_roles or interaction.user.guild_permissions.administrator
-                    if not is_admin:
-                        await interaction.response.send_message("❌ Only HR and management staff can review LOA requests.", ephemeral=True)
-                    else:
-                        if parts[0] == "loa_app":
-                            success, msg, updated = review_loa_request(loa_id, interaction.user.id, "approved")
-                            if success:
-                                staff_user = bot.get_user(updated["user_id"])
-                                new_embed = build_loa_staff_embed(updated, staff_user, interaction.user)
-                                new_view = LOAControlView(loa_id, disabled=True)
-                                await interaction.response.edit_message(embed=new_embed, view=new_view)
-                                await interaction.followup.send(f"✅ Approved LOA #{loa_id} for <@{updated['user_id']}>!", ephemeral=False)
-                                if staff_user:
-                                    try:
-                                        dm = await staff_user.create_dm()
-                                        await dm.send(f"🏖️ **LOA Request #{loa_id} Approved!** Your leave duration: `{updated['duration']}`.")
-                                    except Exception:
-                                        pass
-                            else:
-                                await interaction.response.send_message(f"⚠️ {msg}", ephemeral=True)
-                        elif parts[0] == "loa_den":
-                            modal = DenyLOAModal(bot, loa_id)
-                            await interaction.response.send_modal(modal)
-                except Exception as e:
-                    logger.error(f"Error handling LOA interaction: {e}")
-
-        # 7. Staff & Developer Applications System
-        elif cid.startswith("app_start:"):
-            pos_key = cid.split("app_start:")[1]
-            success, reply_msg = await start_dm_application_flow(
-                bot=bot,
-                user=interaction.user,
-                guild=interaction.guild or bot.get_primary_guild(),
-                position_key=pos_key
-            )
-            await interaction.response.send_message(reply_msg, ephemeral=True)
-
-        elif cid.startswith("app_acc:") or cid.startswith("app_dec:") or cid.startswith("app_ask:") or cid.startswith("app_html:"):
-            parts = cid.split(":")
-            if len(parts) >= 2:
-                try:
-                    app_id = int(parts[1])
-                    if parts[0] == "app_html":
-                        await interaction.response.defer(ephemeral=True)
-                        app = get_application(app_id)
-                        if not app:
-                            await interaction.followup.send("❌ Application not found.", ephemeral=True)
-                        else:
-                            pos_data = APPLICATION_POSITIONS.get(app["position_key"], {})
-                            questions = pos_data.get("questions", [])
-                            user_info = bot.db.get_by_discord_id(app["user_id"])
-                            candidate = bot.get_user(app["user_id"])
-                            if candidate and user_info:
-                                user_info["discord_name"] = candidate.name
-                            elif candidate:
-                                user_info = {"discord_name": candidate.name}
-
-                            reviewer = bot.get_user(app["reviewed_by"]) if app.get("reviewed_by") else None
-                            reviewer_name = reviewer.name if reviewer else None
-
-                            html_content = generate_application_html_transcript(
-                                app_data=app,
-                                questions=questions,
-                                user_info=user_info,
-                                reviewer_name=reviewer_name
-                            )
-                            filename = f"application_{app_id}_dossier.html"
-                            file = discord.File(io.BytesIO(html_content.encode("utf-8")), filename=filename)
-
-                            await interaction.followup.send(
-                                content=f"📥 **HTML Dossier Transcript generated for Application #{app_id}** (`{app['position_title']}`):",
-                                file=file,
-                                ephemeral=True
-                            )
-                        return
-
-                    is_admin = interaction.user.guild_permissions.manage_roles or interaction.user.guild_permissions.administrator
-                    if not is_admin:
-                        await interaction.response.send_message("❌ Only management staff can review applications.", ephemeral=True)
-                    else:
-                        if parts[0] == "app_acc":
-
-                            await interaction.response.defer(ephemeral=True)
-                            app = get_application(app_id)
-                            if not app:
-                                await interaction.followup.send("❌ Application not found.", ephemeral=True)
-                            else:
-                                pos_data = APPLICATION_POSITIONS.get(app["position_key"])
-                                role_id = pos_data["role_id"] if pos_data else config.SUPPORT_TEAM_ROLE_ID
-                                role_name = pos_data["title"] if pos_data else "Staff"
-
-                                success, msg, updated = review_application(app_id, interaction.user.id, "approved", f"Approved by {interaction.user.name}")
-                                if not success:
-                                    await interaction.followup.send(f"⚠️ {msg}", ephemeral=True)
-                                else:
-                                    # Create official job offer via hire_system
-                                    offer_id = create_hire_offer(
-                                        guild_id=app["guild_id"],
-                                        member_id=app["user_id"],
-                                        role_id=role_id,
-                                        issuer_id=interaction.user.id,
-                                        origin_channel_id=interaction.channel.id,
-                                        role_name=role_name
-                                    )
-                                    candidate = bot.get_user(app["user_id"])
-                                    if candidate:
-                                        try:
-                                            dm = await candidate.create_dm()
-                                            offer_embed = discord.Embed(
-                                                title="Echo Technologies • Official Employment Offer",
-                                                description=(
-                                                    f"Dear **{candidate.name}**,\n\n"
-                                                    f"On behalf of Echo Technologies, we are thrilled to inform you that your application for "
-                                                    f"**{role_name}** has been **ACCEPTED**!\n\n"
-                                                    f"We would like to formally offer you the role of **{role_name}**.\n"
-                                                    f"Please click **Accept Offer** below to receive your role and join our team!"
-                                                ),
-                                                color=0x57F287,
-                                                timestamp=discord.utils.utcnow()
-                                            )
-                                            offer_embed.set_footer(text="Echo Technologies Official Job Offer")
-                                            offer_view = HireOfferView(bot, offer_id, role_name)
-                                            await dm.send(embed=offer_embed, view=offer_view)
-                                        except Exception as e:
-                                            logger.warning(f"Could not send hire offer DM to candidate: {e}")
-
-                                    # Update review embed
-                                    roblox_info = bot.db.get_by_discord_id(app["user_id"])
-                                    new_embed = build_application_dossier_embed(updated, candidate, roblox_info, interaction.user)
-                                    new_view = ApplicationControlView(app_id, disabled=True)
-                                    try:
-                                        await interaction.message.edit(embed=new_embed, view=new_view)
-                                    except Exception:
-                                        pass
-
-                                    # Post public log to PUBLIC_LOGS_CHANNEL_ID (#staff-disciplinary / 1556021154756698192)
-                                    pub_ch = interaction.guild.get_channel(config.PUBLIC_LOGS_CHANNEL_ID)
-                                    if pub_ch and isinstance(pub_ch, discord.TextChannel):
-                                        try:
-                                            p_embed = discord.Embed(
-                                                title=f"🎉 Public Staff Log: New Team Member Appointed",
-                                                description=(
-                                                    f"**Staff Member:** <@{app['user_id']}>\n"
-                                                    f"**Position Appointed:** `{role_name}`\n"
-                                                    f"**Approved By:** {interaction.user.mention}\n"
-                                                    f"**Date:** <t:{int(discord.utils.utcnow().timestamp())}:F>"
-                                                ),
-                                                color=0x57F287,
-                                                timestamp=discord.utils.utcnow()
-                                            )
-                                            await pub_ch.send(embed=p_embed)
-                                        except Exception:
-                                            pass
-                                    await interaction.followup.send(f"🎉 **Application #{app_id} Approved!** Formal employment offer dispatched to candidate's DMs.", ephemeral=False)
-
-                        elif parts[0] == "app_dec":
-                            modal = DenyApplicationModal(bot, app_id)
-                            await interaction.response.send_modal(modal)
-
-                        elif parts[0] == "app_ask":
-                            modal = AskApplicantModal(bot, app_id)
-                            await interaction.response.send_modal(modal)
-                except Exception as e:
-                    logger.error(f"Error handling application interaction: {e}")
+    embed = discord.Embed(
+        title="❌ Echo Technologies Has Shut Down",
+        description="Echo Technologies (2026 – 2026) has permanently shut down. All bot commands, slash commands, prefix commands, and interactive services have been permanently disabled.",
+        color=0xED4245
+    )
+    embed.set_footer(text="Echo Technologies 2026-2026 • Decommissioned")
+    try:
+        if not interaction.response.is_done():
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+    except Exception:
+        pass
+    return
 
 
 import socket

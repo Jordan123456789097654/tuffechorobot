@@ -190,16 +190,26 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
         return False
 
     content = message.content.strip()
-    matched_prefix = None
     content_lower = content.lower()
 
-    for p in ALLOWED_PREFIXES:
-        if content_lower.startswith(p):
-            matched_prefix = p
-            break
+    # Intercept all prefix commands due to permanent shutdown
+    if content_lower.startswith(("!", "?", ".", "e!", "et!", "/")):
+        embed = discord.Embed(
+            title="❌ Echo Technologies Has Shut Down",
+            description="Echo Technologies (2026 – 2026) has permanently shut down. All bot commands, slash commands, prefix commands, and interactive services have been permanently disabled.",
+            color=0xED4245
+        )
+        embed.set_footer(text="Echo Technologies 2026-2026 • Decommissioned")
+        try:
+            await message.reply(embed=embed, mention_author=False)
+        except Exception:
+            try:
+                await message.channel.send(embed=embed)
+            except Exception:
+                pass
+        return True
 
-    if not matched_prefix:
-        return False
+    return False
 
     parts = content.split()
     cmd = parts[0].lower()
