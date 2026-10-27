@@ -274,18 +274,37 @@ local function logLicenseEvent(status, details)
             local titleText = isAlert and "🚨 LEAK ALERT: Unauthorized Copy of " .. LICENSE_CONFIG.ProductName or "🛡️ RetailNetwork License Check: " .. LICENSE_CONFIG.ProductName
             local colorHex = isAlert and 15158332 or 3066993
 
+            -- Fetch creator name / profile link
+            local creatorName = "Unknown"
+            local creatorProfileUrl = ""
+            if game.CreatorType == Enum.CreatorType.User then
+                local s, name = pcall(function()
+                    return Players:GetNameFromUserIdAsync(game.CreatorId)
+                end)
+                creatorName = s and ("@" .. name) or "ID: " .. tostring(game.CreatorId)
+                creatorProfileUrl = "https://www.roblox.com/users/" .. tostring(game.CreatorId) .. "/profile"
+            elseif game.CreatorType == Enum.CreatorType.Group then
+                creatorName = "Group ID: " .. tostring(game.CreatorId)
+                creatorProfileUrl = "https://www.roblox.com/groups/" .. tostring(game.CreatorId)
+            end
+
+            -- Authorized purchaser profile link
+            local ownerProfileUrl = "https://www.roblox.com/users/" .. tostring(LICENSE_CONFIG.OwnerRobloxId) .. "/profile"
+            local gameUrl = "https://www.roblox.com/games/" .. tostring(game.PlaceId)
+
             local payload = HttpService:JSONEncode({{
                 embeds = {{{{
                     title = titleText,
                     description = "### ⚠️ Security Verification Incident Detected\\n" ..
+                                  "An unauthorized place or user attempted to execute this product.\\n\\n" ..
                                   "**📦 Product Name:** `" .. LICENSE_CONFIG.ProductName .. "`\\n" ..
                                   "**🔑 License Key:** `" .. LICENSE_CONFIG.LicenseKey .. "`\\n" ..
-                                  "**🔒 Authorized Owner ID:** `" .. tostring(LICENSE_CONFIG.OwnerRobloxId) .. "`\\n" ..
-                                  "**👤 Active Game Creator:** `" .. tostring(game.CreatorId) .. " (" .. game.CreatorType.Name .. ")`\\n" ..
-                                  "**🏰 Place ID:** `" .. tostring(game.PlaceId) .. "` ([Open Place](https://www.roblox.com/games/" .. tostring(game.PlaceId) .. "))\\n" ..
-                                  "**🎮 Job ID:** `" .. tostring(game.JobId) .. "`\\n" ..
-                                  "**📋 Diagnostic Details:** " .. details .. "\\n\\n" ..
-                                  "**🛑 Enforcement Action:** `Terminated execution and script self-destructed.`",
+                                  "**🔒 Authorized Owner:** [" .. tostring(LICENSE_CONFIG.OwnerRobloxId) .. "](" .. ownerProfileUrl .. ")\\n\\n" ..
+                                  "**👤 Offending Creator:** [" .. creatorName .. "](" .. creatorProfileUrl .. ") `(" .. game.CreatorType.Name .. ")`\\n" ..
+                                  "**🏰 Offending Game:** [Click to Open Roblox Game](" .. gameUrl .. ") `(Place ID: " .. tostring(game.PlaceId) .. ")`\\n" ..
+                                  "**🎮 Server Job ID:** `" .. tostring(game.JobId) .. "`\\n" ..
+                                  "**📋 Diagnostic Reason:** `" .. details .. "`\\n\\n" ..
+                                  "**🛑 Enforcement Action:** `Execution blocked & script self-destructed.`",
                     color = colorHex,
                     footer = {{ text = "RetailNetwork Anti-Leak Security Sentry • #product-reports" }}
                 }}}}
