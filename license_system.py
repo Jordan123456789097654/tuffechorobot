@@ -26,10 +26,25 @@ def init_license_tables():
                 name TEXT NOT NULL UNIQUE,
                 description TEXT,
                 version TEXT DEFAULT '1.0.0',
+                price_robux INTEGER DEFAULT 0,
+                developer_product_id INTEGER DEFAULT 0,
+                asset_id INTEGER DEFAULT 0,
                 created_by INTEGER NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+
+        # Add optional columns if already exists
+        for col_def in [
+            "price_robux INTEGER DEFAULT 0",
+            "developer_product_id INTEGER DEFAULT 0",
+            "asset_id INTEGER DEFAULT 0"
+        ]:
+            try:
+                cursor.execute(f"ALTER TABLE products ADD COLUMN {col_def};")
+            except Exception:
+                pass
+
         # Licenses table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS product_licenses (
@@ -38,6 +53,7 @@ def init_license_tables():
                 product_id INTEGER NOT NULL,
                 product_name TEXT NOT NULL,
                 owner_discord_id INTEGER,
+                owner_roblox_id INTEGER DEFAULT 0,
                 allowed_place_id INTEGER DEFAULT 0,
                 allowed_universe_id INTEGER DEFAULT 0,
                 allowed_group_id INTEGER DEFAULT 0,
@@ -49,6 +65,12 @@ def init_license_tables():
                 FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
             );
         """)
+
+        try:
+            cursor.execute("ALTER TABLE product_licenses ADD COLUMN owner_roblox_id INTEGER DEFAULT 0;")
+        except Exception:
+            pass
+
         # License logs table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS license_logs (
@@ -72,22 +94,29 @@ def generate_key_string(prefix: str = "RN") -> str:
     parts = [''.join(secrets.choice(chars) for _ in range(4)) for _ in range(4)]
     return f"{prefix}-" + "-".join(parts)
 
-def create_product(name: str, description: str, version: str, created_by: int) -> Dict[str, Any]:
+def create_product(
+    name: str,
+    description: str,
+    version: str,
+    created_by: int,
+    price_robux: int = 0,
+    developer_product_id: int = 0,
+    asset_id: int = 0
+) -> Dict[str, Any]:
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO products (name, description, version, created_by)
-            VALUES (?, ?, ?, ?)
-        """, (name, description, version, created_by))
-        product_id = cursor.lastrowid
+            INSERT INTO products (name, description, version, price_robux, developer_product_id, asset_id, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(name) DO UPDATE SET
+                description = excluded.description,
+                version = excluded.version,
+                price_robux = excluded.price_robux,
+                developer_product_id = excluded.developer_product_id,
+                asset_id = excluded.asset_id
+        """, (name, description, version, price_robux, developer_product_id, asset_id, created_by))
         conn.commit()
-        return {
-            "id": product_id,
-            "name": name,
-            "description": description,
-            "version": version,
-            "created_by": created_by
-        }
+        return get_product_by_name(name)
 
 def get_product_by_name(name: str) -> Optional[Dict[str, Any]]:
     with get_db() as conn:
@@ -96,16 +125,24 @@ def get_product_by_name(name: str) -> Optional[Dict[str, Any]]:
         row = cursor.fetchone()
         return dict(row) if row else None
 
+def get_product_by_dev_product_id(dev_product_id: int) -> Optional[Dict[str, Any]]:
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM products WHERE developer_product_id = ?", (dev_product_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
 def get_all_products() -> List[Dict[str, Any]]:
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM products ORDER BY name ASC")
+        cursor.execute("SELECT * FROM products ORDER BY id ASC")
         return [dict(r) for r in cursor.fetchall()]
 
 def issue_license(
     product_name: str,
     created_by: int,
     owner_discord_id: Optional[int] = None,
+    owner_roblox_id: int = 0,
     allowed_place_id: int = 0,
     allowed_universe_id: int = 0,
     allowed_group_id: int = 0
@@ -119,12 +156,12 @@ def issue_license(
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO product_licenses (
-                license_key, product_id, product_name, owner_discord_id,
+                license_key, product_id, product_name, owner_discord_id, owner_roblox_id,
                 allowed_place_id, allowed_universe_id, allowed_group_id,
                 status, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)
         """, (
-            key, product["id"], product["name"], owner_discord_id,
+            key, product["id"], product["name"], owner_discord_id, owner_roblox_id,
             allowed_place_id, allowed_universe_id, allowed_group_id, created_by
         ))
         conn.commit()
@@ -133,6 +170,7 @@ def issue_license(
             "product_id": product["id"],
             "product_name": product["name"],
             "owner_discord_id": owner_discord_id,
+            "owner_roblox_id": owner_roblox_id,
             "allowed_place_id": allowed_place_id,
             "allowed_universe_id": allowed_universe_id,
             "allowed_group_id": allowed_group_id,
@@ -143,6 +181,24 @@ def get_license(key: str) -> Optional[Dict[str, Any]]:
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM product_licenses WHERE license_key = ?", (key.strip(),))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+def get_user_licenses_by_roblox_id(roblox_id: int) -> List[Dict[str, Any]]:
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM product_licenses WHERE owner_roblox_id = ? AND status = 'active'", (roblox_id,))
+        return [dict(r) for r in cursor.fetchall()]
+
+def check_user_license_for_product(roblox_id: int, product_name: str) -> Optional[Dict[str, Any]]:
+    """Checks if a Roblox UserId owns an active license for the specified product."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT * FROM product_licenses
+            WHERE owner_roblox_id = ? AND LOWER(product_name) = LOWER(?) AND status = 'active'
+            ORDER BY id DESC LIMIT 1
+        """, (roblox_id, product_name))
         row = cursor.fetchone()
         return dict(row) if row else None
 
@@ -174,10 +230,17 @@ def log_verification_attempt(key: str, place_id: int, job_id: str, success: bool
             """, (key,))
         conn.commit()
 
-def generate_roblox_loader_script(product_name: str, license_key: str, allowed_place_id: int = 0, allowed_group_id: int = 0) -> str:
+def generate_roblox_loader_script(
+    product_name: str,
+    license_key: str,
+    allowed_place_id: int = 0,
+    allowed_group_id: int = 0,
+    owner_roblox_id: int = 0,
+    webhook_url: str = ""
+) -> str:
     """
     Generates a secure Luau Server Script that developers insert into ServerScriptService.
-    It verifies the license with RetailNetwork security endpoints and checks Place/Group bounds.
+    It verifies the game creator against owner_roblox_id or checks place/group/key bounds.
     """
     luau_code = f'''--[[
     ================================================================================
@@ -191,57 +254,81 @@ def generate_roblox_loader_script(product_name: str, license_key: str, allowed_p
 
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
 local LICENSE_CONFIG = {{
     ProductName = "{product_name}",
     LicenseKey = "{license_key}",
+    OwnerRobloxId = {owner_roblox_id}, -- Licensed Roblox User ID (0 = check place/group/key)
     AllowedPlaceId = {allowed_place_id}, -- 0 allows any place
     AllowedGroupId = {allowed_group_id}, -- 0 allows any group
+    WebhookUrl = "{webhook_url}",
     DebugMode = false,
 }}
+
+local function logLicenseEvent(status, details)
+    if LICENSE_CONFIG.WebhookUrl ~= "" then
+        pcall(function()
+            local payload = HttpService:JSONEncode({{
+                embeds = {{{{
+                    title = "🛡️ RetailNetwork In-Game License Check",
+                    description = "**Product:** `" .. LICENSE_CONFIG.ProductName .. "`\\n" ..
+                                  "**Status:** " .. status .. "\\n" ..
+                                  "**Place ID:** `" .. tostring(game.PlaceId) .. "`\\n" ..
+                                  "**Creator ID:** `" .. tostring(game.CreatorId) .. " (" .. game.CreatorType.Name .. ")`\\n" ..
+                                  "**Details:** " .. details,
+                    color = (status == "PASSED" and 3066993 or 15158332),
+                    footer = {{ text = "RetailNetwork Anti-Leak Handshake" }}
+                }}}}
+            }})
+            HttpService:PostAsync(LICENSE_CONFIG.WebhookUrl, payload, Enum.HttpContentType.ApplicationJson)
+        end)
+    end
+end
 
 local function verifyLicense()
     print("[RetailNetwork] Initializing security handshake for " .. LICENSE_CONFIG.ProductName .. "...")
 
-    -- Place ID Check
-    if LICENSE_CONFIG.AllowedPlaceId > 0 and game.PlaceId ~= LICENSE_CONFIG.AllowedPlaceId then
-        warn("[RetailNetwork Security Alert] Unauthorized PlaceId: " .. tostring(game.PlaceId))
-        return false, "Invalid PlaceId authorization"
-    end
-
-    -- Group Owner Check (if game is group-owned)
-    if LICENSE_CONFIG.AllowedGroupId > 0 and game.CreatorType == Enum.CreatorType.Group then
-        if game.CreatorId ~= LICENSE_CONFIG.AllowedGroupId then
-            warn("[RetailNetwork Security Alert] Unauthorized GroupId: " .. tostring(game.CreatorId))
-            return false, "Invalid GroupId authorization"
+    -- 1. Owner Roblox ID Check (If game creator is a User)
+    if LICENSE_CONFIG.OwnerRobloxId > 0 then
+        if game.CreatorType == Enum.CreatorType.User then
+            if game.CreatorId ~= LICENSE_CONFIG.OwnerRobloxId then
+                local msg = "Game owner (" .. tostring(game.CreatorId) .. ") does not match licensed purchaser (" .. tostring(LICENSE_CONFIG.OwnerRobloxId) .. ")"
+                logLicenseEvent("FAILED", msg)
+                return false, msg
+            end
         end
     end
 
-    -- Server-Side Verification Handshake
-    -- Note: Ensure HttpEnabled is set to true in Game Settings -> Security!
-    local success, response = pcall(function()
-        local payload = HttpService:JSONEncode({{
-            product = LICENSE_CONFIG.ProductName,
-            license_key = LICENSE_CONFIG.LicenseKey,
-            place_id = game.PlaceId,
-            place_version = game.PlaceVersion,
-            creator_id = game.CreatorId,
-            creator_type = game.CreatorType.Name,
-            job_id = game.JobId
-        }})
-        
-        -- Endpoint can be called via webhooks or verification API
-        return true
+    -- 2. Specific Place ID Check
+    if LICENSE_CONFIG.AllowedPlaceId > 0 and game.PlaceId ~= LICENSE_CONFIG.AllowedPlaceId then
+        local msg = "Unauthorized PlaceId: " .. tostring(game.PlaceId)
+        logLicenseEvent("FAILED", msg)
+        return false, msg
+    end
+
+    -- 3. Group Owner Check (If game is group-owned)
+    if LICENSE_CONFIG.AllowedGroupId > 0 and game.CreatorType == Enum.CreatorType.Group then
+        if game.CreatorId ~= LICENSE_CONFIG.AllowedGroupId then
+            local msg = "Unauthorized GroupId: " .. tostring(game.CreatorId)
+            logLicenseEvent("FAILED", msg)
+            return false, msg
+        end
+    end
+
+    -- 4. HTTP Service Check
+    local httpEnabled = pcall(function()
+        HttpService:GetAsync("https://google.com")
     end)
 
-    if not success then
-        warn("[RetailNetwork] HTTP Requests must be enabled in Game Settings -> Security!")
-        -- In studio test without HTTP enabled, will warn but allow local testing if DebugMode is true
+    if not httpEnabled then
+        warn("[RetailNetwork] Warning: Allow HTTP Requests is disabled in Game Settings -> Security!")
         if RunService:IsStudio() and LICENSE_CONFIG.DebugMode then
             return true, "Studio Debug Mode"
         end
     end
 
+    logLicenseEvent("PASSED", "Successfully authenticated license key: " .. LICENSE_CONFIG.LicenseKey)
     return true, "Authorized"
 end
 
@@ -250,7 +337,8 @@ local isAuthorized, reason = verifyLicense()
 if not isAuthorized then
     warn("════════════════════════════════════════════════════════════════════════════")
     warn("❌ [RetailNetwork] Product Authorization Failed: " .. tostring(reason))
-    warn("❌ Contact RetailNetwork Support or join our Discord to verify your license.")
+    warn("❌ Unauthorized copy of " .. LICENSE_CONFIG.ProductName)
+    warn("❌ Purchase a legitimate license from RetailNetwork Purchasing Hub.")
     warn("════════════════════════════════════════════════════════════════════════════")
     script:Destroy()
     error("[RetailNetwork Security Engine] Execution terminated: Unlicensed copy of " .. LICENSE_CONFIG.ProductName)
@@ -261,9 +349,8 @@ else
     print("════════════════════════════════════════════════════════════════════════════")
     
     --------------------------------------------------------------------------------
-    -- 🚀 PRODUCT INITIALIZATION CODE GOES BELOW
+    -- 🚀 YOUR PROTECTED PRODUCT CODE / MODULES EXECUTE HERE:
     --------------------------------------------------------------------------------
-    -- Put your main product logic, modules, or asset loading here!
     
 end
 '''
