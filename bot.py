@@ -117,6 +117,7 @@ from points_system import (
 from support_templates_system import sync_support_templates_channel
 from supervisor_templates_system import sync_supervisor_templates_channel, SupervisorCategorySelectView
 from music_system import register_music_commands, ensure_voice_connection, MusicControlView, get_music_player
+from license_commands import register_license_commands
 
 
 
@@ -237,6 +238,7 @@ class RobloxVerificationBot(commands.Bot):
         try:
             self.tree.clear_commands(guild=None)
             register_music_commands(self)
+            register_license_commands(self)
             if config.GUILD_ID:
                 guild_obj = discord.Object(id=config.GUILD_ID)
                 self.tree.copy_global_to(guild=guild_obj)

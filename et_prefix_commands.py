@@ -21,6 +21,7 @@ from hiring_system import (
     schedule_interview, log_interview_scorecard, create_custom_offer,
     start_onboarding, start_hiring_campaign, cancel_hiring_campaign, get_hiring_campaign
 )
+from license_wizard import execute_prefix_create_product
 
 logger = logging.getLogger("roblox_bot.rn_prefix")
 
@@ -232,7 +233,11 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
         return True
 
     # Subcommand routing
-    if subcmd == "say":
+    if subcmd in ("create-product", "createproduct", "newproduct"):
+        await execute_prefix_create_product(bot, message)
+        return True
+
+    elif subcmd == "say":
         await execute_say(message, args)
 
     elif subcmd in ("duty", "on-duty", "off-duty"):
