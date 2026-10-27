@@ -200,7 +200,7 @@ def build_rank_card_embed(
     else:
         embed.add_field(name="🎮 Linked Roblox", value="*Not verified*", inline=True)
 
-    embed.set_footer(text="Echo Technologies Leveling • Chat to earn XP")
+    embed.set_footer(text="RetailNetwork Leveling • Chat to earn XP")
     return embed
 
 def build_leaderboard_embed(
@@ -238,5 +238,5 @@ def build_leaderboard_embed(
             )
         embed.description = "\n".join(lines)
 
-    embed.set_footer(text="Echo Technologies Community Leaderboard")
+    embed.set_footer(text="RetailNetwork Community Leaderboard")
     return embed

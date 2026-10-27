@@ -93,14 +93,14 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "**ECHO TECHNOLOGIES • HUMAN RESOURCES DIVISION**\n"
             "**OFFICIAL DISCIPLINARY STRIKE NOTICE**\n\n"
             "Dear {user},\n\n"
-            "This communication serves as a formal notification that an **Official Disciplinary Strike** has been registered against your record in the Echo Technologies HR Database.\n\n"
+            "This communication serves as a formal notification that an **Official Disciplinary Strike** has been registered against your record in the RetailNetwork HR Database.\n\n"
             "📋 **Notice Parameters:**\n"
             "• **Action Type:** Official Disciplinary Strike\n"
             "• **Authority:** Foundership & Executive HR Leadership\n"
             "• **Policy Violation:** Non-compliance with Staff Protocol & Code of Conduct\n\n"
             "Please be advised that accumulating multiple strikes will result in immediate suspension, demotion, or permanent termination of staff credentials. If you wish to appeal this action, submit an appeal ticket via High-Ranking Support within 48 hours.\n\n"
             "Sincerely,\n"
-            "**Echo Technologies Foundership & HR Operations**"
+            "**RetailNetwork Foundership & HR Operations**"
         )
     },
     "staff_suspension_notice": {
@@ -124,7 +124,7 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "• **Mandate:** You are required to remain available for HR questioning regarding the pending inquiry.\n\n"
             "Do not attempt to bypass permissions or discuss active investigations in public channels. Executive Leadership will notify you upon conclusion of the review.\n\n"
             "Sincerely,\n"
-            "**Executive HR Directorate • Echo Technologies**"
+            "**Executive HR Directorate • RetailNetwork**"
         )
     },
     "staff_suspension_lifted": {
@@ -148,7 +148,7 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "• **Next Steps:** Please check in with your Department Lead for active duty assignments.\n\n"
             "Thank you for your cooperation during the administrative review process.\n\n"
             "Sincerely,\n"
-            "**Executive HR Directorate • Echo Technologies**"
+            "**Executive HR Directorate • RetailNetwork**"
         )
     },
     "staff_demotion_notice": {
@@ -165,14 +165,14 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "**ECHO TECHNOLOGIES • HUMAN RESOURCES DIVISION**\n"
             "**NOTICE OF DEMOTION AND ROLE TERMINATION**\n\n"
             "Dear {user},\n\n"
-            "Following a thorough performance and compliance audit by Foundership and Executive HR Operations, we regret to inform you that your appointment as a staff member at Echo Technologies has been **Terminated**.\n\n"
+            "Following a thorough performance and compliance audit by Foundership and Executive HR Operations, we regret to inform you that your appointment as a staff member at RetailNetwork has been **Terminated**.\n\n"
             "📋 **Executive Order Summary:**\n"
             "• **Action Taken:** Formal Demotion & Role Revocation\n"
             "• **Effective Date:** Immediate\n"
             "• **Reasoning:** Failure to uphold staff performance benchmarks and operational directives.\n\n"
             "All staff credentials, internal access keys, and administrative permissions have been revoked. We thank you for your past contributions.\n\n"
             "Sincerely,\n"
-            "**Foundership & Board of Directors • Echo Technologies**"
+            "**Foundership & Board of Directors • RetailNetwork**"
         )
     },
     "staff_blacklist_notice": {
@@ -189,13 +189,13 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "**ECHO TECHNOLOGIES • HUMAN RESOURCES DIVISION**\n"
             "**CONFIDENTIAL DIRECTIVE: PERMANENT STAFF BLACKLIST**\n\n"
             "Dear {user},\n\n"
-            "Due to a severe breach of trust, unauthorized disclosure, or major misconduct, your account has been placed on the **Permanent Echo Technologies Staff Blacklist**.\n\n"
+            "Due to a severe breach of trust, unauthorized disclosure, or major misconduct, your account has been placed on the **Permanent RetailNetwork Staff Blacklist**.\n\n"
             "🚫 **Blacklist Impact:**\n"
             "• **Staff Eligibility:** Permanently Ineligible for any future staff, developer, or affiliate roles.\n"
-            "• **Global Network Enforcement:** Entry broadcasted across all Echo Technologies systems and partner networks.\n"
+            "• **Global Network Enforcement:** Entry broadcasted across all RetailNetwork systems and partner networks.\n"
             "• **Appeals:** Final Order — Non-appealable.\n\n"
             "Sincerely,\n"
-            "**Office of the Founders • Echo Technologies**"
+            "**Office of the Founders • RetailNetwork**"
         )
     },
     "promotion_appointment": {
@@ -212,13 +212,13 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "**ECHO TECHNOLOGIES • EXECUTIVE OFFICE**\n"
             "**OFFICIAL LETTER OF PROMOTION**\n\n"
             "Dear {user},\n\n"
-            "On behalf of Foundership and Executive Leadership, it is our distinct honor to announce your official **Promotion** within the Echo Technologies organization!\n\n"
+            "On behalf of Foundership and Executive Leadership, it is our distinct honor to announce your official **Promotion** within the RetailNetwork organization!\n\n"
             "🎉 **Appointment Details:**\n"
             "• **New Position:** Elevated Leadership Role\n"
             "• **Status:** Active & Authorized\n\n"
             "Your dedication, leadership, and exemplary performance have distinguished you as a vital pillar of our team. We look forward to your continued excellence in this new capacity.\n\n"
             "Congratulations,\n"
-            "**Foundership & Executive Directorate • Echo Technologies**"
+            "**Foundership & Executive Directorate • RetailNetwork**"
         )
     },
     "appeal_ruling_approved": {
@@ -235,13 +235,13 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "**ECHO TECHNOLOGIES • APPEALS COMMISSION**\n"
             "**OFFICIAL APPEAL DETERMINATION — APPROVED**\n\n"
             "Dear {user},\n\n"
-            "The Echo Technologies Appeals Commission has concluded its formal review regarding your recent infraction appeal.\n\n"
+            "The RetailNetwork Appeals Commission has concluded its formal review regarding your recent infraction appeal.\n\n"
             "⚖️ **Official Determination:** **APPROVED**\n"
             "• **Resolution:** The disciplinary action / penalty on record has been **Pardoned and Expunged**.\n"
             "• **Account Status:** Restored to Full Standing.\n\n"
             "Thank you for your patience during our administrative review process.\n\n"
             "Sincerely,\n"
-            "**Appeals Directorate • Echo Technologies**"
+            "**Appeals Directorate • RetailNetwork**"
         )
     },
     "appeal_ruling_denied": {
@@ -258,13 +258,13 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "**ECHO TECHNOLOGIES • APPEALS COMMISSION**\n"
             "**OFFICIAL APPEAL DETERMINATION — DENIED**\n\n"
             "Dear {user},\n\n"
-            "The Echo Technologies Appeals Commission has thoroughly evaluated your submission and supporting evidence.\n\n"
+            "The RetailNetwork Appeals Commission has thoroughly evaluated your submission and supporting evidence.\n\n"
             "⚖️ **Official Determination:** **DENIED**\n"
             "• **Finding:** The original disciplinary penalty was executed in full accordance with server protocols.\n"
             "• **Status:** The penalty remains active as issued.\n\n"
             "This determination represents the final administrative decision on this matter.\n\n"
             "Sincerely,\n"
-            "**Appeals Directorate • Echo Technologies**"
+            "**Appeals Directorate • RetailNetwork**"
         )
     },
     "loa_approval_formal": {
@@ -285,9 +285,9 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "✈️ **LOA Parameters:**\n"
             "• **Status:** Approved / Exemption Granted\n"
             "• **Quota Requirement:** Temporarily Suspended\n\n"
-            "Please ensure you notify HR upon your return to reactivate active duty status. We wish you well during your leave!\n\n"
+            "Please ensure you notify HR upon your return to reactivate active duty status. We wish you well during your leavrn!\n\n"
             "Sincerely,\n"
-            "**HR Operations • Echo Technologies**"
+            "**HR Operations • RetailNetwork**"
         )
     },
     "investigation_notice": {
@@ -311,7 +311,7 @@ BUILTIN_SUPERVISOR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "3. Maintain strict confidentiality regarding this inquiry.\n\n"
             "A Supervisor will preside over this inquiry.\n\n"
             "Sincerely,\n"
-            "**Supervisory Board • Echo Technologies**"
+            "**Supervisory Board • RetailNetwork**"
         )
     }
 }
@@ -339,7 +339,7 @@ def get_combined_supervisor_template_list() -> List[Dict[str, Any]]:
 async def build_supervisor_header_embed(bot=None) -> discord.Embed:
     """Builds header embed for #supervisor-templates (1556427867947278336)."""
     embed = discord.Embed(
-        title="👑 Echo Technologies • Supervisor & HR Leadership Knowledge Base",
+        title="👑 RetailNetwork • Supervisor & HR Leadership Knowledge Base",
         description=(
             "Welcome to the official **Supervisor & HR Leadership Template Console**!\n\n"
             "This channel is strictly reserved for **Foundership, Executive Leadership, and HR Supervisors** "
@@ -354,7 +354,7 @@ async def build_supervisor_header_embed(bot=None) -> discord.Embed:
         color=0x9B59B6,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text="Echo Technologies Executive Office • Supervisor SOP Panel")
+    embed.set_footer(text="RetailNetwork Executive Office • Supervisor SOP Panel")
     return embed
 
 class SupervisorCategorySelectView(ui.View):
@@ -401,7 +401,7 @@ class SupervisorCategorySelectView(ui.View):
             ),
             color=0x9B59B6
         )
-        embed.set_footer(text=f"Shortcut: {tpl['shortcut']} • Echo Technologies Executive SOP")
+        embed.set_footer(text=f"Shortcut: {tpl['shortcut']} • RetailNetwork Executive SOP")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 class SendSupervisorTemplateSelectView(ui.View):
@@ -485,7 +485,7 @@ class SendSupervisorTemplateSelectView(ui.View):
         try:
             dm = await candidate.create_dm()
             dm_embed = discord.Embed(
-                title=f"👑 Echo Technologies Executive Directive • {tpl['title']}",
+                title=f"👑 RetailNetwork Executive Directive • {tpl['title']}",
                 description=formatted_text,
                 color=0x9B59B6,
                 timestamp=discord.utils.utcnow()

@@ -270,7 +270,7 @@ async def evaluate_message_for_point(message: discord.Message) -> Tuple[bool, st
     _user_eval_cooldowns[uid] = now
 
     prompt = (
-        "You are the Echo Technologies Community AI Evaluator.\n"
+        "You are the RetailNetwork Community AI Evaluator.\n"
         "Your task is to analyze a Discord member's chat message in a Roblox game development studio & asset store server.\n"
         "Determine if this message represents a genuine, high-quality, or helpful contribution deserving of a Community Point.\n\n"
         "Criteria to award a point:\n"
@@ -360,7 +360,7 @@ def build_reward_unlocked_embed(user: discord.User) -> Tuple[discord.Embed, ui.V
         title="🎉 REWARD UNLOCKED • ECHO BLACKLIST SYSTEM (FREE)!",
         description=(
             f"Incredible work, {user.mention}! 🌟\n\n"
-            f"You have accumulated **5 Community Points** through helpful and constructive engagement in **Echo Technologies**!\n\n"
+            f"You have accumulated **5 Community Points** through helpful and constructive engagement in **RetailNetwork**!\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🎁 **Your Claimable Reward:**\n"
             f"• **Product:** **Echo Blacklist System** (Complete Server-Authoritative Ban System)\n"
@@ -378,7 +378,7 @@ def build_reward_unlocked_embed(user: discord.User) -> Tuple[discord.Embed, ui.V
     )
     if hasattr(user, "display_avatar") and user.display_avatar:
         embed.set_thumbnail(url=user.display_avatar.url)
-    embed.set_footer(text="Echo Technologies Community Rewards • 5 Points Milestone Reached")
+    embed.set_footer(text="RetailNetwork Community Rewards • 5 Points Milestone Reached")
 
     view = ui.View(timeout=None)
     view.add_item(
@@ -399,11 +399,11 @@ def build_point_earned_embed(user: discord.User, new_total: int, reason: str) ->
             f"{user.mention} just earned **+1 Community Point** for positive contribution!\n\n"
             f"💡 **AI Note:** *{reason}*\n\n"
             f"📊 **Reward Progress:** {render_progress_bar(new_total, 5)}\n"
-            f"*(Reach 5 points to unlock the **Echo Blacklist System** for free!)*"
+            f"*(Reach 5 points to unlock the **Echo Blacklist System** for frern!)*"
         ),
         color=0xFEE75C
     )
-    embed.set_footer(text=f"Echo Technologies Rewards • Total Points: {new_total}")
+    embed.set_footer(text=f"RetailNetwork Rewards • Total Points: {new_total}")
     return embed
 
 
@@ -424,7 +424,7 @@ REWARD_CATALOGUE = {
         "name": "🛡️ Echo Blacklist System (100 Robux Value)",
         "cost": 5,
         "type": "product",
-        "description": "Complete server-authoritative Roblox ban system (FREE at 5 pts milestone!).",
+        "description": "Complete server-authoritative Roblox ban system (FREE at 5 pts milestonrn!).",
         "emoji": "🛡️"
     },
     "coupon_discount": {
@@ -442,7 +442,7 @@ REWARD_CATALOGUE = {
         "emoji": "💻"
     },
     "role_elite": {
-        "name": "👑 Echo Elite Role & Beta Access",
+        "name": "👑 RetailNetwork Elite Role & Beta Access",
         "cost": 15,
         "type": "role",
         "role_id": config.ECHO_ELITE_ROLE_ID,
@@ -507,7 +507,7 @@ async def redeem_reward(
         if member and role_id:
             role = guild.get_role(role_id) if guild else None
             if role and role in member.roles:
-                return False, f"You already have the **{role.name}** role!", None
+                return False, f"You already have the **{role.name}** rolrn!", None
 
         # Deduct points
         new_balance = remove_points(
@@ -561,7 +561,7 @@ async def redeem_reward(
             f"🎟️ You have redeemed **{reward['name']}** for `{cost}` Points!\n\n"
             f"Here is your exclusive single-use coupon code:\n"
             f"**`{coupon_code}`**\n\n"
-            f"Present this code when ordering or opening a ticket to claim **50% OFF** any upcoming asset!\n"
+            f"Present this code when ordering or opening a ticket to claim **50% OFF** any upcoming assrn!\n"
             f"Remaining balance: `{new_balance}` Points."
         )
         return True, msg, {"type": "coupon", "coupon_code": coupon_code}
@@ -586,7 +586,7 @@ async def redeem_reward(
         msg = (
             f"💻 You have redeemed **{reward['name']}** for `{cost}` Points!\n\n"
             f"Please open a General Support ticket in <#1556000081877147771> (`#ticket-center`) "
-            f"to download your asset file package!\n"
+            f"to download your asset file packagrn!\n"
             f"Remaining balance: `{new_balance}` Points."
         )
         return True, msg, {"type": "asset"}
@@ -662,14 +662,14 @@ def build_tip_embed(tipper: discord.User, recipient: discord.User, amount: int, 
             f"{tipper.mention} just tipped **{amount} Community Point{'s' if amount > 1 else ''}** to {recipient.mention}! 🎁\n\n"
             f"💬 **Note:** *\"{note}\"*\n\n"
             f"📊 **Recipient Progress:** {render_progress_bar(recipient_new_total, 5)}\n"
-            f"*(Reach 5 points to unlock the **Echo Blacklist System** for free!)*"
+            f"*(Reach 5 points to unlock the **Echo Blacklist System** for frern!)*"
         ),
         color=0x57F287,
         timestamp=discord.utils.utcnow()
     )
     if hasattr(tipper, "display_avatar") and tipper.display_avatar:
         embed.set_thumbnail(url=tipper.display_avatar.url)
-    embed.set_footer(text="Echo Technologies Community Tipping System")
+    embed.set_footer(text="RetailNetwork Community Tipping System")
     return embed
 
 
@@ -681,7 +681,7 @@ def build_shop_embed(user: discord.User, points_data: Dict[str, Any]) -> discord
     """Builds the interactive Rewards Shop embed."""
     balance = points_data["points"]
     embed = discord.Embed(
-        title="🛍️ Echo Technologies • Community Rewards Shop",
+        title="🛍️ RetailNetwork • Community Rewards Shop",
         description=(
             f"Earn points by helping fellow developers in chat with scripting, UI, and creative feedback!\n"
             f"Redeem your points below for exclusive roles, product discounts, and free assets.\n\n"
@@ -697,14 +697,14 @@ def build_shop_embed(user: discord.User, points_data: Dict[str, Any]) -> discord
         status_icon = "🟢" if balance >= item["cost"] else "🔒"
         cost_badge = f"`{item['cost']} Points`"
         if rid == "blacklist_system":
-            cost_badge += " *(FREE at 5 pts milestone!)*"
+            cost_badge += " *(FREE at 5 pts milestonrn!)*"
         embed.add_field(
             name=f"{status_icon} {item['name']} — {cost_badge}",
             value=f"> {item['description']}",
             inline=False
         )
 
-    embed.set_footer(text="Select an item below to redeem • Echo Technologies Rewards")
+    embed.set_footer(text="Select an item below to redeem • RetailNetwork Rewards")
     return embed
 
 class PointsShopSelect(ui.Select):
@@ -757,7 +757,7 @@ class PointsShopSelect(ui.Select):
                     inline=False
                 )
             pts = get_user_points(interaction.user.id)
-            embed.set_footer(text=f"Updated Balance: {pts['points']} Points • Echo Technologies")
+            embed.set_footer(text=f"Updated Balance: {pts['points']} Points • RetailNetwork")
             await interaction.response.send_message(embed=embed, ephemeral=True)
         else:
             await interaction.response.send_message(f"❌ {message}", ephemeral=True)

@@ -169,7 +169,7 @@ def build_bug_embed(
     if report.get("dev_notes"):
         embed.add_field(name="Developer Fix / Resolution Notes", value=f"> *\"{report['dev_notes']}\"*", inline=False)
 
-    embed.set_footer(text=f"Echo Technologies Dev Tracker • Backlog #{bid}")
+    embed.set_footer(text=f"RetailNetwork Dev Tracker • Backlog #{bid}")
     return embed
 
 
@@ -271,7 +271,7 @@ class ResolveBugModal(ui.Modal, title="Resolve Bug Report"):
                     dm_embed = discord.Embed(
                         title=f"🎉 Bug Report #{self.bug_id} Resolved!",
                         description=(
-                            f"Hello **{reporter.name}**, great news! The issue you reported to **Echo Technologies** has been marked as resolved.\n\n"
+                            f"Hello **{reporter.name}**, great news! The issue you reported to **RetailNetwork** has been marked as resolved.\n\n"
                             f"• **Bug Title:** `{report['title']}`\n"
                             f"• **Resolved By:** {interaction.user.mention} (`{interaction.user.display_name}`)\n"
                             f"• **Resolution Notes:**\n> *\"{notes}\"*\n\n"

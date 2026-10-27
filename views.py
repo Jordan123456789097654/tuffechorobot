@@ -308,7 +308,7 @@ class VerificationCheckView(ui.View):
             fail_embed = discord.Embed(
                 title="⚠️ Code Not Found in Roblox Bio",
                 description=(
-                    f"We could not find the code `{self.code}` in your Roblox profile bio yet!\n\n"
+                    f"We could not find the code `{self.code}` in your Roblox profile bio yrn!\n\n"
                     f"**Current Bio Detected:**\n{preview_text}\n\n"
                     "**Troubleshooting Checklist:**\n"
                     "1. Did you click **Save** after pasting the code on Roblox?\n"

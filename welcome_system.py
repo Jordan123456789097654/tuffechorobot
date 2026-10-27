@@ -16,9 +16,9 @@ def build_welcome_embed(
 
     if roblox_info:
         embed = discord.Embed(
-            title=f"👋 Welcome to Echo Technologies, {member.name}!",
+            title=f"👋 Welcome to RetailNetwork, {member.name}!",
             description=(
-                f"Welcome {member.mention} to the official **Echo Technologies** community!\n"
+                f"Welcome {member.mention} to the official **RetailNetwork** community!\n"
                 f"Your Roblox account has been recognized by our systems."
             ),
             color=0x00A2FF,
@@ -30,9 +30,9 @@ def build_welcome_embed(
         embed.add_field(name="🔒 Verification Status", value="✅ **Verified & Roles Assigned**", inline=True)
     else:
         embed = discord.Embed(
-            title=f"👋 Welcome to Echo Technologies, {member.name}!",
+            title=f"👋 Welcome to RetailNetwork, {member.name}!",
             description=(
-                f"Welcome {member.mention} to the official **Echo Technologies** community!\n\n"
+                f"Welcome {member.mention} to the official **RetailNetwork** community!\n\n"
                 f"To unlock full access to our channels and games, please verify your Roblox account:"
             ),
             color=0x5865F2,
@@ -45,11 +45,11 @@ def build_welcome_embed(
         )
 
     embed.add_field(
-        name="🚀 Explore Echo Technologies",
+        name="🚀 Explore RetailNetwork",
         value=(
             f"• 🛡️ **Account Verification:** <#{config.VERIFICATION_CHANNEL_ID}>\n"
             f"• 💡 **Community Suggestions:** <#{config.SUGGESTIONS_CHANNEL_ID}>\n"
-            f"• 🎫 **Support Help Desk:** Send a direct message (DM) to this bot anytime!"
+            f"• 🎫 **Support Help Desk:** Send a direct message (DM) to this bot anytimrn!"
         ),
         inline=False
     )
@@ -59,7 +59,7 @@ def build_welcome_embed(
     else:
         embed.set_thumbnail(url=member.display_avatar.url)
 
-    embed.set_footer(text=f"Member #{member_count} • Echo Technologies Official Gateway")
+    embed.set_footer(text=f"Member #{member_count} • RetailNetwork Official Gateway")
     return embed
 
 
@@ -73,9 +73,9 @@ def build_verification_announcement_embed(
     rbx_link = f"[{roblox_info['roblox_id']}](https://www.roblox.com/users/{roblox_info['roblox_id']}/profile)"
 
     embed = discord.Embed(
-        title="🎉 Roblox Account Verification Complete!",
+        title="🎉 Roblox Account Verification Completrn!",
         description=(
-            f"Let's welcome {member.mention} to **Echo Technologies**!\n"
+            f"Let's welcome {member.mention} to **RetailNetwork**!\n"
             f"They have successfully verified their Roblox account."
         ),
         color=0x57F287,
@@ -90,7 +90,7 @@ def build_verification_announcement_embed(
     else:
         embed.set_thumbnail(url=member.display_avatar.url)
 
-    embed.set_footer(text="Echo Technologies Verification Gateway")
+    embed.set_footer(text="RetailNetwork Verification Gateway")
     return embed
 
 

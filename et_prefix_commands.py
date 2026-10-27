@@ -22,156 +22,156 @@ from hiring_system import (
     start_onboarding, start_hiring_campaign, cancel_hiring_campaign, get_hiring_campaign
 )
 
-logger = logging.getLogger("roblox_bot.et_prefix")
+logger = logging.getLogger("roblox_bot.rn_prefix")
 
 # DICTIONARY OF DETAILED COMMAND HELP MANUALS
 COMMAND_HELP_MANUALS: Dict[str, Dict[str, str]] = {
     "say": {
-        "name": "!et say <message>",
+        "name": "!rn say <message>",
         "description": "Bot says the specified message directly into the channel.",
-        "usage": "`!et say <message>` OR `!et say #channel <message>`",
-        "example": "`!et say Hello everyone!`",
+        "usage": "`!rn say <message>` OR `!rn say #channel <message>`",
+        "example": "`!rn say Hello everyonrn!`",
         "permissions": "Foundership / Executive Leadership"
     },
     "duty": {
-        "name": "!et duty [on/off]",
+        "name": "!rn duty [on/off]",
         "description": "Clock in or out of your active support staff shift. Manages your timer and assigns/removes the '@On Duty Staff' role.",
-        "usage": "`!et duty on` OR `!et duty off` (or `!duty`)",
-        "example": "`!et duty on`",
+        "usage": "`!rn duty on` OR `!rn duty off` (or `!duty`)",
+        "example": "`!rn duty on`",
         "permissions": "Support Team / Staff"
     },
     "shift-stats": {
-        "name": "!et shift-stats [@member]",
+        "name": "!rn shift-stats [@member]",
         "description": "Displays detailed duty metrics for yourself or a staff member, including weekly hours and lifetime shift count.",
-        "usage": "`!et shift-stats` OR `!et shift-stats @User`",
-        "example": "`!et shift-stats @Jordan`",
+        "usage": "`!rn shift-stats` OR `!rn shift-stats @User`",
+        "example": "`!rn shift-stats @Jordan`",
         "permissions": "Support Team / Staff"
     },
     "commend": {
-        "name": "!et commend @member <reason>",
+        "name": "!rn commend @member <reason>",
         "description": "Issue an official HR Commendation with preset rewards (e.g. 1-Week Quota Exemption, 1,000 Points) to an outstanding staff member.",
-        "usage": "`!et commend @member <reason>`",
-        "example": "`!et commend @Jordan Excellent resolution of emergency tickets`",
+        "usage": "`!rn commend @member <reason>`",
+        "example": "`!rn commend @Jordan Excellent resolution of emergency tickets`",
         "permissions": "HR / Administrators Only"
     },
     "dossier": {
-        "name": "!et dossier [@member]",
+        "name": "!rn dossier [@member]",
         "description": "Displays a 360° Master HR Personnel file showing shift hours, exam evaluation scores, commendations, active strikes, and blacklist status.",
-        "usage": "`!et dossier [@member]`",
-        "example": "`!et dossier @Jordan`",
+        "usage": "`!rn dossier [@member]`",
+        "example": "`!rn dossier @Jordan`",
         "permissions": "Staff / HR Administrators"
     },
     "meeting": {
-        "name": "!et meeting <announce/cancel/end> [args]",
+        "name": "!rn meeting <announce/cancel/end> [args]",
         "description": "Manage official staff meetings. Auto-posts meeting announcements to #staff-announcements with interactive RSVP buttons (Attending, Cannot Attend, Tentative).",
         "usage": (
-            "• `!et meeting announce [topic]` — Announce staff meeting\n"
-            "• `!et meeting cancel <meeting_id> <reason>` — Cancel scheduled meeting\n"
-            "• `!et meeting end <meeting_id> <summary>` — Conclude meeting & log minutes"
+            "• `!rn meeting announce [topic]` — Announce staff meeting\n"
+            "• `!rn meeting cancel <meeting_id> <reason>` — Cancel scheduled meeting\n"
+            "• `!rn meeting end <meeting_id> <summary>` — Conclude meeting & log minutes"
         ),
-        "example": "`!et meeting announce Q4 Goal Overview`",
+        "example": "`!rn meeting announce Q4 Goal Overview`",
         "permissions": "HR / Administrators Only"
     },
     "campaign": {
-        "name": "!et campaign <start/cancel> [args]",
+        "name": "!rn campaign <start/cancel> [args]",
         "description": "Manage recruitment campaigns. Posts official hiring drive embeds with open positions to #announcements.",
         "usage": (
-            "• `!et campaign start <positions>` — Launch hiring campaign\n"
-            "• `!et campaign cancel <campaign_id> <reason>` — Cancel hiring campaign"
+            "• `!rn campaign start <positions>` — Launch hiring campaign\n"
+            "• `!rn campaign cancel <campaign_id> <reason>` — Cancel hiring campaign"
         ),
-        "example": "`!et campaign start Trial Support, Developer`",
+        "example": "`!rn campaign start Trial Support, Developer`",
         "permissions": "HR / Administrators Only"
     },
     "interview": {
-        "name": "!et interview <open/schedule> <candidate>",
+        "name": "!rn interview <open/schedule> <candidate>",
         "description": "Manage applicant screening. Opens private #interview-username text channels or schedules formal 1-on-1 interview calendar notices.",
         "usage": (
-            "• `!et interview open @candidate` — Create private interview channel\n"
-            "• `!et interview schedule @candidate <time>` — Schedule 1-on-1 interview"
+            "• `!rn interview open @candidate` — Create private interview channel\n"
+            "• `!rn interview schedule @candidate <time>` — Schedule 1-on-1 interview"
         ),
-        "example": "`!et interview open @Alex`",
+        "example": "`!rn interview open @Alex`",
         "permissions": "HR / Administrators Only"
     },
     "promote": {
-        "name": "!et promote @member [reason]",
+        "name": "!rn promote @member [reason]",
         "description": "Formally promote a staff member, post official HR advancement embeds, and dispatch congratulations DMs.",
-        "usage": "`!et promote @member <reason>`",
-        "example": "`!et promote @Jordan Outstanding performance during probation`",
+        "usage": "`!rn promote @member <reason>`",
+        "example": "`!rn promote @Jordan Outstanding performance during probation`",
         "permissions": "HR / Administrators Only"
     },
     "demote": {
-        "name": "!et demote @member [reason]",
+        "name": "!rn demote @member [reason]",
         "description": "Formally demote a staff member and log rationale to HR records.",
-        "usage": "`!et demote @member <reason>`",
-        "example": "`!et demote @Jordan Policy non-compliance`",
+        "usage": "`!rn demote @member <reason>`",
+        "example": "`!rn demote @Jordan Policy non-compliance`",
         "permissions": "HR / Administrators Only"
     },
     "strike": {
-        "name": "!et strike @member <severity 1-3> <reason>",
+        "name": "!rn strike @member <severity 1-3> <reason>",
         "description": "Issue an official HR disciplinary strike (Severity 1: Warning, 2: Moderate, 3: Critical) with DM notices.",
-        "usage": "`!et strike @member <1/2/3> <reason>`",
-        "example": "`!et strike @Alex 2 Missed mandatory staff meeting`",
+        "usage": "`!rn strike @member <1/2/3> <reason>`",
+        "example": "`!rn strike @Alex 2 Missed mandatory staff meeting`",
         "permissions": "HR / Administrators Only"
     },
     "warn": {
-        "name": "!et warn @member <reason>",
+        "name": "!rn warn @member <reason>",
         "description": "Issues an official warning to a server member and logs it.",
-        "usage": "`!et warn @member <reason>`",
-        "example": "`!et warn @User Spamming in chat`",
+        "usage": "`!rn warn @member <reason>`",
+        "example": "`!rn warn @User Spamming in chat`",
         "permissions": "Moderators / Staff"
     },
     "kick": {
-        "name": "!et kick @member <reason>",
+        "name": "!rn kick @member <reason>",
         "description": "Kicks a member from the server.",
-        "usage": "`!et kick @member <reason>`",
-        "example": "`!et kick @User Inappropriate behavior`",
+        "usage": "`!rn kick @member <reason>`",
+        "example": "`!rn kick @User Inappropriate behavior`",
         "permissions": "Moderators / Staff"
     },
     "ban": {
-        "name": "!et ban @member <reason>",
+        "name": "!rn ban @member <reason>",
         "description": "Bans a member from the server.",
-        "usage": "`!et ban @member <reason>`",
-        "example": "`!et ban @User Severe violation`",
+        "usage": "`!rn ban @member <reason>`",
+        "example": "`!rn ban @User Severe violation`",
         "permissions": "Administrators / Leadership"
     },
     "purge": {
-        "name": "!et purge <amount>",
+        "name": "!rn purge <amount>",
         "description": "Bulk deletes messages in the current channel.",
-        "usage": "`!et purge <amount>`",
-        "example": "`!et purge 20`",
+        "usage": "`!rn purge <amount>`",
+        "example": "`!rn purge 20`",
         "permissions": "Moderators / Staff"
     },
     "verify": {
-        "name": "!et verify",
+        "name": "!rn verify",
         "description": "Displays verification instructions for linking your Roblox account to Discord.",
-        "usage": "`!et verify`",
-        "example": "`!et verify`",
+        "usage": "`!rn verify`",
+        "example": "`!rn verify`",
         "permissions": "All Members"
     },
     "whois": {
-        "name": "!et whois [@member]",
+        "name": "!rn whois [@member]",
         "description": "Look up the verified Roblox account username, display name, and Roblox ID for a Discord member.",
-        "usage": "`!et whois @member`",
-        "example": "`!et whois @Jordan`",
+        "usage": "`!rn whois @member`",
+        "example": "`!rn whois @Jordan`",
         "permissions": "All Members"
     },
     "setstatus": {
-        "name": "!et setstatus <playing|watching|listening|competing|streaming|clear> <text>",
+        "name": "!rn setstatus <playing|watching|listening|competing|streaming|clear> <text>",
         "description": "Sets the bot's rich presence activity status text.",
-        "usage": "`!et setstatus watching Echo Server` OR `!et setstatus playing Roblox` OR `!et setstatus clear`",
-        "example": "`!et setstatus watching Echo Technologies Server`",
+        "usage": "`!rn setstatus watching RetailNetwork Server` OR `!rn setstatus playing Roblox` OR `!rn setstatus clear`",
+        "example": "`!rn setstatus watching RetailNetwork Server`",
         "permissions": "Administrators Only"
     },
     "setvisibility": {
-        "name": "!et setvisibility <online|idle|dnd|invisible>",
+        "name": "!rn setvisibility <online|idle|dnd|invisible>",
         "description": "Changes the bot's status indicator dot (Online [🟢], Idle [🌙], Do Not Disturb [🔴], Invisible [⚪]).",
-        "usage": "`!et setvisibility online` OR `!et setvisibility dnd` OR `!et setvisibility idle`",
-        "example": "`!et setvisibility dnd`",
+        "usage": "`!rn setvisibility online` OR `!rn setvisibility dnd` OR `!rn setvisibility idle`",
+        "example": "`!rn setvisibility dnd`",
         "permissions": "Administrators Only"
     }
 }
 
-ALLOWED_PREFIXES = ("!et", "?et", ".et", "e!", "et!", "!echo", "?echo", ".echo", "!duty", "?duty", ".duty")
+ALLOWED_PREFIXES = ("!rn", "?rn", ".rn", "rn!", "rn!", "!rn", "?rn", ".rn", "!duty", "?duty", ".duty")
 MODERATION_COMMANDS = ("say", "warn", "kick", "ban", "timeout", "purge", "lock", "unlock", "strike", "demote", "promote")
 
 async def delete_trigger_message(message: discord.Message):
@@ -183,7 +183,7 @@ async def delete_trigger_message(message: discord.Message):
 
 async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     """
-    Handles prefix commands and subcommands for !et, ?et, .et, e!, et!, !echo, etc.
+    Handles prefix commands and subcommands for !rn, ?rn, .rn, rn!, rn!, !rn, etc.
     Returns True if handled.
     """
     if message.author.bot or not message.content:
@@ -210,7 +210,7 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
         await execute_duty(message, sub)
         return True
 
-    # !et root command or !et help
+    # !rn root command or !rn help
     if len(parts) == 1:
         await send_et_help_directory(message)
         return True
@@ -218,14 +218,14 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
     subcmd = parts[1].lower()
     args = parts[2:]
 
-    # Auto-delete trigger message if it is a moderation action or !et say
+    # Auto-delete trigger message if it is a moderation action or !rn say
     if subcmd in MODERATION_COMMANDS:
         await delete_trigger_message(message)
 
-    # Help router: !et help [command_name]
+    # Help router: !rn help [command_name]
     if subcmd in ("help", "commands", "manual"):
         if args:
-            target_help = args[0].lower().replace("!et", "").strip()
+            target_help = args[0].lower().replace("!rn", "").strip()
             await send_command_specific_help(message, target_help)
         else:
             await send_et_help_directory(message)
@@ -326,17 +326,17 @@ async def handle_et_prefix_command(bot, message: discord.Message) -> bool:
 # --- DETAILED HELP ROUTERS ---
 async def send_et_help_directory(message: discord.Message):
     embed = discord.Embed(
-        title="🤖 Echo Technologies • Master Command Directory",
+        title="🤖 RetailNetwork • Master Command Directory",
         description=(
-            "Welcome to the official **Echo Technologies** Command System!\n"
-            "Use **`!et help [command]`** for detailed usage instructions & examples for any command (e.g. `!et help say`, `!et help duty`, `!et help play`)."
+            "Welcome to the official **RetailNetwork** Command System!\n"
+            "Use **`!rn help [command]`** for detailed usage instructions & examples for any command (e.g. `!rn help say`, `!rn help duty`, `!rn help play`)."
         ),
         color=0x3498DB
     )
 
     embed.add_field(
         name="📢 Announcements, Status & Bot Control",
-        value="`!et say <message>` • `!et setstatus <type> <text>` • `!et setvisibility <status>` • `!et shutdown` • `!et help [command]`",
+        value="`!rn say <message>` • `!rn setstatus <type> <text>` • `!rn setvisibility <status>` • `!rn shutdown` • `!rn help [command]`",
         inline=False
     )
 
@@ -348,53 +348,53 @@ async def send_et_help_directory(message: discord.Message):
 
     embed.add_field(
         name="⏱️ Staff Duty & Shift Tracking",
-        value="`!et duty [on/off]` (or `!duty`) • `!et shift-stats [@user]`",
+        value="`!rn duty [on/off]` (or `!duty`) • `!rn shift-stats [@user]`",
         inline=False
     )
 
     embed.add_field(
         name="💼 HR Administration & Personnel Files",
-        value="`!et commend @user <reason>` • `!et dossier [@user]` • `!et promote @user [reason]` • `!et demote @user [reason]` • `!et strike @user <1-3> <reason>` • `!et pardon <strike_id> <reason>` • `!et eval @user <score> <feedback>` • `!et eval-history [@user]`",
+        value="`!rn commend @user <reason>` • `!rn dossier [@user]` • `!rn promote @user [reason]` • `!rn demote @user [reason]` • `!rn strike @user <1-3> <reason>` • `!rn pardon <strike_id> <reason>` • `!rn eval @user <score> <feedback>` • `!rn eval-history [@user]`",
         inline=False
     )
 
     embed.add_field(
         name="🛡️ Moderation & Server Security",
-        value="`!et warn @user <reason>` • `!et warnings [@user]` • `!et clear-warnings @user` • `!et kick @user <reason>` • `!et ban @user <reason>` • `!et unban <user_id>` • `!et global-ban @user <reason>` • `!et purge <count>` • `!et lock` • `!et unlock` • `!et slowmode <sec>` • `!et mod-case <id>`",
+        value="`!rn warn @user <reason>` • `!rn warnings [@user]` • `!rn clear-warnings @user` • `!rn kick @user <reason>` • `!rn ban @user <reason>` • `!rn unban <user_id>` • `!rn global-ban @user <reason>` • `!rn purge <count>` • `!rn lock` • `!rn unlock` • `!rn slowmode <sec>` • `!rn mod-case <id>`",
         inline=False
     )
 
     embed.add_field(
         name="📅 Staff Meetings & RSVPs",
-        value="`!et meeting announce [topic]` • `!et meeting cancel <id> <reason>` • `!et meeting end <id> <notes>` • `!et meeting rsvp <id> <yes/no/maybe>`",
+        value="`!rn meeting announce [topic]` • `!rn meeting cancel <id> <reason>` • `!rn meeting end <id> <notes>` • `!rn meeting rsvp <id> <yes/no/maybe>`",
         inline=False
     )
 
     embed.add_field(
         name="📢 Hiring, Recruitment & ATS Suite",
-        value="`!et campaign start [positions]` • `!et campaign cancel <id> <reason>` • `!et interview open @candidate` • `!et offer create @candidate <role> [salary]` • `!et onboard start @candidate` • `!et ats note @candidate <notes>` • `!et ats flag @candidate <reason>`",
+        value="`!rn campaign start [positions]` • `!rn campaign cancel <id> <reason>` • `!rn interview open @candidate` • `!rn offer create @candidate <role> [salary]` • `!rn onboard start @candidate` • `!rn ats note @candidate <notes>` • `!rn ats flag @candidate <reason>`",
         inline=False
     )
 
     embed.add_field(
         name="🎟️ AI Support Tickets & Staff Exams",
-        value="`!et ticket panel` • `!et ticket force-open @user` • `!et ticket test-staff @user` • `!et ticket close [reason]` • `!et supervisor-request <reason>`",
+        value="`!rn ticket panel` • `!rn ticket force-open @user` • `!rn ticket test-staff @user` • `!rn ticket close [reason]` • `!rn supervisor-request <reason>`",
         inline=False
     )
 
     embed.add_field(
         name="🏆 Community Points, Rewards & Leveling",
-        value="`!et points [@user]` • `!et shop` • `!et tip @user <points>` • `!et rank [@user]` • `!et top` (or `!et leaderboard`)",
+        value="`!rn points [@user]` • `!rn shop` • `!rn tip @user <points>` • `!rn rank [@user]` • `!rn top` (or `!rn leaderboard`)",
         inline=False
     )
 
     embed.add_field(
         name="🤝 Partnerships, Verification & Utility",
-        value="`!et partner add <name> <category>` • `!et ad` • `!et suggest <idea>` • `!et verify` • `!et whois [@user]` • `!et check-alt @user`",
+        value="`!rn partner add <name> <category>` • `!rn ad` • `!rn suggest <idea>` • `!rn verify` • `!rn whois [@user]` • `!rn check-alt @user`",
         inline=False
     )
 
-    embed.set_footer(text="Type '!et help [command]' for specific manual & syntax • Echo Technologies")
+    embed.set_footer(text="Type '!rn help [command]' for specific manual & syntax • RetailNetwork")
     embed.timestamp = datetime.now(timezone.utc)
 
     await message.channel.send(embed=embed)
@@ -409,7 +409,7 @@ async def send_command_specific_help(message: discord.Message, cmd_name: str):
 
     if not manual:
         await message.channel.send(
-            f"❌ Unknown command **`{cmd_name}`**. Type `!et help` to see the full list of available commands!"
+            f"❌ Unknown command **`{cmd_name}`**. Type `!rn help` to see the full list of available commands!"
         )
         return
 
@@ -422,7 +422,7 @@ async def send_command_specific_help(message: discord.Message, cmd_name: str):
     embed.add_field(name="💡 Example", value=manual['example'], inline=False)
     embed.add_field(name="🔒 Required Permissions", value=f"`{manual['permissions']}`", inline=False)
 
-    embed.set_footer(text="Echo Technologies • Command Reference System")
+    embed.set_footer(text="RetailNetwork • Command Reference System")
     embed.timestamp = datetime.now(timezone.utc)
 
     await message.channel.send(embed=embed)
@@ -430,11 +430,11 @@ async def send_command_specific_help(message: discord.Message, cmd_name: str):
 # --- COMMAND EXECUTORS ---
 async def execute_say(message: discord.Message, args: List[str]):
     if not message.author.guild_permissions.administrator:
-        await message.channel.send("❌ Only Administrators can use !et say.")
+        await message.channel.send("❌ Only Administrators can use !rn say.")
         return
 
     if not args:
-        await message.channel.send("❌ Usage: `!et say <message>`")
+        await message.channel.send("❌ Usage: `!rn say <message>`")
         return
 
     target_ch = message.channel
@@ -460,7 +460,7 @@ async def execute_duty(message: discord.Message, action: str):
 
         if on_duty_role:
             try:
-                await member.add_roles(on_duty_role, reason="Clocked ON duty via !et duty")
+                await member.add_roles(on_duty_role, reason="Clocked ON duty via !rn duty")
             except Exception:
                 pass
 
@@ -469,7 +469,7 @@ async def execute_duty(message: discord.Message, action: str):
             description=f"{member.mention} is now actively **ON DUTY**.",
             color=0x57F287
         )
-        embed.set_footer(text="Echo Technologies • Shift Active")
+        embed.set_footer(text="RetailNetwork • Shift Active")
         embed.timestamp = datetime.now(timezone.utc)
         await message.channel.send(embed=embed)
 
@@ -481,7 +481,7 @@ async def execute_duty(message: discord.Message, action: str):
 
         if on_duty_role and on_duty_role in member.roles:
             try:
-                await member.remove_roles(on_duty_role, reason="Clocked OFF duty via !et duty")
+                await member.remove_roles(on_duty_role, reason="Clocked OFF duty via !rn duty")
             except Exception:
                 pass
 
@@ -497,7 +497,7 @@ async def execute_duty(message: discord.Message, action: str):
             ),
             color=0xED4245
         )
-        embed.set_footer(text="Echo Technologies • Shift Complete")
+        embed.set_footer(text="RetailNetwork • Shift Complete")
         embed.timestamp = datetime.now(timezone.utc)
         await message.channel.send(embed=embed)
 
@@ -517,7 +517,7 @@ async def execute_shift_stats(message: discord.Message, member: discord.Member):
     embed.add_field(name="Shifts Completed", value=f"`{stats['total_shifts']}`", inline=True)
     embed.add_field(name="Weekly Duty Hours", value=f"`{w_h}h {w_m}m`", inline=False)
     embed.add_field(name="Lifetime Duty Hours", value=f"`{tot_h}h {tot_m}m`", inline=False)
-    embed.set_footer(text="Echo Technologies • Staff Duty Records")
+    embed.set_footer(text="RetailNetwork • Staff Duty Records")
     embed.timestamp = datetime.now(timezone.utc)
 
     await message.channel.send(embed=embed)
@@ -528,7 +528,7 @@ async def execute_commend(message: discord.Message, args: List[str]):
         return
 
     if not message.mentions:
-        await message.channel.send("❌ Usage: `!et commend @member <reason>`")
+        await message.channel.send("❌ Usage: `!rn commend @member <reason>`")
         return
 
     member = message.mentions[0]
@@ -538,7 +538,7 @@ async def execute_commend(message: discord.Message, args: List[str]):
     embed = discord.Embed(
         title="🎖️ OFFICIAL HR COMMENDATION",
         description=(
-            f"**Echo Technologies Management** has formally issued a Commendation to {member.mention}!\n\n"
+            f"**RetailNetwork Management** has formally issued a Commendation to {member.mention}!\n\n"
             f"📜 **Commendation ID:** `#COMM-{comm_id:04d}`\n"
             f"🎁 **Preset Reward:** 🎟️ 1-Week Staff Quota Exemption\n"
             f"📋 **Reason:** *\"{reason}\"*\n"
@@ -547,7 +547,7 @@ async def execute_commend(message: discord.Message, args: List[str]):
         color=0xF1C40F
     )
     embed.set_thumbnail(url=member.display_avatar.url)
-    embed.set_footer(text="Echo Technologies • HR Recognition")
+    embed.set_footer(text="RetailNetwork • HR Recognition")
     embed.timestamp = datetime.now(timezone.utc)
 
     await message.channel.send(embed=embed)
@@ -583,7 +583,7 @@ async def execute_dossier(message: discord.Message, member: discord.Member):
         value=f"• **Active Strikes:** `{len(active_strikes)}` | **Blacklist:** {'🔴 BLACKLISTED' if is_staff_blacklisted(member.id) else '🟢 CLEAN'}",
         inline=False
     )
-    embed.set_footer(text="Echo Technologies • Personnel File Confidential")
+    embed.set_footer(text="RetailNetwork • Personnel File Confidential")
     embed.timestamp = datetime.now(timezone.utc)
 
     await message.channel.send(embed=embed)
@@ -605,7 +605,7 @@ async def execute_meeting(message: discord.Message, args: List[str]):
         embed = discord.Embed(
             title="📅 OFFICIAL STAFF MEETING ANNOUNCEMENT",
             description=(
-                f"An official staff meeting has been scheduled by **Echo Technologies Management**.\n"
+                f"An official staff meeting has been scheduled by **RetailNetwork Management**.\n"
                 f"All staff members are required to select their RSVP status below."
             ),
             color=0x9B59B6
@@ -615,7 +615,7 @@ async def execute_meeting(message: discord.Message, args: List[str]):
         embed.add_field(name="📍 Location", value="`Staff Voice Channel #1`", inline=True)
         embed.add_field(name="⚠️ Attendance Policy", value="`🔴 MANDATORY ATTENDANCE`", inline=True)
         embed.add_field(name="📊 RSVP Status Summary", value="✅ **Attending:** `0` | ❌ **Cannot Attend:** `0` | ⏳ **Tentative:** `0`", inline=False)
-        embed.set_footer(text=f"Echo Technologies • Staff Meeting #M-{m_id:03d}")
+        embed.set_footer(text=f"RetailNetwork • Staff Meeting #M-{m_id:03d}")
         embed.timestamp = datetime.now(timezone.utc)
 
         msg = await announce_ch.send(content="📢 **ATTENTION ALL STAFF MEMBERS:**", embed=embed, view=view)
@@ -624,7 +624,7 @@ async def execute_meeting(message: discord.Message, args: List[str]):
 
     elif sub == "cancel":
         if len(args) < 2 or not args[1].isdigit():
-            await message.channel.send("❌ Usage: `!et meeting cancel <meeting_id> <reason>`")
+            await message.channel.send("❌ Usage: `!rn meeting cancel <meeting_id> <reason>`")
             return
         m_id = int(args[1])
         reason = " ".join(args[2:]) or "Scheduled operational conflict"
@@ -651,13 +651,13 @@ async def execute_campaign(message: discord.Message, args: List[str]):
         embed = discord.Embed(
             title="📢 OFFICIAL HIRING CAMPAIGN LAUNCHED",
             description=(
-                f"**Echo Technologies** is now officially accepting applications!\n\n"
+                f"**RetailNetwork** is now officially accepting applications!\n\n"
                 f"💼 **Open Positions:** `{rest or 'Trial Support, Moderator'}`\n"
                 f"🚀 **How to Apply:** Use `/apply` or visit <#1556000041309708390>!"
             ),
             color=0x9B59B6
         )
-        embed.set_footer(text=f"Echo Technologies • Recruitment Campaign #CAMP-{c_id:03d}")
+        embed.set_footer(text=f"RetailNetwork • Recruitment Campaign #CAMP-{c_id:03d}")
         embed.timestamp = datetime.now(timezone.utc)
 
         await announce_ch.send(content="📢 **RECRUITMENT DRIVE ANNOUNCEMENT:**", embed=embed)
@@ -665,7 +665,7 @@ async def execute_campaign(message: discord.Message, args: List[str]):
 
     elif sub == "cancel":
         if len(args) < 2 or not args[1].isdigit():
-            await message.channel.send("❌ Usage: `!et campaign cancel <campaign_id> <reason>`")
+            await message.channel.send("❌ Usage: `!rn campaign cancel <campaign_id> <reason>`")
             return
         c_id = int(args[1])
         reason = " ".join(args[2:]) or "Positions filled"
@@ -702,7 +702,7 @@ async def execute_rank_change(message: discord.Message, subcmd: str, args: List[
         return
 
     if not message.mentions:
-        await message.channel.send(f"❌ Usage: `!et {subcmd} @member <reason>`")
+        await message.channel.send(f"❌ Usage: `!rn {subcmd} @member <reason>`")
         return
 
     member = message.mentions[0]
@@ -721,7 +721,7 @@ async def execute_strike(message: discord.Message, args: List[str]):
         return
 
     if not message.mentions:
-        await message.channel.send("❌ Usage: `!et strike @member <severity 1-3> <reason>`")
+        await message.channel.send("❌ Usage: `!rn strike @member <severity 1-3> <reason>`")
         return
 
     member = message.mentions[0]
@@ -751,7 +751,7 @@ async def execute_mod_action(message: discord.Message, action: str, args: List[s
         return
 
     if not message.mentions:
-        await message.channel.send(f"❌ Usage: `!et {action} @member <reason>`")
+        await message.channel.send(f"❌ Usage: `!rn {action} @member <reason>`")
         return
 
     member = message.mentions[0]
@@ -798,19 +798,19 @@ async def execute_shutdown(bot, message: discord.Message):
         await message.channel.send("❌ Only Administrators can shut down the bot.")
         return
 
-    await message.channel.send("🛑 **Echo Technologies Bot is shutting down gracefully. Logging off Discord...**")
-    logger.info(f"Shutdown initiated via !et shutdown by {message.author.name} (ID: {message.author.id}).")
+    await message.channel.send("🛑 **RetailNetwork Bot is shutting down gracefully. Logging off Discord...**")
+    logger.info(f"Shutdown initiated via !rn shutdown by {message.author.name} (ID: {message.author.id}).")
     await bot.close()
 
 PREMADE_ACTIVITIES: Dict[str, Dict[str, str]] = {
-    "1": {"type": "playing", "text": "Roblox | !et help", "label": "🎮 Roblox & Account Verification"},
-    "2": {"type": "watching", "text": "Echo Technologies Server", "label": "🛡️ Server Moderation & Security"},
+    "1": {"type": "playing", "text": "Roblox | !rn help", "label": "🎮 Roblox & Account Verification"},
+    "2": {"type": "watching", "text": "RetailNetwork Server", "label": "🛡️ Server Moderation & Security"},
     "3": {"type": "listening", "text": "24/7 Jukebox | /play", "label": "🎧 24/7 Music Jukebox"},
     "4": {"type": "listening", "text": "Groq AI Support Tickets", "label": "🤖 Multi-Department AI Assistant"},
     "5": {"type": "watching", "text": "Staff Shifts & Duty Timers", "label": "⏱️ Staff Shift & Duty Tracker"},
     "6": {"type": "playing", "text": "Echo Development Studio", "label": "💻 Roblox Studio Development"},
     "7": {"type": "competing", "text": "Recruitment & Invite Contests", "label": "🏆 Recruitment Leaderboard"},
-    "8": {"type": "streaming", "text": "Official Echo Technologies Stream", "label": "📡 Official Twitch Stream"},
+    "8": {"type": "streaming", "text": "Official RetailNetwork Stream", "label": "📡 Official Twitch Stream"},
     "9": {"type": "watching", "text": "Community Verification Logs", "label": "🔒 Security Telemetry Logs"}
 }
 
@@ -853,10 +853,10 @@ async def execute_setstatus(bot, message: discord.Message, args: List[str]):
 
     if not args:
         await message.channel.send(
-            "❌ **Usage:** `!et setstatus <playing|watching|listening|competing|preset|rotate|clear> [text/id]`\n"
-            "• **Preset Menu:** `!et setstatus preset` (Lists all premade activities)\n"
-            "• **Apply Preset:** `!et setstatus preset 3` (Selects Jukebox status)\n"
-            "• **Auto-Rotate:** `!et setstatus rotate on` (Auto-cycles activities every 45s)"
+            "❌ **Usage:** `!rn setstatus <playing|watching|listening|competing|preset|rotate|clear> [text/id]`\n"
+            "• **Preset Menu:** `!rn setstatus preset` (Lists all premade activities)\n"
+            "• **Apply Preset:** `!rn setstatus preset 3` (Selects Jukebox status)\n"
+            "• **Auto-Rotate:** `!rn setstatus rotate on` (Auto-cycles activities every 45s)"
         )
         return
 
@@ -867,8 +867,8 @@ async def execute_setstatus(bot, message: discord.Message, args: List[str]):
     if act_type in ("preset", "presets", "list"):
         if not act_text:
             embed = discord.Embed(
-                title="✨ Echo Technologies • Premade Status Activity Presets",
-                description="Use **`!et setstatus preset <number>`** to activate any premade activity below!",
+                title="✨ RetailNetwork • Premade Status Activity Presets",
+                description="Use **`!rn setstatus preset <number>`** to activate any premade activity below!",
                 color=0x3498DB
             )
             for k, v in PREMADE_ACTIVITIES.items():
@@ -877,7 +877,7 @@ async def execute_setstatus(bot, message: discord.Message, args: List[str]):
                     value=f"Type: `{v['type'].capitalize()}` | Text: **{v['text']}**",
                     inline=False
                 )
-            embed.set_footer(text="Example: !et setstatus preset 3 • Auto-rotate: !et setstatus rotate on")
+            embed.set_footer(text="Example: !rn setstatus preset 3 • Auto-rotate: !rn setstatus rotate on")
             await message.channel.send(embed=embed)
             return
         else:
@@ -889,7 +889,7 @@ async def execute_setstatus(bot, message: discord.Message, args: List[str]):
                         preset = v
                         break
             if not preset:
-                await message.channel.send(f"❌ Invalid preset **`{act_text}`**. Type `!et setstatus preset` to view the list!")
+                await message.channel.send(f"❌ Invalid preset **`{act_text}`**. Type `!rn setstatus preset` to view the list!")
                 return
 
             act_type = preset['type']
@@ -901,7 +901,7 @@ async def execute_setstatus(bot, message: discord.Message, args: List[str]):
         if act_text.lower() in ("on", "enable", "true", "start"):
             rotate_mode = True
             act_type = "playing"
-            act_text = "Roblox | !et help"
+            act_text = "Roblox | !rn help"
             if hasattr(bot, 'rotation_enabled'):
                 bot.rotation_enabled = True
             await message.channel.send("🔄 **Auto-Rotation Enabled!** The bot will now automatically cycle through all premade activities every 45 seconds.")
@@ -949,8 +949,8 @@ async def execute_setvisibility(bot, message: discord.Message, args: List[str]):
 
     if not args:
         await message.channel.send(
-            "❌ **Usage:** `!et setvisibility <online|idle|dnd|invisible>`\n"
-            "**Example:** `!et setvisibility dnd` (🔴 Do Not Disturb)"
+            "❌ **Usage:** `!rn setvisibility <online|idle|dnd|invisible>`\n"
+            "**Example:** `!rn setvisibility dnd` (🔴 Do Not Disturb)"
         )
         return
 
@@ -967,7 +967,7 @@ async def execute_setvisibility(bot, message: discord.Message, args: List[str]):
     try:
         stored = bot.db.get_bot_presence() if hasattr(bot, 'db') and hasattr(bot.db, 'get_bot_presence') else {}
         act_type_save = stored.get("activity_type", "playing")
-        act_text_save = stored.get("activity_text", "Roblox | !et help")
+        act_text_save = stored.get("activity_text", "Roblox | !rn help")
 
         activity = build_discord_activity(act_type_save, act_text_save)
         await bot.change_presence(activity=activity, status=new_status)
@@ -982,7 +982,7 @@ async def execute_setvisibility(bot, message: discord.Message, args: List[str]):
 
 async def execute_music_play_prefix(bot, message: discord.Message, args: List[str]):
     if not args:
-        await message.channel.send("❌ Usage: `!et play <song name or link>`")
+        await message.channel.send("❌ Usage: `!rn play <song name or link>`")
         return
 
     from music_system import ensure_voice_connection, get_music_player, extract_tracks
@@ -1001,11 +1001,11 @@ async def execute_music_play_prefix(bot, message: discord.Message, args: List[st
         if len(tracks) == 1:
             track = tracks[0]
             await player.add_track(track)
-            await message.channel.send(f"🎵 Added **[{track.title}]({track.webpage_url})** (`{track.format_duration()}`) to the queue!")
+            await message.channel.send(f"🎵 Added **[{track.title}]({track.webpage_url})** (`{track.format_duration()}`) to the queurn!")
         else:
             for t in tracks:
                 await player.add_track(t)
-            await message.channel.send(f"🎶 Added **{len(tracks)} tracks** to the queue!")
+            await message.channel.send(f"🎶 Added **{len(tracks)} tracks** to the queurn!")
     except Exception as e:
         await message.channel.send(f"❌ Error adding track: `{e}`")
 
@@ -1020,7 +1020,7 @@ async def execute_music_skip_prefix(bot, message: discord.Message):
 
 async def execute_music_filter_prefix(bot, message: discord.Message, args: List[str]):
     if not args:
-        await message.channel.send("❌ Usage: `!et filter <off|bassboost|nightcore|vaporwave|8d|reverb>`")
+        await message.channel.send("❌ Usage: `!rn filter <off|bassboost|nightcore|vaporwave|8d|reverb>`")
         return
     from music_system import get_music_player, AUDIO_FILTERS
     player = get_music_player(bot)
@@ -1054,7 +1054,7 @@ async def execute_music_lyrics_prefix(bot, message: discord.Message, args: List[
     player = get_music_player(bot)
     query = " ".join(args) if args else (f"{player.current.title} {player.current.uploader}" if player.current else "")
     if not query:
-        await message.channel.send("❌ Usage: `!et lyrics <song name>`")
+        await message.channel.send("❌ Usage: `!rn lyrics <song name>`")
         return
 
     res = await fetch_lyrics(query)
@@ -1071,7 +1071,7 @@ async def execute_music_lyrics_prefix(bot, message: discord.Message, args: List[
 
 async def execute_music_seek_prefix(bot, message: discord.Message, args: List[str]):
     if not args:
-        await message.channel.send("❌ Usage: `!et seek <MM:SS or seconds>` (e.g. `!et seek 1:30`)")
+        await message.channel.send("❌ Usage: `!rn seek <MM:SS or seconds>` (e.g. `!rn seek 1:30`)")
         return
     from music_system import get_music_player
     player = get_music_player(bot)
@@ -1153,7 +1153,7 @@ async def execute_music_voteskip_prefix(bot, message: discord.Message):
 
 async def execute_music_playlist_prefix(bot, message: discord.Message, args: List[str]):
     if not args:
-        await message.channel.send("❌ Usage: `!et playlist <save/load/list/delete> [name]`")
+        await message.channel.send("❌ Usage: `!rn playlist <save/load/list/delete> [name]`")
         return
 
     from music_system import get_music_player, Track, ensure_voice_connection
@@ -1163,7 +1163,7 @@ async def execute_music_playlist_prefix(bot, message: discord.Message, args: Lis
 
     if action == "save":
         if not name:
-            await message.channel.send("❌ Please specify a playlist name: `!et playlist save my_vibe`")
+            await message.channel.send("❌ Please specify a playlist name: `!rn playlist save my_vibe`")
             return
         tracks_to_save = []
         if player.current:
@@ -1177,7 +1177,7 @@ async def execute_music_playlist_prefix(bot, message: discord.Message, args: Lis
 
     elif action == "load":
         if not name:
-            await message.channel.send("❌ Please specify a playlist name: `!et playlist load my_vibe`")
+            await message.channel.send("❌ Please specify a playlist name: `!rn playlist load my_vibe`")
             return
         await ensure_voice_connection(bot)
         if hasattr(bot, 'db') and hasattr(bot.db, 'get_user_playlist'):

@@ -397,7 +397,7 @@ class RequestCloseModal(ui.Modal):
         try:
             dm = await candidate.create_dm()
             dm_embed = discord.Embed(
-                title="🔔 Echo Support • Ticket Close Request",
+                title="🔔 RetailNetwork Support • Ticket Close Request",
                 description=(
                     f"Hello **{candidate.name}**!\n\n"
                     f"Our support staff member **{interaction.user.name}** has marked your support ticket (**#{self.ticket['id']}**) as resolved and requested to close it.\n\n"
@@ -407,7 +407,7 @@ class RequestCloseModal(ui.Modal):
                 color=0x5865F2,
                 timestamp=discord.utils.utcnow()
             )
-            dm_embed.set_footer(text=f"Ticket #{self.ticket['id']} • Echo Technologies Support")
+            dm_embed.set_footer(text=f"Ticket #{self.ticket['id']} • RetailNetwork Support")
             view = TicketCloseRequestDMView(self.bot, self.ticket["id"])
             await dm.send(embed=dm_embed, view=view)
             dm_sent = True
@@ -577,7 +577,7 @@ class TicketFeedbackModal(ui.Modal):
             title="⭐ Thank You for Your Feedback!",
             description=(
                 f"You rated Ticket **#{self.ticket_id}**: **{stars_str} ({self.rating}/5 Stars)**\n\n"
-                f"Your feedback helps us continuously improve our AI support and staff assistance!"
+                f"Your feedback helps us continuously improve our AI support and staff assistancrn!"
             ),
             color=0x57F287
         )

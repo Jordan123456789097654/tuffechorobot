@@ -119,7 +119,7 @@ story.append(HRFlowable(width="100%", thickness=2, color=ACCENT_COLOR, spaceBefo
 meta_data = [
     [Paragraph("<b>Document Version:</b> 2.0 Master", styles['BodyCustom']), Paragraph("<b>Passing Exam Threshold:</b> 90 / 100", styles['BodyCustom'])],
     [Paragraph("<b>Target Audience:</b> Support Trainees & Staff", styles['BodyCustom']), Paragraph("<b>Exam Command:</b> /test-ticket", styles['BodyCustom'])],
-    [Paragraph("<b>Classification:</b> Echo HR Confidential", styles['BodyCustom']), Paragraph("<b>Last Updated:</b> October 2026", styles['BodyCustom'])]
+    [Paragraph("<b>Classification:</b> RetailNetwork HR Confidential", styles['BodyCustom']), Paragraph("<b>Last Updated:</b> October 2026", styles['BodyCustom'])]
 ]
 meta_table = Table(meta_data, colWidths=[3.2*inch, 3.2*inch])
 meta_table.setStyle(TableStyle([
@@ -134,7 +134,7 @@ story.append(Spacer(1, 10))
 # --- MODULE 1: ACADEMY ORIENTATION ---
 story.append(Paragraph("Module 1: Orientation & Evaluation Standards", styles['SectionHeading']))
 story.append(Paragraph(
-    "Welcome to the official Echo Technologies Support Staff Training Curriculum. All support trainees must complete this comprehensive training manual and pass the automated AI practical examination (<b>/test-ticket</b>) with a score of <b>90/100 or higher</b> before live ticket permissions are granted.",
+    "Welcome to the official RetailNetwork Support Staff Training Curriculum. All support trainees must complete this comprehensive training manual and pass the automated AI practical examination (<b>/test-ticket</b>) with a score of <b>90/100 or higher</b> before live ticket permissions are granted.",
     styles['BodyCustom']
 ))
 story.append(Paragraph("• <b>Primary Responsibility:</b> Deliver fast, accurate, professional support while adhering strictly to server SOPs.", styles['BulletCustom']))
@@ -151,7 +151,7 @@ story.append(Paragraph(
 
 greeting_box = [
     [Paragraph("<b>MANDATORY OFFICIAL INTRODUCTION SCRIPT (100% REQUIRED)</b>", ParagraphStyle('GHead', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.white))],
-    [Paragraph('<i>"Hello @Member! My name is {staff_name} from the Echo Technologies Support Team. I will be assisting you today. Please state your inquiry or details below."</i>', styles['CodeBlock'])]
+    [Paragraph('<i>"Hello @Member! My name is {staff_name} from the RetailNetwork Support Team. I will be assisting you today. Please state your inquiry or details below."</i>', styles['CodeBlock'])]
 ]
 t_gbox = Table(greeting_box, colWidths=[6.4*inch])
 t_gbox.setStyle(TableStyle([
@@ -206,7 +206,7 @@ story.append(Paragraph(
 
 comp_box = [
     [Paragraph("<b>STRICT COMPENSATION PROHIBITION SCRIPT</b>", ParagraphStyle('CHead', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.white))],
-    [Paragraph('<i>"Echo Technologies is not responsible for off-site phishing scams or compromised personal accounts. We do not issue Robux payouts, group funds, or unearned group rank restorations without explicit Foundership authorization."</i>', styles['CodeBlock'])]
+    [Paragraph('<i>"RetailNetwork is not responsible for off-site phishing scams or compromised personal accounts. We do not issue Robux payouts, group funds, or unearned group rank restorations without explicit Foundership authorization."</i>', styles['CodeBlock'])]
 ]
 t_cbox = Table(comp_box, colWidths=[6.4*inch])
 t_cbox.setStyle(TableStyle([
@@ -233,7 +233,7 @@ story.append(Paragraph(
     "Hostile members threatening alt account raids, server disruption, or mass-report campaigns MUST receive the formal Permanent Global Blacklist warning:",
     styles['BodyCustom']
 ))
-story.append(Paragraph('<i>"Threats to organize raids, mass-report our Discord server, or bypass moderation actions violate Echo Technologies Terms of Service and will result in an immediate Permanent Global Blacklist across all associated servers and services."</i>', styles['BodyCustom']))
+story.append(Paragraph('<i>"Threats to organize raids, mass-report our Discord server, or bypass moderation actions violate RetailNetwork Terms of Service and will result in an immediate Permanent Global Blacklist across all associated servers and services."</i>', styles['BodyCustom']))
 story.append(Spacer(1, 10))
 
 # --- MODULE 7 & 8: VERIFICATION & EXPLOIT REPORTS ---
@@ -273,11 +273,11 @@ story.append(Spacer(1, 10))
 story.append(Paragraph("Module 10–12: Master Exam Case Studies", styles['SectionHeading']))
 story.append(Paragraph("<b>Case Study Sample (Pass 100/100):</b>", styles['SubSectionHeading']))
 story.append(Paragraph(
-    "<i>'Hello @Jordan! My name is Alex from the Echo Technologies Support Team. I will be assisting you today.<br/>"
+    "<i>'Hello @Jordan! My name is Alex from the RetailNetwork Support Team. I will be assisting you today.<br/>"
     "I am very sorry to hear about your account. Please note that official Echo staff will NEVER DM users offering free ranks or requesting off-site logins.<br/>"
     "Please reset your password, enable 2FA, and submit a recovery ticket to Roblox Support (https://www.roblox.com/support).<br/>"
-    "Echo Technologies does not issue Robux payouts for off-site scams. Additionally, mass-report threats violate our TOS and result in a Permanent Global Blacklist.<br/>"
-    "If you have screenshots of the scammer's DMs, please reply here!'</i>",
+    "RetailNetwork does not issue Robux payouts for off-site scams. Additionally, mass-report threats violate our TOS and result in a Permanent Global Blacklist.<br/>"
+    "If you have screenshots of the scammer's DMs, please reply herrn!'</i>",
     styles['BodyCustom']
 ))
 story.append(Spacer(1, 8))

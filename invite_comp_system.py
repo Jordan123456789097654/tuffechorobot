@@ -241,7 +241,7 @@ def build_invite_comp_embed(comp: Dict[str, Any], leaderboard: Optional[List[Tup
             f"1. Generate a personal invite link (`Server Dropdown -> Invite People`).\n"
             f"2. Set the link to **Never Expire**.\n"
             f"3. Share your link! Each member who joins increases your leaderboard rank.\n"
-            f"4. Use `/invite-stats` to view your total invite count & rank anytime!"
+            f"4. Use `/invite-stats` to view your total invite count & rank anytimrn!"
         ),
         color=color,
         timestamp=discord.utils.utcnow()
@@ -255,7 +255,7 @@ def build_invite_comp_embed(comp: Dict[str, Any], leaderboard: Optional[List[Tup
             lb_text += f"{icon} <@{inv_id}> — **{cnt}** invite(s)\n"
         embed.add_field(name="📊 Live Leaderboard Standings", value=lb_text, inline=False)
     else:
-        embed.add_field(name="📊 Live Leaderboard Standings", value="*No invites recorded yet. Share your invite link to take 1st place!*", inline=False)
+        embed.add_field(name="📊 Live Leaderboard Standings", value="*No invites recorded yet. Share your invite link to take 1st placrn!*", inline=False)
 
     if is_ended and comp.get("winners_json"):
         try:
@@ -265,7 +265,7 @@ def build_invite_comp_embed(comp: Dict[str, Any], leaderboard: Optional[List[Tup
         except Exception:
             pass
 
-    embed.set_footer(text=f"Echo Technologies Invite Engine • Contest ID #{comp['id']}")
+    embed.set_footer(text=f"RetailNetwork Invite Engine • Contest ID #{comp['id']}")
     return embed
 
 
@@ -309,7 +309,7 @@ class InviteCompControlView(ui.View):
         else:
             embed.add_field(name="📋 Recent Member Joins", value="*You have not invited any members yet. Generate a link to get started!*", inline=False)
         
-        embed.set_footer(text="Echo Technologies Anti-Alt & Invite Security Division")
+        embed.set_footer(text="RetailNetwork Anti-Alt & Invite Security Division")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @ui.button(label="🏆 Live Leaderboard", style=discord.ButtonStyle.secondary, emoji="🏆", custom_id="invite_comp_leaderboard")
@@ -359,7 +359,7 @@ async def check_and_send_rank_movement_dms(bot, guild: discord.Guild):
                                 color=color,
                                 timestamp=discord.utils.utcnow()
                             )
-                            dm_embed.set_footer(text="Echo Technologies Leaderboard Monitor")
+                            dm_embed.set_footer(text="RetailNetwork Leaderboard Monitor")
                             await dm.send(embed=dm_embed)
                         except Exception:
                             pass
@@ -466,7 +466,7 @@ async def end_invite_competition(bot, comp_id: int):
                 color=0x57F287,
                 timestamp=discord.utils.utcnow()
             )
-            announce_embed.set_footer(text="Echo Technologies Recruitment Division")
+            announce_embed.set_footer(text="RetailNetwork Recruitment Division")
             await channel.send(content=f"🎉 **CONGRATULATIONS TO OUR INVITE CHAMPIONS!** <@{winners[0][1]}>", embed=announce_embed)
         else:
             await channel.send(f"📢 The invite competition **{comp['title']}** has ended. No invites were recorded during this contest.")

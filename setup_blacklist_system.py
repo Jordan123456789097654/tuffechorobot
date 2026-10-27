@@ -53,7 +53,7 @@ class SetupBlacklistSystemClient(discord.Client):
                 channel = await guild.create_text_channel(
                     name=CHANNEL_NAME,
                     overwrites=overrides,
-                    topic="Say sorry 100 times to get unblacklisted from Echo Technologies.",
+                    topic="Say sorry 100 times to get unblacklisted from RetailNetwork.",
                     reason="Created punishment channel for blacklisted members"
                 )
                 print(f"Created channel: {channel.name} ({channel.id})", flush=True)
@@ -104,7 +104,7 @@ class SetupBlacklistSystemClient(discord.Client):
                     value="```\n0 / 100 Sorries\n```",
                     inline=False
                 )
-                embed.set_footer(text="Echo Technologies • Automated Apology System")
+                embed.set_footer(text="RetailNetwork • Automated Apology System")
                 embed.timestamp = discord.utils.utcnow()
 
                 msg = await channel.send(content=f"⚠️ <@{TARGET_USER_ID}> **Read Your Requirements Below:**", embed=embed)

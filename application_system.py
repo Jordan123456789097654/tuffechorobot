@@ -16,7 +16,7 @@ APPLICATION_POSITIONS: Dict[str, Dict[str, Any]] = {
         "title": "Product Development",
         "emoji": "🛠️",
         "role_id": config.DEVELOPMENT_TEAM_ROLE_ID,
-        "description": "Create innovative Roblox assets, game mechanics, 3D models, and studio systems for Echo Technologies.",
+        "description": "Create innovative Roblox assets, game mechanics, 3D models, and studio systems for RetailNetwork.",
         "questions": [
             "What is your primary development specialization (e.g. Luau Scripting, 3D Modeling/Blender, Building, UI/UX Design, Animation, Sound Design) and how many years have you been developing in Roblox Studio?",
             "Please share links to your portfolio, DevForum profile, Roblox creations, GitHub, or upload screenshot/video attachments of your work right here in this DM!",
@@ -24,7 +24,7 @@ APPLICATION_POSITIONS: Dict[str, Dict[str, Any]] = {
             "How familiar are you with clean code standards, modular script architecture (e.g. Knit, ModuleScripts, strict Luau typing), and Git / Rojo workflows?",
             "What is your estimated weekly availability (hours/week), your timezone, and how do you handle development deadlines and project feedback?",
             "How do you handle constructive criticism and peer reviews if a project lead asks for revisions on your work?",
-            "What kind of products, assets, or gameplay systems are you most excited to create for Echo Technologies?"
+            "What kind of products, assets, or gameplay systems are you most excited to create for RetailNetwork?"
         ]
     },
     "support_team": {
@@ -39,7 +39,7 @@ APPLICATION_POSITIONS: Dict[str, Dict[str, Any]] = {
             "Scenario B: A member opens a ticket claiming another player exploited or scammed them in our game. What steps and proof would you gather before taking administrative action?",
             "Scenario C: You encounter a situation in a ticket or chat where server rules are ambiguous, or you are unsure how to handle a customer's request. What is your course of action?",
             "How do you handle high-pressure situations or rude/provocative members while maintaining professional customer service?",
-            "Why do you want to join the Echo Technologies Support Team specifically, and what qualities make you a great fit?"
+            "Why do you want to join the RetailNetwork Support Team specifically, and what qualities make you a great fit?"
         ]
     },
     "public_relations": {
@@ -49,12 +49,12 @@ APPLICATION_POSITIONS: Dict[str, Dict[str, Any]] = {
         "description": "Manage community outreach, social media, studio announcements, affiliate partnerships, and brand marketing.",
         "questions": [
             "What is your timezone, estimated weekly availability, and prior experience in public relations, community outreach, or marketing for Roblox/Discord groups?",
-            "How would you describe your communication style, and how comfortable are you drafting public announcements, event promos, and release notes on behalf of Echo Technologies?",
-            "Scenario A: A community member starts public drama or spreads false rumors about Echo Technologies in chat or on social media. How would you de-escalate and address this professionally?",
+            "How would you describe your communication style, and how comfortable are you drafting public announcements, event promos, and release notes on behalf of RetailNetwork?",
+            "Scenario A: A community member starts public drama or spreads false rumors about RetailNetwork in chat or on social media. How would you de-escalate and address this professionally?",
             "Scenario B: We are releasing a major new Roblox asset or game update. How would you plan and promote the release across our Discord, Roblox group, and social channels to maximize engagement?",
             "How would you approach reaching out to and negotiating partnerships with other prominent Roblox studios, development groups, or content creators?",
-            "What creative event ideas, community initiatives, or marketing strategies would you bring to Echo Technologies to grow active community participation?",
-            "Why do you want to join our Public Relations team specifically, and what makes you the ideal brand ambassador for Echo Technologies?"
+            "What creative event ideas, community initiatives, or marketing strategies would you bring to RetailNetwork to grow active community participation?",
+            "Why do you want to join our Public Relations team specifically, and what makes you the ideal brand ambassador for RetailNetwork?"
         ]
     },
     "qa_tester": {
@@ -406,9 +406,9 @@ def build_career_panel_embed() -> discord.Embed:
     all_closed = all(not s["is_open"] for s in statuses.values())
 
     embed = discord.Embed(
-        title="💼 Echo Technologies • Career Opportunities",
+        title="💼 RetailNetwork • Career Opportunities",
         description=(
-            "Join the official Echo Technologies team! We are looking for talented, passionate, "
+            "Join the official RetailNetwork team! We are looking for talented, passionate, "
             "and dedicated community members to help build our games, products, and community.\n\n"
             "**Open Positions & Current Vacancies:**\n\n"
         ),
@@ -445,7 +445,7 @@ def build_career_panel_embed() -> discord.Embed:
         ),
         inline=False
     )
-    embed.set_footer(text="Echo Technologies Recruitment • Private Direct Message Application")
+    embed.set_footer(text="RetailNetwork Recruitment • Private Direct Message Application")
     return embed
 
 class CareerLaunchView(ui.View):
@@ -521,7 +521,7 @@ async def run_ai_prescreening(app_id: int, groq_assistant=None) -> Optional[Dict
     qa_text = "\n\n".join(qa_formatted)
 
     prompt = f"""
-    You are an automated HR Candidate Evaluator for Echo Technologies.
+    You are an automated HR Candidate Evaluator for RetailNetwork.
     Evaluate the following applicant's responses for the position '{app['position_title']}':
 
     {qa_text}
@@ -671,7 +671,7 @@ def build_application_dossier_embed(
     if app_data.get("review_note"):
         embed.add_field(name="📝 HR Feedback Note", value=f"`{app_data['review_note']}`", inline=False)
 
-    embed.set_footer(text=f"Application #{app_id} • Echo Technologies HR Desk")
+    embed.set_footer(text=f"Application #{app_id} • RetailNetwork HR Desk")
     return embed
 
 class ApplicationControlView(ui.View):
@@ -767,14 +767,14 @@ class DenyApplicationModal(ui.Modal):
                     title=f"💼 Application Status Update • {updated['position_title']}",
                     description=(
                         f"Hello **{candidate.name}**,\n\n"
-                        f"Thank you for your interest and for taking the time to apply for **{updated['position_title']}** at Echo Technologies.\n\n"
+                        f"Thank you for your interest and for taking the time to apply for **{updated['position_title']}** at RetailNetwork.\n\n"
                         f"After careful review by our leadership team, we have decided not to move forward with your application at this time.\n\n"
                         f"**Feedback from Leadership:**\n> {feedback}\n\n"
                         f"You are welcome to reapply in the future as you gain more experience. We wish you the best in your endeavors!"
                     ),
                     color=0xED4245
                 )
-                dm_embed.set_footer(text="Echo Technologies Careers")
+                dm_embed.set_footer(text="RetailNetwork Careers")
                 await dm.send(embed=dm_embed)
             except Exception as e:
                 logger.warning(f"Could not send denial feedback DM to candidate {candidate.id}: {e}")
@@ -828,7 +828,7 @@ class AskApplicantModal(ui.Modal):
                 ),
                 color=0x5865F2
             )
-            msg_embed.set_footer(text=f"Echo Technologies HR • App #{self.app_id}")
+            msg_embed.set_footer(text=f"RetailNetwork HR • App #{self.app_id}")
             await dm.send(embed=msg_embed)
             await interaction.followup.send(f"✅ Dispatched follow-up question to {candidate.mention}'s DMs!", ephemeral=True)
         except Exception as e:
@@ -864,7 +864,7 @@ async def start_dm_application_flow(
     q1 = questions[0]
 
     opening_embed = discord.Embed(
-        title=f"🚀 Echo Technologies Application • {pos_data['title']}",
+        title=f"🚀 RetailNetwork Application • {pos_data['title']}",
         description=(
             f"Hello **{user.name}**! Welcome to the application process for **{pos_data['title']}**.\n\n"
             f"We will ask you **{len(questions)} questions** one at a time. "
@@ -888,7 +888,7 @@ async def start_dm_application_flow(
     except discord.Forbidden:
         # Revert session if bot cannot DM
         cancel_application_session(user.id)
-        return False, "❌ Could not send you a Direct Message! Please enable **Allow direct messages from server members** in your Discord Privacy Settings and try again."
+        return False, "❌ Could not send you a Direct Messagrn! Please enable **Allow direct messages from server members** in your Discord Privacy Settings and try again."
     except Exception as e:
         cancel_application_session(user.id)
         return False, f"❌ An error occurred while opening your application: {e}"
@@ -950,7 +950,7 @@ async def handle_applicant_dm_message(bot, message: discord.Message) -> bool:
                 f"Thank you for completing your application for **{pos_data['title']}**!\n\n"
                 f"Our leadership team has received your submission and will review it thoroughly. "
                 f"You will receive an update right here in your Direct Messages once a decision has been reached.\n\n"
-                f"Best of luck from the Echo Technologies Team!"
+                f"Best of luck from the RetailNetwork Team!"
             ),
             color=0x57F287
         )

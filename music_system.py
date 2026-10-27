@@ -474,7 +474,7 @@ async def fetch_lyrics(query: str) -> Optional[Dict[str, str]]:
 
 def build_music_panel_embed(player: MusicPlayer) -> discord.Embed:
     embed = discord.Embed(
-        title="🎵 Echo Technologies • Official 24/7 Spotify & SoundCloud Jukebox",
+        title="🎵 RetailNetwork • Official 24/7 Spotify & SoundCloud Jukebox",
         color=0x1DB954
     )
 
@@ -505,7 +505,7 @@ def build_music_panel_embed(player: MusicPlayer) -> discord.Embed:
     else:
         embed.description = (
             "**No track currently playing.**\n\n"
-            "Use **/play <song or Spotify URL>** in chat to add music to the queue!\n"
+            "Use **/play <song or Spotify URL>** in chat to add music to the queurn!\n"
             "Supports Spotify tracks, SoundCloud, Bandcamp, and direct audio stream links."
         )
 
@@ -534,7 +534,7 @@ def build_music_panel_embed(player: MusicPlayer) -> discord.Embed:
         inline=False
     )
 
-    embed.set_footer(text="Echo Technologies Official 24/7 Jukebox • Controls Below")
+    embed.set_footer(text="RetailNetwork Official 24/7 Jukebox • Controls Below")
     embed.timestamp = discord.utils.utcnow()
     return embed
 
@@ -652,7 +652,7 @@ async def voice_keepalive_loop(bot):
 
 async def debug_music_system(bot, target_channel: Optional[discord.TextChannel] = None) -> str:
     import traceback
-    lines = ["🔍 **Echo Technologies • Music System Telemetry & Diagnostics**\n"]
+    lines = ["🔍 **RetailNetwork • Music System Telemetry & Diagnostics**\n"]
 
     # 1. Check PyNaCl voice support
     try:
@@ -739,11 +739,11 @@ def register_music_commands(bot):
             if len(tracks) == 1:
                 track = tracks[0]
                 await player.add_track(track)
-                await interaction.followup.send(f"🎵 Added **[{track.title}]({track.webpage_url})** (`{track.format_duration()}`) to the queue!")
+                await interaction.followup.send(f"🎵 Added **[{track.title}]({track.webpage_url})** (`{track.format_duration()}`) to the queurn!")
             else:
                 for t in tracks:
                     await player.add_track(t)
-                await interaction.followup.send(f"🎶 Added **{len(tracks)} tracks** from playlist to the queue!")
+                await interaction.followup.send(f"🎶 Added **{len(tracks)} tracks** from playlist to the queurn!")
         except Exception as e:
             logger.error(f"Error in /play command: {e}")
             await interaction.followup.send(f"❌ Error loading track: `{e}`", ephemeral=True)
@@ -866,7 +866,7 @@ def register_music_commands(bot):
             target_query = f"{player.current.title} {player.current.uploader}"
 
         if not target_query:
-            await interaction.followup.send("❌ No track currently playing. Please specify a song title!", ephemeral=True)
+            await interaction.followup.send("❌ No track currently playing. Please specify a song titlrn!", ephemeral=True)
             return
 
         res = await fetch_lyrics(target_query)
@@ -883,7 +883,7 @@ def register_music_commands(bot):
             description=lyrics_text,
             color=0x9B59B6
         )
-        embed.set_footer(text="Echo Technologies Music System • Lyrics Service")
+        embed.set_footer(text="RetailNetwork Music System • Lyrics Service")
         await interaction.followup.send(embed=embed)
 
     @bot.tree.command(name="seek", description="Seek to a specific timestamp in the current song (e.g. 1:30 or 90).")
@@ -991,7 +991,7 @@ def register_music_commands(bot):
             await player.add_track(t)
             count += 1
 
-        await interaction.followup.send(f"🎶 Loaded **{count} tracks** from playlist **`{name}`** into the queue!")
+        await interaction.followup.send(f"🎶 Loaded **{count} tracks** from playlist **`{name}`** into the queurn!")
 
     @playlist_group.command(name="list", description="List all your saved playlists.")
     async def playlist_list(interaction: discord.Interaction):
@@ -1001,7 +1001,7 @@ def register_music_commands(bot):
 
         playlists = bot.db.get_user_playlists_list(interaction.user.id)
         if not playlists:
-            await interaction.response.send_message("📜 You have no saved playlists. Use `/playlist save name: <name>` to create one!", ephemeral=True)
+            await interaction.response.send_message("📜 You have no saved playlists. Use `/playlist save name: <name>` to create onrn!", ephemeral=True)
             return
 
         embed = discord.Embed(

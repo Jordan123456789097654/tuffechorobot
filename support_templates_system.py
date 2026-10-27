@@ -91,7 +91,7 @@ BUILTIN_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "1. Head over to <#1556000182196506684> and click 'Verify Roblox Account'.\n"
             "2. Enter your exact Roblox Username.\n"
             "3. Copy the 4-word code provided and paste it into your Roblox Profile 'About' / Bio section.\n"
-            "4. Click 'Check Verification' when done!\n\n"
+            "4. Click 'Check Verification' when donrn!\n\n"
             "If your code gets tagged (###), reply here and we will verify your profile manually!"
         )
     },
@@ -110,7 +110,7 @@ BUILTIN_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "1. Open your game in Roblox Studio.\n"
             "2. Click Home -> Game Settings -> Security.\n"
             "3. Ensure 'Allow HTTP Requests' and 'Enable Studio Access to API Services' are both turned ON.\n"
-            "4. If you encounter an error, screenshot your Output Window (View -> Output) and reply here!"
+            "4. If you encounter an error, screenshot your Output Window (View -> Output) and reply herrn!"
         )
     },
     "http_service": {
@@ -162,7 +162,7 @@ BUILTIN_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "3. Assign lead developer and establish commission milestones."
         ),
         "template": (
-            "Hello {user}! Thank you for your interest in commissioning custom development from Echo Technologies!\n\n"
+            "Hello {user}! Thank you for your interest in commissioning custom development from RetailNetwork!\n\n"
             "To provide an accurate pricing quote and timeline, please reply with:\n"
             "1. **Project Type:** (Scripting, UI Design, 3D Building, Animation, or Full Game Setup)\n"
             "2. **Detailed Description:** Scope of work and required features.\n"
@@ -217,7 +217,7 @@ BUILTIN_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "3. Issue booster role or redemption coupon code."
         ),
         "template": (
-            "Hello {user}! Thank you so much for boosting Echo Technologies! 🎉\n\n"
+            "Hello {user}! Thank you so much for boosting RetailNetwork! 🎉\n\n"
             "We have verified your server boost! Your Booster Perks have been activated. If your reward includes a custom role, coupon, or asset download link, reply here with your preferred role name and color!"
         )
     },
@@ -301,7 +301,7 @@ BUILTIN_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "3. Pause AI replies in channel."
         ),
         "template": (
-            "Hello {user}, we take staff integrity very seriously at Echo Technologies.\n\n"
+            "Hello {user}, we take staff integrity very seriously at RetailNetwork.\n\n"
             "Your complaint has been escalated directly to our **Foundership & HR Leadership Team**. Please provide any screenshots or message links regarding your concern, and a Founding Director will assist you directly."
         )
     },
@@ -318,7 +318,7 @@ BUILTIN_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "Hello {user}! To re-sync your Discord roles with your Roblox Group rank:\n\n"
             "1. Make sure your Roblox account is linked via <#1556000182196506684>.\n"
             "2. Run the `/update` slash command in any bot channel.\n"
-            "3. If your group rank changed recently, please allow 1 minute for role sync to update!"
+            "3. If your group rank changed recently, please allow 1 minute for role sync to updatrn!"
         )
     },
     "inactive": {
@@ -332,7 +332,7 @@ BUILTIN_TEMPLATES: Dict[str, Dict[str, Any]] = {
         ),
         "template": (
             "Hello {user}, we haven't received a response from you recently, so we are closing this support ticket for now.\n\n"
-            "If you still need assistance or have further questions, feel free to open a new ticket anytime. Thank you for choosing Echo Technologies!"
+            "If you still need assistance or have further questions, feel free to open a new ticket anytime. Thank you for choosing RetailNetwork!"
         )
     }
 }
@@ -369,7 +369,7 @@ async def build_support_header_embed(bot=None) -> discord.Embed:
             pass
 
     embed = discord.Embed(
-        title="📚 Echo Technologies • Support Team Guide & Knowledge Base",
+        title="📚 RetailNetwork • Support Team Guide & Knowledge Base",
         description=(
             "Welcome to the official **Support Team Knowledge Base & Template Console**!\n\n"
             "This channel contains standard operating procedures (SOPs), troubleshooting workflows, "
@@ -387,7 +387,7 @@ async def build_support_header_embed(bot=None) -> discord.Embed:
         color=0x5865F2,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text="Echo Technologies Support Division • Real-Time Status & SOP Panel")
+    embed.set_footer(text="RetailNetwork Support Division • Real-Time Status & SOP Panel")
     return embed
 
 class TemplateCategorySelectView(ui.View):
@@ -439,7 +439,7 @@ class TemplateCategorySelectView(ui.View):
             ),
             color=0x5865F2
         )
-        embed.set_footer(text=f"Template Shortcut: {tpl['shortcut']} • Echo Technologies SOP")
+        embed.set_footer(text=f"Template Shortcut: {tpl['shortcut']} • RetailNetwork SOP")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 class SendTemplateSelectView(ui.View):
@@ -519,7 +519,7 @@ class SendTemplateSelectView(ui.View):
         channel_embed.set_footer(text=f"Template: {tpl['shortcut']} • Modmail Relayed to DM")
         await interaction.channel.send(embed=channel_embed)
 
-        # Check if this is a Staff Exam Test Ticket!
+        # Check if this is a Staff Exam Test Tickrn!
         if "Support Staff Exam" in ticket.get("section", ""):
             import asyncio
             asyncio.create_task(self.bot.process_ai_test_roleplay_message(self.ticket_id, interaction.channel, interaction.user, formatted_text))
@@ -530,7 +530,7 @@ class SendTemplateSelectView(ui.View):
         try:
             dm = await candidate.create_dm()
             dm_embed = discord.Embed(
-                title=f"💬 Echo Support • {tpl['title']}",
+                title=f"💬 RetailNetwork Support • {tpl['title']}",
                 description=formatted_text,
                 color=0x5865F2,
                 timestamp=discord.utils.utcnow()

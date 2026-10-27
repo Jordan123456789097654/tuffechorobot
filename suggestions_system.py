@@ -124,7 +124,7 @@ def build_suggestion_embed(
     author: Optional[discord.User] = None,
     reviewer: Optional[discord.User] = None
 ) -> discord.Embed:
-    """Renders the comprehensive Echo Technologies suggestion card."""
+    """Renders the comprehensive RetailNetwork suggestion card."""
     status = suggestion.get("status", "pending").lower()
     sid = suggestion["id"]
 
@@ -142,7 +142,7 @@ def build_suggestion_embed(
         status_tag = "⏳ **Under Community Review**"
 
     embed = discord.Embed(
-        title=f"💡 Echo Technologies Suggestion #{sid}",
+        title=f"💡 RetailNetwork Suggestion #{sid}",
         description=suggestion["content"],
         color=color,
         timestamp=discord.utils.utcnow()
@@ -163,7 +163,7 @@ def build_suggestion_embed(
     if suggestion.get("attachment_url"):
         embed.set_image(url=suggestion["attachment_url"])
 
-    embed.set_footer(text=f"Echo Technologies Ideas & Feedback • #{sid}")
+    embed.set_footer(text=f"RetailNetwork Ideas & Feedback • #{sid}")
     return embed
 
 
@@ -285,11 +285,11 @@ class ReviewSuggestionModal(ui.Modal, title="Review Suggestion"):
                     dm_embed = discord.Embed(
                         title=f"💡 Suggestion #{self.suggestion_id} Update",
                         description=(
-                            f"Hello **{author.name}**, your suggestion submitted to **Echo Technologies** has been reviewed!\n\n"
+                            f"Hello **{author.name}**, your suggestion submitted to **RetailNetwork** has been reviewed!\n\n"
                             f"• **Status:** **{status.upper()}**\n"
                             f"• **Reviewer:** {interaction.user.mention} (`{interaction.user.display_name}`)\n"
                             f"• **Feedback Note:**\n> *\"{note}\"*\n\n"
-                            f"Thank you for helping us innovate and improve!"
+                            f"Thank you for helping us innovate and improvrn!"
                         ),
                         color=0x57F287 if status == "approved" else (0x00A2FF if status == "in_progress" else 0xED4245),
                         timestamp=discord.utils.utcnow()

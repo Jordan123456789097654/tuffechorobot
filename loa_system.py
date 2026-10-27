@@ -137,7 +137,7 @@ def build_loa_staff_embed(
     if loa_data.get("review_note"):
         embed.add_field(name="💬 Review Note", value=f"`{loa_data['review_note']}`", inline=False)
 
-    embed.set_footer(text="Echo Technologies HR • Leave of Absence Management")
+    embed.set_footer(text="RetailNetwork HR • Leave of Absence Management")
     return embed
 
 class LOAControlView(ui.View):

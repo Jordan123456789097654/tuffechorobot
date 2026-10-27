@@ -27,7 +27,7 @@ class AnnouncementClient(discord.Client):
             embed = discord.Embed(
                 title="🦆 NEW PRODUCT RELEASE: Steal A Duck [CODED]",
                 description=(
-                    "**Steal A Duck [CODED]** is now officially available for purchase!\n"
+                    "**Steal A Duck [CODED]** is now officially available for purchasrn!\n"
                     "A complete, feature-rich Roblox base defense and duck theft engine built with enterprise modularity and full source code included."
                 ),
                 color=0xF1C40F # Vibrant Gold
@@ -72,7 +72,7 @@ class AnnouncementClient(discord.Client):
             )
 
             embed.set_footer(
-                text="Echo Technologies • Steal A Duck [CODED] • Product Release Announcement"
+                text="RetailNetwork • Steal A Duck [CODED] • Product Release Announcement"
             )
             embed.timestamp = discord.utils.utcnow()
 

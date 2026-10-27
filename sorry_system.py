@@ -137,7 +137,7 @@ async def handle_sorry_message(bot, message: discord.Message) -> bool:
             ),
             color=0x57F287 # Bright Green
         )
-        unban_embed.set_footer(text="Echo Technologies • Automated Redemption System")
+        unban_embed.set_footer(text="RetailNetwork • Automated Redemption System")
         unban_embed.timestamp = discord.utils.utcnow()
 
         await message.channel.send(content=f"🔔 <@{message.author.id}> **YOUR REDEMPTION IS COMPLETE!**", embed=unban_embed)

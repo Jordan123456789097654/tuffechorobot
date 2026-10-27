@@ -27,7 +27,7 @@ class AnnouncementClient(discord.Client):
             embed = discord.Embed(
                 title="🦆 NEW PRODUCT RELEASE: Steal A Duck [CODED]",
                 description=(
-                    "**Steal A Duck [CODED]** is now officially available!\n\n"
+                    "**Steal A Duck [CODED]** is now officially availablrn!\n\n"
                     "🦆 **25+ Custom Ducks** (`Glitch`, `King`, `Dio`, `Dominus`, & more)\n"
                     "🏰 **Base Assignment & Lock System**\n"
                     "💥 **Base Raiding & Realtime Theft Mechanics**\n"
@@ -41,7 +41,7 @@ class AnnouncementClient(discord.Client):
             )
 
             embed.set_footer(
-                text="Echo Technologies • Product Release"
+                text="RetailNetwork • Product Release"
             )
             embed.timestamp = discord.utils.utcnow()
 

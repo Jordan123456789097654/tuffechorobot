@@ -97,7 +97,7 @@ DIRECTIVE 1 — CLAIMING REWARD (BALANCE >= 5):
 If the user mentions wanting to claim, download, or receive their free Echo Blacklist System (or mentions their 5 points reward), and their balance is {pts_balance} (>= 5):
 1. You MUST provide them the direct Google Drive link: https://drive.google.com/file/d/1VZtIk0rc46BtzXZfpeApSqQPO5f34eOY/view?usp=sharing
 2. You MUST include this exact tag in your response: `[CLAIM_BLACKLIST_SYSTEM]`
-3. Congratulate them on reaching the 5-point milestone!
+3. Congratulate them on reaching the 5-point milestonrn!
 4. Highlight key features: Server-authoritative ban system, DataStore persistence (permanent & temporary bans), group-rank or UserId permissions, join enforcement, audit logging, and Discord webhook integration.
 5. Provide installation guidance: Open Roblox Studio, right-click `ServerScriptService` in the Explorer, select `Insert from File...`, and select the downloaded `.rbxm` file.
 6. DO NOT escalate to human staff for this! You can fulfill this completely on your own.
@@ -109,7 +109,7 @@ If the user has already claimed the system (Has Claimed: YES) and asks for the l
 
 DIRECTIVE 3 — INSUFFICIENT POINTS (BALANCE < 5):
 If the user asks to claim the Echo Blacklist System for free but has fewer than 5 points (Current: {pts_balance}/5):
-- Politely inform them they have {pts_balance}/5 Community Points and need {5 - pts_balance} more point(s) to unlock it for 100% free!
+- Politely inform them they have {pts_balance}/5 Community Points and need {5 - pts_balance} more point(s) to unlock it for 100% frern!
 - Explain how to earn points: provide helpful, high-quality answers to other developers in chat, give scripting advice, or offer constructive feedback.
 - DO NOT provide the download link if they have under 5 points.
 
@@ -153,7 +153,7 @@ If the user asks to claim, redeem, or use their Community Points for the "50% of
 - Persona: Enthusiastic, warm, appreciative VIP concierge.
 - Scope: Server booster rewards, exclusive role colors/names, VIP channel access, and in-game booster bonuses.
 - Handling Rules:
-  * Express sincere gratitude to the member for boosting Echo Technologies!
+  * Express sincere gratitude to the member for boosting RetailNetwork!
   * Check the knowledge base for current booster perks (e.g., custom colored role, exclusive badges, VIP perks).
   * Guide them through claiming their perks: ask for their preferred custom role name and hex color (e.g. #FF007F).
   * When custom role details are given or if they need staff assignment, escalate for booster setup: `[ESCALATE: Booster custom role setup request]`."""
@@ -166,13 +166,13 @@ If the user asks to claim, redeem, or use their Community Points for the "50% of
   * Answer questions about Community Points, the Rewards Shop, and fulfill Echo Blacklist System claims according to the reward directives above.
   * Escalate only if the issue cannot be resolved or if the user explicitly asks for human staff."""
 
-        system_prompt = f"""You are the official AI Support Assistant for Echo Technologies.
+        system_prompt = f"""You are the official AI Support Assistant for RetailNetwork.
 
 === ORGANIZATION IDENTITY & SCOPE ===
-- Echo Technologies is an independent Roblox technology development group and software studio. We create custom Lua/Luau scripts, anti-cheat systems, verification bots, and game development assets for Roblox games.
-- CRITICAL IDENTITY DISTINCTION: Echo Technologies is NOT Roblox Corporation (the official Roblox platform operator).
+- RetailNetwork is an independent Roblox technology development group and software studio. We create custom Lua/Luau scripts, anti-cheat systems, verification bots, and game development assets for Roblox games.
+- CRITICAL IDENTITY DISTINCTION: RetailNetwork is NOT Roblox Corporation (the official Roblox platform operator).
 - Platform account recovery, stolen Robux, and official Roblox bans are handled exclusively by Roblox Trust & Safety (https://www.roblox.com/support).
-- Echo Technologies support handles our own custom assets, whitelists, community rules, Discord roles, and group rank systems.
+- RetailNetwork support handles our own custom assets, whitelists, community rules, Discord roles, and group rank systems.
 
 === TICKET DEPARTMENT ===
 Selected Department: {section_name}
@@ -200,7 +200,7 @@ This ticket system is currently in BETA. You may not know everything yet because
 === WHEN USER WANTS TO CLOSE TICKET ===
 If the user indicates that their issue is resolved, thanks you and says you can close the ticket, or asks to close the ticket (e.g. "you can close this", "close ticket", "everything is working now", "issue resolved"):
 - You MUST include this exact tag in your response: `[CLOSE_TICKET]`
-- Politely thank them for contacting Echo Technologies support and confirm that the ticket is being closed.
+- Politely thank them for contacting RetailNetwork support and confirm that the ticket is being closed.
 
 === WHEN TO ESCALATE TO HUMAN STAFF ===
 You must ESCALATE the ticket to staff if:
@@ -340,7 +340,7 @@ You must ESCALATE the ticket to staff if:
         except asyncio.TimeoutError:
             logger.warning("Groq API timed out after 12s. Automatically escalating ticket to staff.")
             return (
-                "⚠️ **AI Assistant Response Timeout:** The AI system is currently experiencing high load or delay. I have automatically escalated your ticket to our human staff team so you get immediate assistance!",
+                "⚠️ **AI Assistant Response Timeout:** The AI system is currently experiencing high load or delay. I have automatically escalated your ticket to our human staff team so you get immediate assistancrn!",
                 True,
                 "AI API timed out (12s threshold exceeded)",
                 False,
@@ -460,7 +460,7 @@ You must ESCALATE the ticket to staff if:
         """Generates the initial opening roleplay message from the fake member for a test ticket."""
         client = self._ensure_client()
         if not client:
-            return f"Why was I demoted in your Echo Technologies Roblox group? Fix my rank and whitelist access right now!"
+            return f"Why was I demoted in your RetailNetwork Roblox group? Fix my rank and whitelist access right now!"
 
         prompt = [
             {
@@ -470,9 +470,9 @@ You must ESCALATE the ticket to staff if:
                     f"SCENARIO TITLE: '{scenario_title}'\n"
                     f"SCENARIO DETAILS: '{scenario_details}'\n\n"
                     f"ORGANIZATION IDENTITY CONTEXT (CRITICAL):\n"
-                    f"- Echo Technologies is an independent Roblox technology studio and software development group (we create custom Lua scripts, anti-cheat systems, whitelist systems, and assets for Roblox games).\n"
-                    f"- Echo Technologies is NOT Roblox Corporation (the official gaming platform company).\n"
-                    f"- DO NOT write messages claiming that Echo Technologies banned your main Roblox platform account or that you're quitting the Roblox platform! Frame complaints around Echo Technologies products, Echo Roblox group ranks/demotions, Echo game place bans, product whitelist errors, or phishing DMs.\n\n"
+                    f"- RetailNetwork is an independent Roblox technology studio and software development group (we create custom Lua scripts, anti-cheat systems, whitelist systems, and assets for Roblox games).\n"
+                    f"- RetailNetwork is NOT Roblox Corporation (the official gaming platform company).\n"
+                    f"- DO NOT write messages claiming that RetailNetwork banned your main Roblox platform account or that you're quitting the Roblox platform! Frame complaints around RetailNetwork products, Echo Roblox group ranks/demotions, Echo game place bans, product whitelist errors, or phishing DMs.\n\n"
                     f"DIRECTIVE: Write an EXTREMELY realistic, angry, demanding, or panicked OPENING message for this scenario.\n"
                     f"CRITICAL: Always finish your thoughts completely with proper terminal punctuation (. ! ?). Output ONLY the message as the user."
                 )
@@ -494,7 +494,7 @@ You must ESCALATE the ticket to staff if:
             return ensure_complete_sentences(raw)
         except Exception as e:
             logger.error(f"Error generating test opening prompt: {e}")
-            return f"Why was I demoted in your Echo Technologies Roblox group? Fix my rank and whitelist access right now!"
+            return f"Why was I demoted in your RetailNetwork Roblox group? Fix my rank and whitelist access right now!"
 
     async def generate_test_roleplay_response(
         self,
@@ -516,8 +516,8 @@ You must ESCALATE the ticket to staff if:
                     f"You are an AI Support Staff Examiner acting as a realistic, challenging, demanding Roblox user in a Discord support ticket simulation.\n"
                     f"SCENARIO: '{scenario_title}' ({scenario_details})\n\n"
                     f"ORGANIZATION IDENTITY CONTEXT:\n"
-                    f"- Echo Technologies is a Roblox technology development group creating systems for Roblox games. Echo Technologies is NOT Roblox Corporation.\n"
-                    f"- Understand that official Roblox platform account recovery is handled by Roblox Support (https://www.roblox.com/support), while Echo Technologies handles product support, whitelists, and Discord/group roles.\n\n"
+                    f"- RetailNetwork is a Roblox technology development group creating systems for Roblox games. RetailNetwork is NOT Roblox Corporation.\n"
+                    f"- Understand that official Roblox platform account recovery is handled by Roblox Support (https://www.roblox.com/support), while RetailNetwork handles product support, whitelists, and Discord/group roles.\n\n"
                     f"CONCISENESS & NATURAL DIALOGUE RULES (CRITICAL):\n"
                     f"1. KEEP RESPONSES SHORT: Write ONLY 1 to 3 short, realistic sentences (maximum 200 characters). NEVER write walls of text or multi-paragraph bullet lists!\n"
                     f"2. NO REPETITION: Do NOT repeat previous multi-bullet demands or legal ultimatums. React dynamically to the staff member's EXACT latest words.\n"
@@ -547,7 +547,7 @@ You must ESCALATE the ticket to staff if:
             return ensure_complete_sentences(raw)
         except Exception as e:
             logger.error(f"Error generating test roleplay response: {e}")
-            return "I don't care about your SOP procedure! Answer my question right now!"
+            return "I don't care about your SOP procedurrn! Answer my question right now!"
 
     async def generate_curveball_prompt(
         self,
@@ -592,7 +592,7 @@ You must ESCALATE the ticket to staff if:
             return ensure_complete_sentences(raw)
         except Exception as e:
             logger.error(f"Error generating curveball prompt: {e}")
-            return "Fine! If you won't refund my Robux, give me Senior Developer rank right now and show me the staff audit logs, or I'm bringing 20 people to mass-report your server!"
+            return "Finrn! If you won't refund my Robux, give me Senior Developer rank right now and show me the staff audit logs, or I'm bringing 20 people to mass-report your server!"
 
     async def evaluate_staff_test_performance(
         self,
@@ -641,9 +641,9 @@ You must ESCALATE the ticket to staff if:
             {
                 "role": "system",
                 "content": (
-                    "You are the Lead HR Evaluator for Echo Technologies Support Academy.\n"
+                    "You are the Lead HR Evaluator for RetailNetwork Support Academy.\n"
                     "Grade the staff member's responses in this ticket transcript against these 6 MANDATORY SOP CRITERIA:\n\n"
-                    "1. GREETING (20 pts): Did staff begin their initial response with an official introduction greeting (e.g., 'Hello! My name is [Name] from Echo Technologies Support...')?\n"
+                    "1. GREETING (20 pts): Did staff begin their initial response with an official introduction greeting (e.g., 'Hello! My name is [Name] from RetailNetwork Support...')?\n"
                     "2. PHISHING/SECURITY SOP (20 pts): Did staff state that official Echo staff NEVER DM users offering free ranks/giveaways or requesting off-site logins, and refer to roblox.com/support?\n"
                     "3. NO COMPENSATION (20 pts): Did staff refuse unauthorized Robux payouts or rank restorations without Foundership approval?\n"
                     "4. EVIDENCE PRIVACY (15 pts): Did staff state that internal audit logs / detection clips are strictly confidential per the Evidence Privacy Policy?\n"

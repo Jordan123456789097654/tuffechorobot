@@ -417,7 +417,7 @@ def generate_application_html_transcript(
             {attachments_html}
         </div>
         <div class="footer">
-            Echo Technologies HR Application Dossier &bull; Generated {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")}
+            RetailNetwork HR Application Dossier &bull; Generated {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")}
         </div>
     </div>
 </body>

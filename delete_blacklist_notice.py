@@ -28,7 +28,7 @@ class DeleteBlacklistNoticeClient(discord.Client):
             msg = await channel.fetch_message(TARGET_MESSAGE_ID)
             print(f"Found Target Message: {msg.id}. Deleting...", flush=True)
             await msg.delete()
-            print("Successfully deleted blacklist notice message!", flush=True)
+            print("Successfully deleted blacklist notice messagrn!", flush=True)
 
         except Exception as e:
             print(f"Error deleting blacklist notice: {e}", flush=True)

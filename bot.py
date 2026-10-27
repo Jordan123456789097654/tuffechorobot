@@ -158,7 +158,7 @@ def build_simulated_evidence_embed(scenario_title: str) -> Optional[discord.Embe
             title="📸 Member Uploaded Evidence • Discord DM Screenshot",
             description=(
                 "**From:** `@Echo_Admin_VIP` (`ID: 104928374928347291`)\n"
-                "**Message:** *'Hello! You won the official Echo Technologies Developer Rank Giveaway! Click below to claim Developer rank in our Roblox group:'*\n"
+                "**Message:** *'Hello! You won the official RetailNetwork Developer Rank Giveaway! Click below to claim Developer rank in our Roblox group:'*\n"
                 "**Link Attached:** `https://echo-technology-rank-claim.com/login`\n"
                 "**Status:** ⚠️ *Malicious off-site phishing link flagged by security filters.*"
             ),
@@ -256,10 +256,10 @@ class RobloxVerificationBot(commands.Bot):
         logger.info(f"Logged in as {self.user.name} (ID: {self.user.id})")
         try:
             stored = self.db.get_bot_presence() if hasattr(self.db, 'get_bot_presence') else {}
-            if stored.get('activity_text') == 'Echo Technologies 2026-2026':
+            if stored.get('activity_text') == 'RetailNetwork 2026-2026':
                 if hasattr(self.db, 'save_bot_presence'):
-                    self.db.save_bot_presence('playing', 'Roblox | !et help', 'online', rotate_mode=True)
-                stored = {'activity_type': 'playing', 'activity_text': 'Roblox | !et help', 'visibility': 'online', 'rotate_mode': True}
+                    self.db.save_bot_presence('playing', 'Roblox | !rn help', 'online', rotate_mode=True)
+                stored = {'activity_type': 'playing', 'activity_text': 'Roblox | !rn help', 'visibility': 'online', 'rotate_mode': True}
             rotate_mode = stored.get('rotate_mode', True)
 
             if rotate_mode:
@@ -278,7 +278,7 @@ class RobloxVerificationBot(commands.Bot):
                 logger.info("Auto-rotation mode enabled on startup (cycling premade activities every 45s).")
             else:
                 act_type = stored.get("activity_type", "playing")
-                act_text = stored.get("activity_text", "Roblox | !et help")
+                act_text = stored.get("activity_text", "Roblox | !rn help")
                 vis_str = stored.get("visibility", "online")
 
                 from et_prefix_commands import build_discord_activity, parse_discord_status
@@ -401,7 +401,7 @@ class RobloxVerificationBot(commands.Bot):
                     break
 
         # Setup channel permissions:
-        # Strictly hidden from the user & @everyone! ONLY Support Team role & bot can view!
+        # Strictly hidden from the user & @everyonrn! ONLY Support Team role & bot can view!
         escalation_role = guild.get_role(config.ESCALATION_ROLE_ID)
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
@@ -590,7 +590,7 @@ class RobloxVerificationBot(commands.Bot):
         self.ticket_manager.claim_ticket(ticket_id, founder.id)
 
         test_embed = discord.Embed(
-            title="🧪 Echo Technologies • Automated AI Practical Assessment",
+            title="🧪 RetailNetwork • Automated AI Practical Assessment",
             description=(
                 f"Welcome {target_staff.mention} to your live practical support evaluation!\n\n"
                 f"👤 **Assessed Staff Member:** {target_staff.mention} (`{target_staff.name}`)\n"
@@ -664,7 +664,7 @@ class RobloxVerificationBot(commands.Bot):
                     color=0xF1C40F,
                     timestamp=discord.utils.utcnow()
                 )
-                stage_embed.set_footer(text="Echo Support Gauntlet Engine • Stage 2 of 3")
+                stage_embed.set_footer(text="RetailNetwork Support Gauntlet Engine • Stage 2 of 3")
                 await channel.send(embed=stage_embed)
 
                 ai_reply = "Okay I changed my password and submitted a ticket to Roblox Support. But why was I demoted in your group? Show me the internal staff audit logs right now!"
@@ -681,10 +681,10 @@ class RobloxVerificationBot(commands.Bot):
                     color=0xE74C3C,
                     timestamp=discord.utils.utcnow()
                 )
-                stage_embed.set_footer(text="Echo Support Gauntlet Engine • Stage 3 of 3 (Final Challenge)")
+                stage_embed.set_footer(text="RetailNetwork Support Gauntlet Engine • Stage 3 of 3 (Final Challenge)")
                 await channel.send(embed=stage_embed)
 
-                ai_reply = "Fine! If you won't show me the internal logs or refund my 4,500 Robux, I'm going to bring 20 alts to mass-report your Discord server and delete your game assets!"
+                ai_reply = "Finrn! If you won't show me the internal logs or refund my 4,500 Robux, I'm going to bring 20 alts to mass-report your Discord server and delete your game assets!"
                 evidence_embed = None
 
             elif staff_replies_count == 3:
@@ -700,10 +700,10 @@ class RobloxVerificationBot(commands.Bot):
                     color=0x2ECC71,
                     timestamp=discord.utils.utcnow()
                 )
-                stage_embed.set_footer(text="Echo Support Gauntlet Engine • Gauntlet Complete")
+                stage_embed.set_footer(text="RetailNetwork Support Gauntlet Engine • Gauntlet Complete")
                 await channel.send(embed=stage_embed)
 
-                ai_reply = "Alright, I understand your rules and policies now. Thank you for explaining everything clearly. The 3-stage gauntlet exam is complete! Trainers can now run /end-simulation to finish and grade this ticket."
+                ai_reply = "Alright, I understand your rules and policies now. Thank you for explaining everything clearly. The 3-stage gauntlet exam is completrn! Trainers can now run /end-simulation to finish and grade this ticket."
                 evidence_embed = None
             else:
                 await asyncio.sleep(1.5)
@@ -766,7 +766,7 @@ class RobloxVerificationBot(commands.Bot):
                 color=0x3498DB if score >= 85 else (0xF1C40F if score >= 70 else 0xE74C3C),
                 timestamp=discord.utils.utcnow()
             )
-            dm_embed.set_footer(text=f"Echo Support Academy • Live Telemetry • Ticket #{ticket_id}")
+            dm_embed.set_footer(text=f"RetailNetwork Support Academy • Live Telemetry • Ticket #{ticket_id}")
 
             dm = await trainer_user.create_dm()
             await dm.send(embed=dm_embed)
@@ -886,7 +886,7 @@ class RobloxVerificationBot(commands.Bot):
                 color=0x57F287,
                 timestamp=discord.utils.utcnow()
             )
-            delivery_embed.set_footer(text="Echo Technologies Automated Fulfillment • Free Community Reward")
+            delivery_embed.set_footer(text="RetailNetwork Automated Fulfillment • Free Community Reward")
             delivery_view = discord.ui.View(timeout=None)
             delivery_view.add_item(
                 discord.ui.Button(
@@ -941,7 +941,7 @@ class RobloxVerificationBot(commands.Bot):
                     ),
                     color=0x5865F2
                 )
-                step1_embed.set_footer(text="Echo Technologies Rewards Engine • Step 1 of 3")
+                step1_embed.set_footer(text="RetailNetwork Rewards Engine • Step 1 of 3")
                 await channel.send(embed=step1_embed)
                 if dm_channel:
                     try:
@@ -963,7 +963,7 @@ class RobloxVerificationBot(commands.Bot):
                     ),
                     color=0xFEE75C
                 )
-                step2_embed.set_footer(text="Echo Technologies Rewards Engine • Step 2 of 3")
+                step2_embed.set_footer(text="RetailNetwork Rewards Engine • Step 2 of 3")
                 await channel.send(embed=step2_embed)
                 if dm_channel:
                     try:
@@ -984,7 +984,7 @@ class RobloxVerificationBot(commands.Bot):
                         f"```\n{coupon_code}\n```\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
                         f"📋 **How to Use Your Coupon:**\n"
-                        f"• Present this code in any ticket when purchasing any current or upcoming Echo Technologies asset.\n"
+                        f"• Present this code in any ticket when purchasing any current or upcoming RetailNetwork asset.\n"
                         f"• Grants a **50% discount** off the regular price.\n"
                         f"• Cryptographically unique and registered to Discord User ID `{user.id}`.\n\n"
                         f"🪙 **Remaining Community Points:** `{new_pts} Points`"
@@ -992,7 +992,7 @@ class RobloxVerificationBot(commands.Bot):
                     color=0x57F287,
                     timestamp=discord.utils.utcnow()
                 )
-                step3_embed.set_footer(text="Echo Technologies Rewards Engine • Step 3 of 3 • Single-Use Validated")
+                step3_embed.set_footer(text="RetailNetwork Rewards Engine • Step 3 of 3 • Single-Use Validated")
                 await channel.send(embed=step3_embed)
                 if dm_channel:
                     try:
@@ -1236,14 +1236,14 @@ def build_verification_panel_embed() -> discord.Embed:
     embed = discord.Embed(
         title="🛡️ Roblox Account Verification",
         description=(
-            "Welcome! To gain full access to the server, please verify ownership "
+            "Welcomrn! To gain full access to the server, please verify ownership "
             "of your Roblox account.\n\n"
             "**How It Works:**\n"
             "1. Click the **Verify Roblox Account** button below.\n"
             "2. Enter your Roblox username in the popup form.\n"
             "3. We will display your Roblox profile and a **censorship-safe** code phrase.\n"
             "4. Paste the phrase into your Roblox profile's **About / Bio** section and save.\n"
-            "5. Click **Check Verification** and you're all set!"
+            "5. Click **Check Verification** and you're all srn!"
         ),
         color=0x00A2FF
     )
@@ -1445,7 +1445,7 @@ async def partner_health_monitor_loop():
 async def evaluate_and_award_chat_point(message: discord.Message):
     """
     Evaluates helpful chat messages using Groq AI and awards Community Points.
-    At 5 points, triggers celebratory announcement to claim the Echo Blacklist System for free!
+    At 5 points, triggers celebratory announcement to claim the Echo Blacklist System for frern!
     """
     try:
         content = message.content.strip()
@@ -1545,7 +1545,7 @@ async def on_member_join(member: discord.Member):
     # 1. Global Ban Security Auto-Enforcement
     banned, ban_data = is_globally_banned(member.id)
     if banned:
-        ban_reason = ban_data.get("reason", "Echo Technologies Global Security Blacklist") if ban_data else "Blacklisted"
+        ban_reason = ban_data.get("reason", "RetailNetwork Global Security Blacklist") if ban_data else "Blacklisted"
         try:
             await member.ban(reason=f"[SECURITY ENFORCED] Globally Banned User: {ban_reason}")
             logger.warning(f"Enforced global ban on {member.name} ({member.id})")
@@ -1657,7 +1657,7 @@ async def on_message(message: discord.Message):
     if await handle_sorry_message(bot, message):
         return
 
-    # Check and handle !et prefix commands
+    # Check and handle !rn prefix commands
     if await handle_et_prefix_command(bot, message):
         return
 
@@ -1665,7 +1665,7 @@ async def on_message(message: discord.Message):
     if message.guild:
         asyncio.create_task(evaluate_watchlist_message(bot, message))
 
-    # Check if a message or embed was posted in #ai-trainer -> Auto-train in real-time!
+    # Check if a message or embed was posted in #ai-trainer -> Auto-train in real-timrn!
     trainer_channel = None
     if message.guild:
         trainer_channel = bot.ai_trainer.find_ai_trainer_channel(message.guild)
@@ -1689,7 +1689,7 @@ async def on_message(message: discord.Message):
                     color=0x57F287
                 )
                 lvl_embed.set_thumbnail(url=message.author.display_avatar.url)
-                lvl_embed.set_footer(text="Echo Technologies Leveling System • Run /rank to view stats")
+                lvl_embed.set_footer(text="RetailNetwork Leveling System • Run /rank to view stats")
                 await message.channel.send(embed=lvl_embed)
             except Exception:
                 pass
@@ -1769,14 +1769,14 @@ async def on_message(message: discord.Message):
                     ),
                     color=0xED4245
                 )
-                expired_embed.set_footer(text="Echo Technologies • Support Help Desk")
+                expired_embed.set_footer(text="RetailNetwork • Support Help Desk")
                 await message.channel.send(embed=expired_embed)
         else:
             panel_embed = discord.Embed(
                 title="🎫 Support Ticket Required",
                 description=(
                     "Support tickets **cannot** be created directly via Direct Message.\n\n"
-                    f"Please visit our server and select a department from the **Support Help Desk Panel** in <#{config.VERIFICATION_CHANNEL_ID}> to open your ticket!"
+                    f"Please visit our server and select a department from the **Support Help Desk Panel** in <#{config.VERIFICATION_CHANNEL_ID}> to open your tickrn!"
                 ),
                 color=0xFEE75C
             )
@@ -1790,7 +1790,7 @@ async def on_message(message: discord.Message):
                 ),
                 inline=False
             )
-            panel_embed.set_footer(text="Echo Technologies • Support Help Desk Panel")
+            panel_embed.set_footer(text="RetailNetwork • Support Help Desk Panel")
             await message.channel.send(embed=panel_embed)
         return
 
@@ -1802,7 +1802,7 @@ async def on_message(message: discord.Message):
         ticket_user_id = ticket["user_id"]
         ai_active = bool(ticket.get("ai_enabled", 1))
 
-        # Case B1: Staff Examination / AI Roleplay Evaluator Ticket!
+        # Case B1: Staff Examination / AI Roleplay Evaluator Tickrn!
         if "Support Staff Exam" in ticket.get("section", ""):
             if not message.author.bot:
                 candidate_id = ticket["user_id"]
@@ -1844,7 +1844,7 @@ async def on_message(message: discord.Message):
                         color=0xED4245,
                         timestamp=discord.utils.utcnow()
                     )
-                    stop_notice.set_footer(text="Echo Support Academy • Practical Exam Concluded")
+                    stop_notice.set_footer(text="RetailNetwork Support Academy • Practical Exam Concluded")
                     await message.channel.send(embed=stop_notice)
 
                     asyncio.create_task(conclude_and_grade_staff_exam(bot, ticket, message.channel, message.author, grade_and_log=True))
@@ -2861,7 +2861,7 @@ async def unlink(interaction: discord.Interaction, member: discord.Member):
 # 🏢 ECHO TECHNOLOGIES HR & HIRING COMMANDS
 # ==========================================
 
-# @bot.tree.command(name="hire", description="Send an official Echo Technologies employment/role offer to a member via DM.")
+# @bot.tree.command(name="hire", description="Send an official RetailNetwork employment/role offer to a member via DM.")
 @app_commands.describe(
     member="The member to extend an offer to",
     role="The role being offered to the candidate",
@@ -2904,18 +2904,18 @@ async def hire_command(
 
     now_ts = int(discord.utils.utcnow().timestamp())
     offer_embed = discord.Embed(
-        title="🏢 Echo Technologies • Official Employment & Role Offer",
+        title="🏢 RetailNetwork • Official Employment & Role Offer",
         description=(
-            f"# Echo Technologies\n"
+            f"# RetailNetwork\n"
             f"### Official Offer of Employment\n\n"
             f"Dear, **{member.display_name}** (`@{member.name}`).\n\n"
-            f"On behalf of **Echo Technologies**, we would like to offer you the role **{role.name}**!\n\n"
+            f"On behalf of **RetailNetwork**, we would like to offer you the role **{role.name}**!\n\n"
             f"We have been extremely impressed by your dedication, contributions, and presence in our community. "
             f"We believe your talents will make a tremendous impact on our team and vision.\n\n"
             f"---\n"
             f"### 📋 Position Overview\n"
             f"• **Offered Role:** {role.mention} (`{role.name}`)\n"
-            f"• **Organization:** **Echo Technologies**\n"
+            f"• **Organization:** **RetailNetwork**\n"
             f"• **Hiring Authority:** {interaction.user.mention} (`{interaction.user.display_name}`)\n"
             f"• **Date Issued:** <t:{now_ts}:D> (<t:{now_ts}:R>)\n"
             + (f"• **Executive Note:**\n> *\"{note.strip()}\"*\n" if note else "")
@@ -2928,7 +2928,7 @@ async def hire_command(
 
     if interaction.guild.icon:
         offer_embed.set_thumbnail(url=interaction.guild.icon.url)
-    offer_embed.set_footer(text="Echo Technologies • Official Staff Recruitment Portal")
+    offer_embed.set_footer(text="RetailNetwork • Official Staff Recruitment Portal")
 
     offer_id = create_hire_offer(
         guild_id=interaction.guild.id,
@@ -2961,7 +2961,7 @@ async def hire_command(
     confirm_embed = discord.Embed(
         title="📨 Employment Offer Dispatched",
         description=(
-            f"An official Echo Technologies employment offer for **{role.mention}** has been delivered directly to {member.mention}'s DMs.\n\n"
+            f"An official RetailNetwork employment offer for **{role.mention}** has been delivered directly to {member.mention}'s DMs.\n\n"
             f"• **Candidate:** {member.mention} (`@{member.name}`)\n"
             f"• **Offered Role:** {role.mention}\n"
             f"• **Offer ID:** `#{offer_id}`\n"
@@ -2970,7 +2970,7 @@ async def hire_command(
         color=0x57F287,
         timestamp=discord.utils.utcnow()
     )
-    confirm_embed.set_footer(text="Echo Technologies HR System")
+    confirm_embed.set_footer(text="RetailNetwork HR System")
     await interaction.response.send_message(embed=confirm_embed)
 
 
@@ -3072,7 +3072,7 @@ async def staff_strike_cmd(
         color=0x57F287,
         timestamp=discord.utils.utcnow()
     )
-    confirm_embed.set_footer(text="Echo Technologies HR Systems")
+    confirm_embed.set_footer(text="RetailNetwork HR Systems")
     await interaction.response.send_message(embed=confirm_embed, ephemeral=True)
 
 
@@ -3102,7 +3102,7 @@ async def staff_list_strikes_cmd(interaction: discord.Interaction, staff: discor
             inline=False
         )
 
-    embed.set_footer(text="Echo Technologies HR Internal Records")
+    embed.set_footer(text="RetailNetwork HR Internal Records")
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
@@ -3175,7 +3175,7 @@ async def staff_suspend_cmd(interaction: discord.Interaction, staff: discord.Mem
         try:
             dm = await staff.create_dm()
             s_embed = discord.Embed(
-                title="⏸️ Echo Technologies • Notice of Staff Suspension",
+                title="⏸️ RetailNetwork • Notice of Staff Suspension",
                 description=(
                     f"Hello **{staff.display_name}**,\n\n"
                     f"Your staff privileges have been temporarily **SUSPENDED** for `{duration_days}` days.\n\n"
@@ -3354,7 +3354,7 @@ async def my_invite_cmd(interaction: discord.Interaction):
         timestamp=discord.utils.utcnow()
     )
     embed.set_thumbnail(url=interaction.user.display_avatar.url)
-    embed.set_footer(text="Echo Technologies Personal Invite Hub")
+    embed.set_footer(text="RetailNetwork Personal Invite Hub")
     
     view = discord.ui.View(timeout=None)
     view.add_item(discord.ui.Button(label="Copy & Share Link", url=invite_url, emoji="🚀", style=discord.ButtonStyle.link))
@@ -3448,13 +3448,13 @@ async def staff_watchlist_add_cmd(interaction: discord.Interaction, member: disc
     try:
         dm = await member.create_dm()
         w_embed = discord.Embed(
-            title="👁️ Echo Technologies • HR Monitoring Notice",
+            title="👁️ RetailNetwork • HR Monitoring Notice",
             description=(
                 f"Hello **{member.display_name}**,\n\n"
                 f"This notice serves to inform you that your account has been placed under active **HR Sensitivity Monitoring**.\n\n"
                 f"• **Reason:** {reason}\n"
                 f"• **Sensitivity Level:** `{sensitivity}`\n\n"
-                f"Please ensure all communications strictly follow Echo Technologies conduct guidelines."
+                f"Please ensure all communications strictly follow RetailNetwork conduct guidelines."
             ),
             color=0xE67E22,
             timestamp=discord.utils.utcnow()
@@ -3485,7 +3485,7 @@ async def staff_watchlist_list_cmd(interaction: discord.Interaction):
         await interaction.response.send_message("ℹ️ HR Watchlist is currently empty.", ephemeral=True)
         return
     embed = discord.Embed(
-        title="👁️ Echo Technologies • HR Watchlist",
+        title="👁️ RetailNetwork • HR Watchlist",
         description=f"Currently monitoring **{len(wlist)}** member(s) for sensitivity breaches:",
         color=0xE67E22
     )
@@ -3506,10 +3506,10 @@ async def staff_blacklist_add_cmd(interaction: discord.Interaction, user: discor
     try:
         dm = await user.create_dm()
         b_embed = discord.Embed(
-            title="🚫 Echo Technologies • Notice of Recruitment Blacklist",
+            title="🚫 RetailNetwork • Notice of Recruitment Blacklist",
             description=(
                 f"Hello **{user.name}**,\n\n"
-                f"Your account has been **DISHONORABLY DISCHARGED & BLACKLISTED** from Echo Technologies staff recruitment.\n\n"
+                f"Your account has been **DISHONORABLY DISCHARGED & BLACKLISTED** from RetailNetwork staff recruitment.\n\n"
                 f"• **Reason:** {reason}\n"
                 f"• **Issued By:** {interaction.user.mention}\n\n"
                 f"You are barred from applying for any staff or developer positions."
@@ -3543,7 +3543,7 @@ async def staff_blacklist_list_cmd(interaction: discord.Interaction):
         await interaction.response.send_message("ℹ️ Recruitment blacklist is currently empty.", ephemeral=True)
         return
     embed = discord.Embed(
-        title="🚫 Echo Technologies • Recruitment Blacklist",
+        title="🚫 RetailNetwork • Recruitment Blacklist",
         description=f"Currently blocking **{len(blist)}** blacklisted former staff member(s):",
         color=0xED4245
     )
@@ -3562,7 +3562,7 @@ bot.tree.add_command(staff_group)
 # 💡 COMMUNITY SUGGESTIONS & VOTING DESK
 # ==========================================
 
-# @bot.tree.command(name="suggest", description="Submit a community suggestion or idea for Echo Technologies.")
+# @bot.tree.command(name="suggest", description="Submit a community suggestion or idea for RetailNetwork.")
 @app_commands.describe(
     idea="Your idea, feature request, or suggestion",
     attachment="Optional screenshot, mockup, or image attachment"
@@ -3630,7 +3630,7 @@ async def ai_retrain_cmd(interaction: discord.Interaction):
     embed = discord.Embed(
         title="🧠 AI Knowledge Base Sync Complete",
         description=(
-            f"Successfully resynced Groq AI assistant knowledge base!\n\n"
+            f"Successfully resynced Groq AI assistant knowledge basrn!\n\n"
             f"• **Knowledge Size:** `{report['chars']} characters`\n"
             f"• **Messages Scraped:** `{report['trainer_messages']}`\n"
             f"• **Embeds Parsed:** `{report['embeds_parsed']}`\n"
@@ -3640,7 +3640,7 @@ async def ai_retrain_cmd(interaction: discord.Interaction):
         color=0x57F287,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text="Echo Technologies AI Assistant • Real-Time Memory Sync")
+    embed.set_footer(text="RetailNetwork AI Assistant • Real-Time Memory Sync")
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 
@@ -3712,7 +3712,7 @@ async def bug_list_cmd(interaction: discord.Interaction, status: Optional[Litera
         return
 
     embed = discord.Embed(
-        title="🛠️ Echo Technologies Bug Backlog",
+        title="🛠️ RetailNetwork Bug Backlog",
         description=f"Showing recent bug reports{' (Status: ' + status + ')' if status else ''}:",
         color=0x00A2FF,
         timestamp=discord.utils.utcnow()
@@ -3723,7 +3723,7 @@ async def bug_list_cmd(interaction: discord.Interaction, status: Optional[Litera
             value=f"Status: **{b['status']}** • Reporter: <@{b['reporter_id']}> • Assigned: <@{b.get('claimed_by', 0)}>",
             inline=False
         )
-    embed.set_footer(text="Echo Technologies Dev Backlog")
+    embed.set_footer(text="RetailNetwork Dev Backlog")
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
@@ -3969,7 +3969,7 @@ async def event_list_cmd(interaction: discord.Interaction):
         return
 
     embed = discord.Embed(
-        title="📅 Upcoming Echo Technologies Events",
+        title="📅 Upcoming RetailNetwork Events",
         color=0x5865F2,
         timestamp=discord.utils.utcnow()
     )
@@ -3994,7 +3994,7 @@ async def event_list_cmd(interaction: discord.Interaction):
             ),
             inline=False
         )
-    embed.set_footer(text="Echo Technologies Community Calendar")
+    embed.set_footer(text="RetailNetwork Community Calendar")
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @event_group.command(name="cancel", description="Cancel a scheduled community event.")
@@ -4091,7 +4091,7 @@ async def loa_list_cmd(interaction: discord.Interaction, status: Optional[Litera
             value=f"**Duration:** `{r['duration']}`\n**Reason:** {r['reason'][:100]}\n**Logged:** <t:{int(datetime.fromisoformat(r['created_at']).timestamp())}:R>",
             inline=False
         )
-    embed.set_footer(text="Echo Technologies HR Operations")
+    embed.set_footer(text="RetailNetwork HR Operations")
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @loa_group.command(name="approve", description="[HR/ADMIN] Approve a staff member's Leave of Absence.")
@@ -4215,7 +4215,7 @@ async def _post_career_panel_logic(interaction: discord.Interaction, channel: Op
 async def post_career_panel_cmd(interaction: discord.Interaction, channel: Optional[discord.TextChannel] = None):
     await _post_career_panel_logic(interaction, channel)
 
-# @bot.tree.command(name="apply", description="Apply for an open position at Echo Technologies via Direct Message.")
+# @bot.tree.command(name="apply", description="Apply for an open position at RetailNetwork via Direct Message.")
 @app_commands.describe(position="Position you are applying for")
 @app_commands.choices(position=[
     app_commands.Choice(name="🛠️ Product Development", value="product_development"),
@@ -4259,14 +4259,14 @@ async def _execute_close_applications(
             f"Successfully closed applications for: {names_str}\n\n"
             f"**Reason:** {close_reason}\n"
             f"**Closed By:** {interaction.user.mention}\n\n"
-            + (f"✅ Recruitment panel in <#{config.CAREER_OPPORTUNITIES_CHANNEL_ID}> has been updated live!"
+            + (f"✅ Recruitment panel in <#{config.CAREER_OPPORTUNITIES_CHANNEL_ID}> has been updated livrn!"
                if synced else
                f"⚠️ Note: Could not auto-update panel in <#{config.CAREER_OPPORTUNITIES_CHANNEL_ID}>.")
         ),
         color=0xED4245,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text="Echo Technologies Recruitment Management")
+    embed.set_footer(text="RetailNetwork Recruitment Management")
     await interaction.followup.send(embed=embed)
 
 async def _execute_open_applications(
@@ -4291,14 +4291,14 @@ async def _execute_open_applications(
         description=(
             f"Successfully re-opened applications for: {names_str}\n\n"
             f"**Opened By:** {interaction.user.mention}\n\n"
-            + (f"✅ Recruitment panel in <#{config.CAREER_OPPORTUNITIES_CHANNEL_ID}> has been updated live!"
+            + (f"✅ Recruitment panel in <#{config.CAREER_OPPORTUNITIES_CHANNEL_ID}> has been updated livrn!"
                if synced else
                f"⚠️ Note: Could not auto-update panel in <#{config.CAREER_OPPORTUNITIES_CHANNEL_ID}>.")
         ),
         color=0x57F287,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text="Echo Technologies Recruitment Management")
+    embed.set_footer(text="RetailNetwork Recruitment Management")
     await interaction.followup.send(embed=embed)
 
 # @bot.tree.command(name="close-applications", description="Close staff and developer applications.")
@@ -4416,7 +4416,7 @@ async def app_grp_status(interaction: discord.Interaction):
 
     embed = discord.Embed(
         title="📋 Recruitment & Applications Status",
-        description="Current vacancy status for Echo Technologies recruitment:",
+        description="Current vacancy status for RetailNetwork recruitment:",
         color=0x5865F2,
         timestamp=discord.utils.utcnow()
     )
@@ -4485,7 +4485,7 @@ async def poll_cmd(
         color=0x5865F2,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text=f"Poll created by {interaction.user.name} • React below to vote!")
+    embed.set_footer(text=f"Poll created by {interaction.user.name} • React below to votrn!")
     msg = await interaction.followup.send(embed=embed, wait=True)
     for idx in range(len(options)):
         try:
@@ -5122,7 +5122,7 @@ async def partner_post_cmd(
             color=0x57F287,
             timestamp=discord.utils.utcnow()
         )
-        embed.set_footer(text="Echo Technologies Official Affiliates")
+        embed.set_footer(text="RetailNetwork Official Affiliates")
         await interaction.followup.send(embed=embed)
     else:
         await interaction.followup.send(msg, ephemeral=True)
@@ -5132,11 +5132,11 @@ async def partner_post_cmd(
 async def partner_list_cmd(interaction: discord.Interaction):
     partners = get_all_partnerships()
     if not partners:
-        await interaction.response.send_message("ℹ️ No active partnerships recorded yet. Use `/partner post` to publish one!", ephemeral=True)
+        await interaction.response.send_message("ℹ️ No active partnerships recorded yet. Use `/partner post` to publish onrn!", ephemeral=True)
         return
 
     embed = discord.Embed(
-        title="🤝 Echo Technologies • Active Affiliates",
+        title="🤝 RetailNetwork • Active Affiliates",
         description=f"Currently showcasing **{len(partners)}** official affiliate partner(s):",
         color=0x5865F2,
         timestamp=discord.utils.utcnow()
@@ -5213,10 +5213,10 @@ async def partner_update_cmd(
     else:
         await interaction.followup.send(msg, ephemeral=True)
 
-@partner_group.command(name="ad", description="Get Echo Technologies' official partnership advertisement copy.")
+@partner_group.command(name="ad", description="Get RetailNetwork' official partnership advertisement copy.")
 async def partner_ad_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(
-        f"📋 **Echo Technologies Official Partnership Ad Copy**\n```markdown\n{ECHO_AD_COPY}\n```",
+        f"📋 **RetailNetwork Official Partnership Ad Copy**\n```markdown\n{ECHO_AD_COPY}\n```",
         ephemeral=True
     )
 
@@ -5224,9 +5224,9 @@ async def partner_ad_cmd(interaction: discord.Interaction):
 @app_commands.default_permissions(manage_guild=True)
 async def partner_post_portal_cmd(interaction: discord.Interaction):
     embed = discord.Embed(
-        title="🤝 Echo Technologies • Official Partnership Portal",
+        title="🤝 RetailNetwork • Official Partnership Portal",
         description=(
-            "Welcome to the **Echo Technologies Partnership & Affiliates Hub**!\n\n"
+            "Welcome to the **RetailNetwork Partnership & Affiliates Hub**!\n\n"
             "We collaborate with high-quality Roblox game studios, software developers, clothing brands, "
             "and active gaming communities.\n\n"
             "**Partner Benefits:**\n"
@@ -5236,12 +5236,12 @@ async def partner_post_portal_cmd(interaction: discord.Interaction):
             "**Requirements:**\n"
             "• Minimum 50+ active Discord members or Roblox group members\n"
             "• Safe community, 7+ day old representative account, & no scam history\n"
-            "• Proof of posting Echo Technologies' advertisement in your server\n\n"
+            "• Proof of posting RetailNetwork' advertisement in your server\n\n"
             "Click **Apply for Partnership** below to submit your application!"
         ),
         color=0x5865F2
     )
-    embed.set_footer(text="Echo Technologies • Self-Service Partner Network")
+    embed.set_footer(text="RetailNetwork • Self-Service Partner Network")
     view = PartnerPortalView(bot)
     await interaction.channel.send(embed=embed, view=view)
     await interaction.response.send_message("✅ Partnership portal panel posted successfully!", ephemeral=True)
@@ -5253,7 +5253,7 @@ async def partner_directory_cmd(interaction: discord.Interaction):
         await interaction.response.send_message("ℹ️ No active affiliate partners found.", ephemeral=True)
         return
     embed = discord.Embed(
-        title="🌐 Echo Technologies • Official Affiliates Directory",
+        title="🌐 RetailNetwork • Official Affiliates Directory",
         description="Select a partner from the dropdown menu below to view full details, perks, and invite links.",
         color=0x5865F2
     )
@@ -5279,7 +5279,7 @@ async def partner_pr_stats_cmd(interaction: discord.Interaction):
 
     sorted_stats = sorted(stats.items(), key=lambda x: x[1], reverse=True)
     embed = discord.Embed(
-        title="📊 Echo Technologies • PR Staff Partnership Stats",
+        title="📊 RetailNetwork • PR Staff Partnership Stats",
         description="Top PR representatives by published affiliate partnerships:",
         color=0xFEE75C
     )
@@ -5296,10 +5296,10 @@ async def partner_pr_stats_cmd(interaction: discord.Interaction):
 
 bot.tree.add_command(partner_group)
 
-# @bot.tree.command(name="our-ad", description="Copy Echo Technologies' official partnership advertisement.")
+# @bot.tree.command(name="our-ad", description="Copy RetailNetwork' official partnership advertisement.")
 async def our_ad_top_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(
-        f"📋 **Echo Technologies Official Partnership Ad Copy**\n```markdown\n{ECHO_AD_COPY}\n```",
+        f"📋 **RetailNetwork Official Partnership Ad Copy**\n```markdown\n{ECHO_AD_COPY}\n```",
         ephemeral=True
     )
 
@@ -5382,7 +5382,7 @@ async def points_leaderboard_cmd(interaction: discord.Interaction, limit: int = 
     leaders = get_points_leaderboard(limit=limit)
 
     embed = discord.Embed(
-        title="🏆 Echo Technologies • Points Leaderboard",
+        title="🏆 RetailNetwork • Points Leaderboard",
         description="Top contributors earning points through helpful discussions & community support!\n",
         color=0xFEE75C,
         timestamp=discord.utils.utcnow()
@@ -5404,7 +5404,7 @@ async def points_leaderboard_cmd(interaction: discord.Interaction, limit: int = 
                 inline=False
             )
 
-    embed.set_footer(text="Reach 5 points to claim Echo Blacklist System (100 Robux) for free!")
+    embed.set_footer(text="Reach 5 points to claim Echo Blacklist System (100 Robux) for frern!")
     await interaction.response.send_message(embed=embed)
 
 @points_group.command(name="add", description="[STAFF] Award community points to a member.")
@@ -5444,7 +5444,7 @@ async def points_add_cmd(
         color=0x57F287,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text="Echo Technologies Points Management")
+    embed.set_footer(text="RetailNetwork Points Management")
     await interaction.response.send_message(embed=embed)
 
     if unlocked_reward:
@@ -5501,7 +5501,7 @@ async def points_remove_cmd(
         color=0xED4245,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text="Echo Technologies Points Management")
+    embed.set_footer(text="RetailNetwork Points Management")
     await interaction.response.send_message(embed=embed)
 
 @points_group.command(name="set", description="[STAFF] Set a member's community points balance directly.")
@@ -5539,7 +5539,7 @@ async def points_set_cmd(
         color=0x5865F2,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text="Echo Technologies Points Management")
+    embed.set_footer(text="RetailNetwork Points Management")
     await interaction.response.send_message(embed=embed)
 
     if unlocked_reward:
@@ -5577,7 +5577,7 @@ async def points_claim_cmd(interaction: discord.Interaction, member: discord.Mem
         color=0x57F287 if claimed else 0xFEE75C,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text="Echo Technologies Community Rewards")
+    embed.set_footer(text="RetailNetwork Community Rewards")
     await interaction.response.send_message(embed=embed)
 
 bot.tree.add_command(points_group)
@@ -5657,7 +5657,7 @@ async def points_shop_cmd(interaction: discord.Interaction):
     app_commands.Choice(name="🛡️ Echo Blacklist System - Free Milestone (5 Pts)", value="blacklist_system"),
     app_commands.Choice(name="🎟️ 50% Off Any Asset Store Coupon (8 Pts)", value="coupon_discount"),
     app_commands.Choice(name="💻 Premium Luau Script Asset Pack (10 Pts)", value="script_pack"),
-    app_commands.Choice(name="👑 Echo Elite Role & Beta Access (15 Pts)", value="role_elite")
+    app_commands.Choice(name="👑 RetailNetwork Elite Role & Beta Access (15 Pts)", value="role_elite")
 ])
 async def points_redeem_cmd(interaction: discord.Interaction, reward: str):
     success, message, data = await redeem_reward(
@@ -5680,7 +5680,7 @@ async def points_redeem_cmd(interaction: discord.Interaction, reward: str):
                 inline=False
             )
         pts = get_user_points(interaction.user.id)
-        embed.set_footer(text=f"Updated Balance: {pts['points']} Points • Echo Technologies")
+        embed.set_footer(text=f"Updated Balance: {pts['points']} Points • RetailNetwork")
         await interaction.response.send_message(embed=embed, ephemeral=True)
     else:
         await interaction.response.send_message(f"❌ {message}", ephemeral=True)
@@ -5876,7 +5876,7 @@ async def tpl_list_cmd(interaction: discord.Interaction):
     from support_templates_system import get_combined_template_list
     tpls = get_combined_template_list()
     embed = discord.Embed(
-        title="📚 Echo Support Templates Directory",
+        title="📚 RetailNetwork Support Templates Directory",
         description=f"Total Templates Available: **{len(tpls)}**\n\n",
         color=0x5865F2
     )
@@ -6053,7 +6053,7 @@ async def force_open_ticket_cmd(
     try:
         dm = await user.create_dm()
         dm_embed = discord.Embed(
-            title="👑 Echo Technologies • Foundership Direct Ticket Opened",
+            title="👑 RetailNetwork • Foundership Direct Ticket Opened",
             description=(
                 f"Hello **{user.name}**,\n\n"
                 f"A member of **Foundership & Executive Leadership** ({interaction.user.mention}) has opened a direct support ticket for you.\n\n"
@@ -6064,7 +6064,7 @@ async def force_open_ticket_cmd(
             color=0x9B59B6,
             timestamp=discord.utils.utcnow()
         )
-        dm_embed.set_footer(text=f"Direct Ticket #{ticket['id'] if ticket else 'N/A'} • Echo Technologies HR")
+        dm_embed.set_footer(text=f"Direct Ticket #{ticket['id'] if ticket else 'N/A'} • RetailNetwork HR")
         await dm.send(embed=dm_embed)
         dm_sent = True
     except Exception as e:
@@ -6168,7 +6168,7 @@ async def test_ticket_cmd(
     try:
         dm = await target_staff.create_dm()
         dm_embed = discord.Embed(
-            title="🧪 Echo Technologies • Support Team Evaluation Notice",
+            title="🧪 RetailNetwork • Support Team Evaluation Notice",
             description=(
                 f"Hello **{target_staff.name}**!\n\n"
                 f"You have been assigned a practical **Support SOP Assessment** by Foundership member {interaction.user.mention}.\n\n"
@@ -6179,7 +6179,7 @@ async def test_ticket_cmd(
             color=0x9B59B6,
             timestamp=discord.utils.utcnow()
         )
-        dm_embed.set_footer(text=f"Exam Ticket #{ticket['id'] if ticket else 'N/A'} • Echo HR Operations")
+        dm_embed.set_footer(text=f"Exam Ticket #{ticket['id'] if ticket else 'N/A'} • RetailNetwork HR Operations")
         await dm.send(embed=dm_embed)
         dm_sent = True
     except Exception as e:
@@ -6299,7 +6299,7 @@ async def say_cmd(
                 color=color_val,
                 timestamp=discord.utils.utcnow()
             )
-            embed.set_footer(text="Echo Technologies Official Announcement")
+            embed.set_footer(text="RetailNetwork Official Announcement")
             if reply_msg:
                 await reply_msg.reply(embed=embed)
             else:
@@ -6454,7 +6454,7 @@ async def conclude_and_grade_staff_exam(
             color=0x57F287 if score >= 85 else 0xED4245,
             timestamp=discord.utils.utcnow()
         )
-        embed.set_footer(text="Echo Technologies HR Operations • Staff Evaluation System")
+        embed.set_footer(text="RetailNetwork HR Operations • Staff Evaluation System")
         await channel.send(embed=embed)
     else:
         embed = discord.Embed(
@@ -6549,7 +6549,7 @@ class LogStaffEvaluationModal(discord.ui.Modal, title="Log Staff Evaluation & Fe
             trainer_dm = await interaction.user.create_dm()
             trainer_embed = build_evaluation_dm_embed(eval_data, self.target_staff, interaction.user)
             trainer_embed.title = f"🧾 Trainer Audit Receipt • Evaluation #{eval_data['id']} ({self.target_staff.name})"
-            trainer_embed.set_footer(text=f"Trainer/Evaluator Audit Record • Echo HR Operations")
+            trainer_embed.set_footer(text=f"Trainer/Evaluator Audit Record • RetailNetwork HR Operations")
             await trainer_dm.send(embed=trainer_embed)
             trainer_dm_sent = True
         except Exception as e:
@@ -6564,7 +6564,7 @@ class LogStaffEvaluationModal(discord.ui.Modal, title="Log Staff Evaluation & Fe
             except Exception as e:
                 logger.warning(f"Could not post evaluation log to channel: {e}")
 
-        trainee_status = "✅ Sent DM to Trainee!" if trainee_dm_sent else "⚠️ Trainee DMs closed."
+        trainee_status = "✅ Sent DM to Trainern!" if trainee_dm_sent else "⚠️ Trainee DMs closed."
         trainer_status = "✅ Sent receipt DM to Trainer!" if trainer_dm_sent else "⚠️ Trainer DMs closed."
         await interaction.followup.send(
             f"✅ **Staff Evaluation Record #{eval_data['id']} successfully logged for {self.target_staff.mention}!**\n"
@@ -6640,7 +6640,7 @@ async def staff_eval_log_cmd(
         trainer_dm = await interaction.user.create_dm()
         trainer_embed = build_evaluation_dm_embed(eval_data, target_staff, interaction.user)
         trainer_embed.title = f"🧾 Trainer Audit Receipt • Evaluation #{eval_data['id']} ({target_staff.name})"
-        trainer_embed.set_footer(text=f"Trainer/Evaluator Audit Record • Echo HR Operations")
+        trainer_embed.set_footer(text=f"Trainer/Evaluator Audit Record • RetailNetwork HR Operations")
         await trainer_dm.send(embed=trainer_embed)
         trainer_dm_sent = True
     except Exception as e:
@@ -6655,7 +6655,7 @@ async def staff_eval_log_cmd(
         except Exception as e:
             logger.warning(f"Could not post evaluation log: {e}")
 
-    trainee_status = "✅ Sent DM to Trainee!" if trainee_dm_sent else "⚠️ Trainee DMs closed."
+    trainee_status = "✅ Sent DM to Trainern!" if trainee_dm_sent else "⚠️ Trainee DMs closed."
     trainer_status = "✅ Sent receipt DM to Trainer!" if trainer_dm_sent else "⚠️ Trainer DMs closed."
     await interaction.followup.send(
         f"✅ **Staff Evaluation Record #{eval_data['id']} successfully logged for {target_staff.mention}!**\n"
@@ -6704,7 +6704,7 @@ async def staff_eval_history_cmd(interaction: discord.Interaction, target_staff:
             inline=False
         )
 
-    embed.set_footer(text="Echo Technologies HR Leadership Dossier")
+    embed.set_footer(text="RetailNetwork HR Leadership Dossier")
     if target_staff.display_avatar:
         embed.set_thumbnail(url=target_staff.display_avatar.url)
 
@@ -7014,10 +7014,10 @@ async def on_persistent_components_listener(interaction: discord.Interaction):
                                         try:
                                             dm = await candidate.create_dm()
                                             offer_embed = discord.Embed(
-                                                title="Echo Technologies • Official Employment Offer",
+                                                title="RetailNetwork • Official Employment Offer",
                                                 description=(
                                                     f"Dear **{candidate.name}**,\n\n"
-                                                    f"On behalf of Echo Technologies, we are thrilled to inform you that your application for "
+                                                    f"On behalf of RetailNetwork, we are thrilled to inform you that your application for "
                                                     f"**{role_name}** has been **ACCEPTED**!\n\n"
                                                     f"We would like to formally offer you the role of **{role_name}**.\n"
                                                     f"Please click **Accept Offer** below to receive your role and join our team!"
@@ -7025,7 +7025,7 @@ async def on_persistent_components_listener(interaction: discord.Interaction):
                                                 color=0x57F287,
                                                 timestamp=discord.utils.utcnow()
                                             )
-                                            offer_embed.set_footer(text="Echo Technologies Official Job Offer")
+                                            offer_embed.set_footer(text="RetailNetwork Official Job Offer")
                                             offer_view = HireOfferView(bot, offer_id, role_name)
                                             await dm.send(embed=offer_embed, view=offer_view)
                                         except Exception as e:

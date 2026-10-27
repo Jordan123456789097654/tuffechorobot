@@ -23,7 +23,7 @@ PARTNER_CATEGORIES = [
     "General Affiliate Partner"
 ]
 
-# Official Formatted Echo Technologies Partnership Advertisement Copy
+# Official Formatted RetailNetwork Partnership Advertisement Copy
 ECHO_AD_COPY = """# 🌟 ECHO TECHNOLOGIES • BRAND NEW ROBLOX TECH & SYSTEMS COMMUNITY!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 > **We just officially launched! Be one of our founding members and get free Roblox systems, automated tools, and exclusive launch perks!** 🚀
@@ -33,7 +33,7 @@ ECHO_AD_COPY = """# 🌟 ECHO TECHNOLOGIES • BRAND NEW ROBLOX TECH & SYSTEMS C
 • 📦 **FREE Roblox Blacklist System:** Get our server-authoritative ban system (`.rbxm`) 100% FREE!
 • 🛠️ **Staff & Developer Positions OPEN:** We are actively hiring Support Staff, Scripters, UI Designers, and PR Reps!
 • 🤖 **24/7 AI Support Assistant:** Groq AI helpdesk built directly into our DMs to solve your coding & verification issues instantly.
-• 🪙 **Earn Points Just By Chatting:** Get rewarded with free Roblox scripts, store coupons, and roles just for being active!
+• 🪙 **Earn Points Just By Chatting:** Get rewarded with free Roblox scripts, store coupons, and roles just for being activrn!
 • 🤝 **Fast & Easy Partnerships:** Instant ad swaps & cross-promotions for servers of all sizes!
 
 🌐 **BECOME A FOUNDING MEMBER TODAY:**
@@ -251,7 +251,7 @@ def check_partner_reputation(
 
 async def verify_partner_ad_proof(bot, proof_url: str) -> Tuple[bool, str]:
     """
-    Verifies if a submitted proof message link contains Echo Technologies' invite code.
+    Verifies if a submitted proof message link contains RetailNetwork' invite code.
     Returns: (verified: bool, details_msg: str)
     """
     if not proof_url or "discord.com/channels/" not in proof_url:
@@ -271,8 +271,8 @@ async def verify_partner_ad_proof(bot, proof_url: str) -> Tuple[bool, str]:
             if msg:
                 content = (msg.content or "") + " " + " ".join([e.description or "" for e in msg.embeds])
                 if "discord.gg" in content.lower() or "echotech" in content.lower() or "8uqxrqbgrh" in content.lower():
-                    return True, "✅ Verified: Echo Technologies ad / invite link detected in proof message!"
-                return False, "❌ Proof message fetched, but no Echo Technologies invite code was found in it."
+                    return True, "✅ Verified: RetailNetwork ad / invite link detected in proof messagrn!"
+                return False, "❌ Proof message fetched, but no RetailNetwork invite code was found in it."
     except Exception as e:
         return False, f"⚠️ Could not fetch message from proof link: {e}"
 
@@ -412,7 +412,7 @@ def build_partner_embed(
     embed = discord.Embed(
         title=f"⭐ Official Affiliate Partner • {name}",
         description=(
-            f"**Echo Technologies** is thrilled to announce our official partnership with **{name}**!\n\n"
+            f"**RetailNetwork** is thrilled to announce our official partnership with **{name}**!\n\n"
             f"🏆 **Partnership Tier:** `{tier}`\n"
             f"🏷️ **Category:** `{category}`\n"
             f"🔗 **Direct Access:** [Click Here to Join / Visit]({invite_url if invite_url.startswith('http') else 'https://' + invite_url})\n\n"
@@ -458,7 +458,7 @@ def build_partner_embed(
     if banner_target and banner_target.startswith("http"):
         embed.set_image(url=banner_target)
 
-    footer_text = "Echo Technologies Official Affiliates Network"
+    footer_text = "RetailNetwork Official Affiliates Network"
     if partner_id:
         footer_text += f" • Partner #{partner_id}"
     embed.set_footer(text=footer_text)
@@ -515,7 +515,7 @@ async def publish_affiliate_partnership(
 
     try:
         # 1. Post to Affiliates Channel with @here ping!
-        announcement_content = f"@here 🌟 **New Official Affiliate:** Echo Technologies is proud to announce our partnership with **{name}**!"
+        announcement_content = f"@here 🌟 **New Official Affiliate:** RetailNetwork is proud to announce our partnership with **{name}**!"
         
         if isinstance(ch, discord.ForumChannel):
             post = await ch.create_thread(
@@ -867,7 +867,7 @@ class PartnerPortalView(ui.View):
     @ui.button(label="Copy Echo Ad Copy", style=discord.ButtonStyle.secondary, emoji="📋", custom_id="part_portal_ad")
     async def ad_btn(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_message(
-            content=f"📋 **Echo Technologies Official Partnership Ad Copy:**\n\n```markdown\n{ECHO_AD_COPY}\n```",
+            content=f"📋 **RetailNetwork Official Partnership Ad Copy:**\n\n```markdown\n{ECHO_AD_COPY}\n```",
             ephemeral=True
         )
 
@@ -875,7 +875,7 @@ class PartnerPortalView(ui.View):
     async def dir_btn(self, interaction: discord.Interaction, button: ui.Button):
         partners = get_all_partnerships()
         embed = discord.Embed(
-            title="🤝 Echo Technologies • Affiliates Directory",
+            title="🤝 RetailNetwork • Affiliates Directory",
             description=f"We currently have **{len(partners)} active affiliate partners**! Run `/partner directory` to browse categories.",
             color=0x5865F2
         )
@@ -954,7 +954,7 @@ async def check_partner_health(bot) -> List[Dict[str, Any]]:
                     value=f"**Invite:** `{f['invite_url']}`\nRun `/partner remove partner_id:{f['id']}` to remove.",
                     inline=False
                 )
-            embed.set_footer(text="Echo Technologies Partnership Health Monitor")
+            embed.set_footer(text="RetailNetwork Partnership Health Monitor")
             try:
                 await mod_ch.send(embed=embed)
             except Exception:

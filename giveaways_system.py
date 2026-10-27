@@ -202,7 +202,7 @@ def build_giveaway_embed(
         embed = discord.Embed(
             title=f"🎉 GIVEAWAY: {prize}",
             description=(
-                f"A new giveaway has begun! Click the **🎉 Enter ({entry_count})** button below to participate!\n\n"
+                f"A new giveaway has begun! Click the **🎉 Enter ({entry_count})** button below to participatrn!\n\n"
                 f"🎁 **Prize:** `{prize}`\n"
                 f"👑 **Hosted by:** <@{host_id}>\n"
                 f"🏆 **Winners:** `{winners_count}`\n"
@@ -211,7 +211,7 @@ def build_giveaway_embed(
             ),
             color=0x5865F2
         )
-        embed.set_footer(text=f"Giveaway #{gw_id} • Echo Technologies Community Events")
+        embed.set_footer(text=f"Giveaway #{gw_id} • RetailNetwork Community Events")
     else:
         if winners and len(winners) > 0:
             winners_str = ", ".join([f"<@{w}>" for w in winners])
@@ -301,7 +301,7 @@ async def end_giveaway(bot, giveaway_id: int) -> Tuple[bool, str, List[int]]:
                 ),
                 color=0x57F287
             )
-            congrats_embed.set_footer(text=f"Giveaway #{giveaway_id} • Echo Technologies")
+            congrats_embed.set_footer(text=f"Giveaway #{giveaway_id} • RetailNetwork")
             jump_view = None
             if msg:
                 jump_view = ui.View()
@@ -324,7 +324,7 @@ async def reroll_giveaway(bot, giveaway_id: int, winners_count: int = 1) -> Tupl
     if not gw:
         return False, "Giveaway not found.", []
     if not gw["ended"]:
-        return False, "This giveaway is still active! Use `/giveaway end` to conclude it first.", []
+        return False, "This giveaway is still activrn! Use `/giveaway end` to conclude it first.", []
 
     prev_winners = []
     if gw.get("winners"):

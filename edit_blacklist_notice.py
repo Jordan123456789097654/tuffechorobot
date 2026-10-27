@@ -32,7 +32,7 @@ class EditBlacklistNoticeClient(discord.Client):
             embed = discord.Embed(
                 title="🚨 OFFICIAL BLACKLIST NOTICE",
                 description=(
-                    "An official Blacklist Notice has been formally issued and updated by **Echo Technologies Management**.\n\n"
+                    "An official Blacklist Notice has been formally issued and updated by **RetailNetwork Management**.\n\n"
                     "All staff members, partners, and affiliated personnel are required to review and adhere to the directives below immediately."
                 ),
                 color=0x992D22 # Dark Crimson Red
@@ -80,7 +80,7 @@ class EditBlacklistNoticeClient(discord.Client):
                     "• **Dual-Affiliation Prohibition**: Echo staff members affiliated with or employed by Axis Core Retail are subject to **immediate termination**.\n"
                     "• **Product & License Revocation**: All product licenses, scripts, and service access granted to associated personnel are **permanently voided**.\n"
                     "• **Zero Engagement Policy**: Strict prohibition on all business transactions, partnerships, or communications.\n"
-                    "• **System Blacklist**: Automatic blacklisting across all Echo Technologies Discord servers, games, and verification systems."
+                    "• **System Blacklist**: Automatic blacklisting across all RetailNetwork Discord servers, games, and verification systems."
                 ),
                 inline=False
             )
@@ -92,7 +92,7 @@ class EditBlacklistNoticeClient(discord.Client):
             )
 
             embed.set_footer(
-                text="Echo Technologies • Blacklist & Security Enforcement Division"
+                text="RetailNetwork • Blacklist & Security Enforcement Division"
             )
             embed.timestamp = discord.utils.utcnow()
 

@@ -116,9 +116,9 @@ class TicketManager:
             cursor.execute("SELECT COUNT(*) as count FROM canned_responses;")
             if cursor.fetchone()["count"] == 0:
                 default_canned = [
-                    ("verify", "Verification Help", "To verify your Roblox account, please click the 'Verify Roblox Account' button in the verification channel, enter your username, and place the 4-word code in your Roblox profile Bio. Click 'Check Verification' when done!"),
+                    ("verify", "Verification Help", "To verify your Roblox account, please click the 'Verify Roblox Account' button in the verification channel, enter your username, and place the 4-word code in your Roblox profile Bio. Click 'Check Verification' when donrn!"),
                     ("appeal", "Ban / Infraction Appeal Format", "To submit an appeal, please reply with: 1) Your Roblox Username, 2) Reason you were penalized, 3) Why you believe the penalty should be reduced or lifted."),
-                    ("bug", "Bug Report Format", "Thank you for reporting an issue! Please describe: 1) Exactly what happened, 2) Steps to reproduce the bug, 3) Screenshots, videos, or error logs if available."),
+                    ("bug", "Bug Report Format", "Thank you for reporting an issurn! Please describe: 1) Exactly what happened, 2) Steps to reproduce the bug, 3) Screenshots, videos, or error logs if available."),
                     ("rules", "Server & Game Rules", "Please be sure to adhere to our server rules and the Roblox Terms of Use. Toxicity, exploiting, spamming, and scamming are strictly prohibited."),
                     ("closing", "Inactive Closure Notice", "We haven't received a response from you recently, so we are closing this ticket for now. Feel free to open a new ticket anytime if you need further help!")
                 ]

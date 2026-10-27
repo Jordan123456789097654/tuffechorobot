@@ -139,7 +139,7 @@ class VerificationDatabase:
                 d = dict(row)
                 d['rotate_mode'] = bool(d.get('rotate_mode', 1))
                 return d
-            return {"activity_type": "playing", "activity_text": "Roblox | !et help", "visibility": "online", "rotate_mode": True}
+            return {"activity_type": "playing", "activity_text": "Roblox | !rn help", "visibility": "online", "rotate_mode": True}
 
     def save_user_playlist(self, discord_id: int, playlist_name: str, tracks_data: List[Dict[str, Any]]) -> None:
         """Saves or updates a custom user playlist."""

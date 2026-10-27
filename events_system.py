@@ -177,7 +177,7 @@ def build_event_embed(event_data: Dict[str, Any], counts: Dict[str, int], is_can
         ),
         color=color
     )
-    embed.set_footer(text=f"Event #{event_id} • Echo Technologies Events • Automated 15m Reminder Active")
+    embed.set_footer(text=f"Event #{event_id} • RetailNetwork Events • Automated 15m Reminder Active")
     return embed
 
 class EventRsvpView(ui.View):
@@ -238,7 +238,7 @@ async def broadcast_event_dm_task(bot, event_data: Dict[str, Any], guild: discor
     invite_embed = discord.Embed(
         title=f"🎉 You're Invited: {event_data['title']}",
         description=(
-            f"Echo Technologies has scheduled a new community event!\n\n"
+            f"RetailNetwork has scheduled a new community event!\n\n"
             f"**Event:** **{event_data['title']}**\n"
             f"**When:** <t:{ts}:F> (<t:{ts}:R>)\n"
             f"**Host:** <@{event_data['host_id']}>\n\n"
@@ -247,7 +247,7 @@ async def broadcast_event_dm_task(bot, event_data: Dict[str, Any], guild: discor
         ),
         color=0x5865F2
     )
-    invite_embed.set_footer(text="Echo Technologies Events • RSVP in server for 15m reminder")
+    invite_embed.set_footer(text="RetailNetwork Events • RSVP in server for 15m reminder")
 
     view = ui.View()
     view.add_item(ui.Button(label="View Event & RSVP", url=jump_url, style=discord.ButtonStyle.link))
@@ -311,7 +311,7 @@ async def check_event_reminders_loop(bot):
                     ),
                     color=0xFEE75C
                 )
-                reminder_embed.set_footer(text=f"Event #{ev['id']} Reminder • Echo Technologies")
+                reminder_embed.set_footer(text=f"Event #{ev['id']} Reminder • RetailNetwork")
 
                 for uid in attendees:
                     try:

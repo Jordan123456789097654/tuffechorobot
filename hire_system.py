@@ -66,7 +66,7 @@ def update_hire_offer_status(offer_id: int, status: str) -> bool:
 
 
 class HireOfferView(ui.View):
-    """Interactive DM view for candidate to Accept or Decline Echo Technologies employment offer."""
+    """Interactive DM view for candidate to Accept or Decline RetailNetwork employment offer."""
 
     def __init__(self, bot, offer_id: int, member_id: int):
         super().__init__(timeout=86400 * 7) # 7-day offer lifespan
@@ -198,7 +198,7 @@ async def handle_hire_action(
 
         # Assign role
         try:
-            await member.add_roles(role, reason=f"Accepted Echo Technologies employment offer issued by {issuer.name if issuer else issuer_id}")
+            await member.add_roles(role, reason=f"Accepted RetailNetwork employment offer issued by {issuer.name if issuer else issuer_id}")
             logger.info(f"Assigned role {role.name} ({role.id}) to {member.name} ({member.id}) following accepted offer #{offer_id}.")
         except discord.Forbidden:
             await interaction.response.send_message(
@@ -218,13 +218,13 @@ async def handle_hire_action(
         accept_embed = discord.Embed(
             title="🎉 Welcome to the Team • Offer Accepted!",
             description=(
-                f"# Echo Technologies\n"
+                f"# RetailNetwork\n"
                 f"### Official Role Appointment Confirmation\n\n"
                 f"Dear **{member.display_name}**,\n\n"
                 f"Congratulations! We are thrilled to confirm that you have **accepted** the offer to join our team as a **{role.name}**!\n\n"
                 f"✅ **Status:** **Offer Accepted & Processed**\n"
                 f"🎖️ **Assigned Role:** {role.mention} (`{role.name}`)\n"
-                f"🏢 **Organization:** **Echo Technologies** (`{guild.name}`)\n"
+                f"🏢 **Organization:** **RetailNetwork** (`{guild.name}`)\n"
                 f"🤝 **Appointed By:** {issuer_tag}\n"
                 f"📅 **Effective Date:** <t:{int(discord.utils.utcnow().timestamp())}:F>\n\n"
                 f"Your server permissions and staff access in **{guild.name}** have been activated. "
@@ -236,7 +236,7 @@ async def handle_hire_action(
         )
         if guild.icon:
             accept_embed.set_thumbnail(url=guild.icon.url)
-        accept_embed.set_footer(text="Echo Technologies • Human Resources & Talent System")
+        accept_embed.set_footer(text="RetailNetwork • Human Resources & Talent System")
 
         await interaction.response.edit_message(embed=accept_embed, view=None)
 
@@ -286,10 +286,10 @@ async def handle_hire_action(
         decline_embed = discord.Embed(
             title="Employment Offer Declined",
             description=(
-                f"# Echo Technologies\n"
+                f"# RetailNetwork\n"
                 f"### Offer Decision Confirmation\n\n"
                 f"Dear **{member.display_name}**,\n\n"
-                f"Thank you for informing us of your decision. You have respectfully **declined** the offer for the position of **{role.name}** at **Echo Technologies**.\n\n"
+                f"Thank you for informing us of your decision. You have respectfully **declined** the offer for the position of **{role.name}** at **RetailNetwork**.\n\n"
                 f"We genuinely appreciate your time and consideration. If you ever have any questions or wish to explore opportunities with us in the future, please feel free to reach out to our management team.\n\n"
                 f"We wish you all the best in your endeavors! ✨"
             ),
@@ -298,7 +298,7 @@ async def handle_hire_action(
         )
         if guild.icon:
             decline_embed.set_thumbnail(url=guild.icon.url)
-        decline_embed.set_footer(text="Echo Technologies • Human Resources & Talent System")
+        decline_embed.set_footer(text="RetailNetwork • Human Resources & Talent System")
 
         await interaction.response.edit_message(embed=decline_embed, view=None)
 

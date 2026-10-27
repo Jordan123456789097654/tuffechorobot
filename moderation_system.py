@@ -291,7 +291,7 @@ class InfractionAppealModal(ui.Modal, title="⚖️ Moderation Appeal Submission
             timestamp=discord.utils.utcnow()
         )
         embed.set_thumbnail(url=interaction.user.display_avatar.url)
-        embed.set_footer(text="Echo Technologies Moderation Appeals Division")
+        embed.set_footer(text="RetailNetwork Moderation Appeals Division")
 
         if approvals_ch:
             view = ModAppealReviewView(appellant_id=interaction.user.id, action_label=self.action_label)
@@ -329,7 +329,7 @@ class ModAppealReviewView(ui.View):
             if appellant:
                 dm_embed = discord.Embed(
                     title="🎉 Moderation Appeal Approved!",
-                    description=f"Your appeal regarding your **{self.action_label}** in **Echo Technologies** has been **APPROVED** by staff. The penalty has been revoked/expunged.",
+                    description=f"Your appeal regarding your **{self.action_label}** in **RetailNetwork** has been **APPROVED** by staff. The penalty has been revoked/expunged.",
                     color=0x57F287,
                     timestamp=discord.utils.utcnow()
                 )
@@ -360,7 +360,7 @@ class ModAppealReviewView(ui.View):
             if appellant:
                 dm_embed = discord.Embed(
                     title="❌ Moderation Appeal Denied",
-                    description=f"Your appeal regarding your **{self.action_label}** in **Echo Technologies** has been reviewed and **DENIED** by staff leadership.",
+                    description=f"Your appeal regarding your **{self.action_label}** in **RetailNetwork** has been reviewed and **DENIED** by staff leadership.",
                     color=0xED4245,
                     timestamp=discord.utils.utcnow()
                 )
@@ -375,7 +375,7 @@ async def send_dm_infraction_notice(
     target: discord.User,
     action_label: str,
     reason: str,
-    guild_name: str = "Echo Technologies",
+    guild_name: str = "RetailNetwork",
     duration: Optional[str] = None
 ) -> bool:
     """Safely notifies a punished user in their Direct Messages with an Appeal button."""
@@ -519,7 +519,7 @@ async def dispatch_mod_log(
     elif roblox_avatar:
         embed.set_thumbnail(url=roblox_avatar)
 
-    embed.set_footer(text=f"Echo Technologies Security Audit • Case #{case_id}")
+    embed.set_footer(text=f"RetailNetwork Security Audit • Case #{case_id}")
 
     # 4. Dispatch to Log Channel (config.MOD_LOGS_CHANNEL_ID: 1556000170922221661)
     ch_id = config.MOD_LOGS_CHANNEL_ID
@@ -572,7 +572,7 @@ async def execute_global_ban(
             target=target,
             action_label="Globally Banned",
             reason=reason,
-            guild_name="Echo Technologies Network"
+            guild_name="RetailNetwork Network"
         )
 
     success_count = 0

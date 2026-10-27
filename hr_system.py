@@ -209,7 +209,7 @@ async def evaluate_strike_escalation(bot, guild: discord.Guild, staff_member: di
             color=0xE67E22,
             timestamp=discord.utils.utcnow()
         )
-        embed.set_footer(text="Echo Technologies HR Automated Escalation")
+        embed.set_footer(text="RetailNetwork HR Automated Escalation")
         return "SUSPENDED_3D", embed
 
     elif count >= 3:
@@ -243,7 +243,7 @@ async def evaluate_strike_escalation(bot, guild: discord.Guild, staff_member: di
             timestamp=discord.utils.utcnow()
         )
         embed.set_thumbnail(url=staff_member.display_avatar.url)
-        embed.set_footer(text="Echo Technologies Executive HR Security Notice")
+        embed.set_footer(text="RetailNetwork Executive HR Security Notice")
         return "CRITICAL_DEMOTION", embed
 
     return "NORMAL", None
@@ -365,11 +365,11 @@ async def check_expired_suspensions(bot):
                 # Send DM notice
                 try:
                     embed = discord.Embed(
-                        title="✅ Echo Technologies • HR Suspension Lifted",
+                        title="✅ RetailNetwork • HR Suspension Lifted",
                         description=(
                             f"Hello **{member.display_name}**,\n\n"
                             f"Your temporary HR suspension has expired. Your staff roles and access have been automatically restored.\n"
-                            f"Please maintain full compliance with Echo Technologies staff guidelines going forward."
+                            f"Please maintain full compliance with RetailNetwork staff guidelines going forward."
                         ),
                         color=0x57F287
                     )
@@ -439,7 +439,7 @@ async def evaluate_watchlist_message(bot, message: discord.Message):
         return
 
     prompt = (
-        f"You are an expert HR Security Auditor for Echo Technologies Roblox tech studio.\n"
+        f"You are an expert HR Security Auditor for RetailNetwork Roblox tech studio.\n"
         f"Analyze this chat message sent by a {'watchlisted member' if entry else 'staff member'} for policy breaches, toxicity, leak attempts, staff unprofessionalism, or hostility.\n"
         f"User: @{message.author.name} (ID: {message.author.id})\n"
         f"Channel: #{message.channel.name}\n"
@@ -546,31 +546,31 @@ async def evaluate_watchlist_message(bot, message: discord.Message):
                             title="🚨 ECHO TECHNOLOGIES • NOTICE OF STAFF TERMINATION & DISHONORABLE DISCHARGE",
                             description=(
                                 f"Dear **{message.author.display_name}**,\n\n"
-                                f"This notice serves as official confirmation that your staff status with **Echo Technologies** has been **TERMINATED** effective immediately.\n\n"
+                                f"This notice serves as official confirmation that your staff status with **RetailNetwork** has been **TERMINATED** effective immediately.\n\n"
                                 f"### 📋 Termination Summary\n"
                                 f"• **Flagged Violation:** `{data.get('category', 'Critical Misconduct')}`\n"
                                 f"• **AI Risk Score:** `{risk_score:.2f}` / 1.00\n"
                                 f"• **Reason:** {data.get('reason')}\n"
                                 f"• **Enforcement Actions:** All staff roles stripped & permanent recruitment blacklist applied.\n"
                                 f"• **Guild Status:** {'🔨 Server Ban Executed' if is_banned else '⚠️ Staff Access Revoked'}\n\n"
-                                f"Echo Technologies maintains zero tolerance for severe policy violations."
+                                f"RetailNetwork maintains zero tolerance for severe policy violations."
                             ),
                             color=0xED4245,
                             timestamp=discord.utils.utcnow()
                         )
                     else:
                         dm_embed = discord.Embed(
-                            title="🚨 Echo Technologies • Automated HR Security Enforcement",
+                            title="🚨 RetailNetwork • Automated HR Security Enforcement",
                             description=(
                                 f"Hello **{message.author.display_name}**,\n\n"
-                                f"Your message in {message.channel.mention} was automatically removed by the **Echo Technologies Real-Time HR AI Sentinel**.\n\n"
+                                f"Your message in {message.channel.mention} was automatically removed by the **RetailNetwork Real-Time HR AI Sentinel**.\n\n"
                                 f"### 📋 Enforcement Summary\n"
                                 f"• **Flagged Category:** `{data.get('category', 'Unprofessionalism')}`\n"
                                 f"• **AI Risk Score:** `{risk_score:.2f}` / 1.00\n"
                                 f"• **Diagnostic Reason:** {data.get('reason')}\n"
                                 f"• **Recorded HR Strike:** `Record #{strike_id}` ({format_severity(severity)})\n"
                                 f"• **Message Status:** {'🗑️ Deleted from Channel' if msg_deleted else '⚠️ Deletion Failed'}\n\n"
-                                f"Please maintain full compliance with Echo Technologies professionalism standards."
+                                f"Please maintain full compliance with RetailNetwork professionalism standards."
                             ),
                             color=0xED4245,
                             timestamp=discord.utils.utcnow()
@@ -607,7 +607,7 @@ async def evaluate_watchlist_message(bot, message: discord.Message):
                         timestamp=discord.utils.utcnow()
                     )
                     embed.set_thumbnail(url=message.author.display_avatar.url)
-                    embed.set_footer(text="Echo Technologies Real-Time Automated HR Enforcement System")
+                    embed.set_footer(text="RetailNetwork Real-Time Automated HR Enforcement System")
                     await hr_channel.send(embed=embed)
     except Exception as e:
         logger.debug(f"AI Watchlist Evaluation error: {e}")
@@ -830,7 +830,7 @@ def build_staff_dossier_embed(staff_member: discord.Member, issuer: discord.User
         color = 0x57F287
 
     embed = discord.Embed(
-        title=f"📊 Echo Technologies • HR Staff Dossier",
+        title=f"📊 RetailNetwork • HR Staff Dossier",
         description=(
             f"# Confidential Staff File\n"
             f"**Subject:** {staff_member.mention} (`@{staff_member.name}` | ID: `{staff_member.id}`)\n"
@@ -872,7 +872,7 @@ def build_staff_dossier_embed(staff_member: discord.Member, issuer: discord.User
             recent_text += f"• **`#{s['id']}`** [{status_icon}] - {format_severity(s['severity'])}\n  Reason: *{s['reason']}*\n"
         embed.add_field(name="📋 Recent Disciplinary Log", value=recent_text, inline=False)
 
-    embed.set_footer(text="Echo Technologies HR Systems • Internal Staff Record")
+    embed.set_footer(text="RetailNetwork HR Systems • Internal Staff Record")
     return embed
 
 
@@ -955,15 +955,15 @@ def build_strike_dm_embed(
     severity: int,
     total_active: int
 ) -> discord.Embed:
-    """Constructs the official Echo Technologies disciplinary DM notice."""
+    """Constructs the official RetailNetwork disciplinary DM notice."""
     color = 0xFEE75C if severity == 1 else (0xE67E22 if severity == 2 else 0xED4245)
     embed = discord.Embed(
-        title="⚠️ Echo Technologies • Notice of Staff Disciplinary Action",
+        title="⚠️ RetailNetwork • Notice of Staff Disciplinary Action",
         description=(
-            f"# Echo Technologies\n"
+            f"# RetailNetwork\n"
             f"### Human Resources & Internal Accountability\n\n"
             f"Dear **{staff.display_name}**,\n\n"
-            f"This notice serves as official documentation that a disciplinary action has been issued regarding your conduct or duties as a staff member of **Echo Technologies**.\n\n"
+            f"This notice serves as official documentation that a disciplinary action has been issued regarding your conduct or duties as a staff member of **RetailNetwork**.\n\n"
             f"--- \n"
             f"### 📋 Disciplinary Record Overview\n"
             f"• **Record ID:** `#{strike_id}`\n"
@@ -976,14 +976,14 @@ def build_strike_dm_embed(
             f"> {reason}\n\n"
             f"---\n"
             f"### 🛡️ Rights & Appeals Procedure\n"
-            f"Echo Technologies values fairness. Click the **Appeal Strike** button below or use `/appeal strike_id:{strike_id}` to submit an appeal to HR Leadership."
+            f"RetailNetwork values fairness. Click the **Appeal Strike** button below or use `/appeal strike_id:{strike_id}` to submit an appeal to HR Leadership."
         ),
         color=color,
         timestamp=discord.utils.utcnow()
     )
     if staff.guild and staff.guild.icon:
         embed.set_thumbnail(url=staff.guild.icon.url)
-    embed.set_footer(text="Echo Technologies HR Portal • Confidential Staff Record")
+    embed.set_footer(text="RetailNetwork HR Portal • Confidential Staff Record")
     return embed
 
 def build_strike_log_embed(
@@ -1007,7 +1007,7 @@ def build_strike_log_embed(
     embed.add_field(name="Severity", value=f"**{format_severity(severity)}**", inline=True)
     embed.add_field(name="Active Strikes", value=f"`{total_active}` total", inline=True)
     embed.add_field(name="Reason", value=reason[:1024], inline=False)
-    embed.set_footer(text=f"Echo Technologies HR System • Record #{strike_id}")
+    embed.set_footer(text=f"RetailNetwork HR System • Record #{strike_id}")
     return embed
 
 
@@ -1088,7 +1088,7 @@ def build_evaluation_dm_embed(
     verdict_emoji = "🌟" if score >= 95 else ("✅" if score >= 85 else ("🟡" if score >= 70 else "❌"))
 
     embed = discord.Embed(
-        title=f"{verdict_emoji} Echo Technologies • Staff Training Assessment Results",
+        title=f"{verdict_emoji} RetailNetwork • Staff Training Assessment Results",
         description=(
             f"Dear **{staff.display_name}**,\n\n"
             f"Your recent support evaluation / SOP exam record (`#{eval_data['id']}`) has been officially logged by Foundership.\n\n"
@@ -1101,12 +1101,12 @@ def build_evaluation_dm_embed(
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"### 📋 Evaluator Feedback & Detailed Notes\n"
             f"{eval_data['feedback_notes']}\n\n"
-            f"Thank you for your dedication to Echo Technologies Support Operations!"
+            f"Thank you for your dedication to RetailNetwork Support Operations!"
         ),
         color=color,
         timestamp=discord.utils.utcnow()
     )
-    embed.set_footer(text=f"Evaluation ID #{eval_data['id']} • Echo HR Leadership Records")
+    embed.set_footer(text=f"Evaluation ID #{eval_data['id']} • RetailNetwork HR Leadership Records")
     if staff.display_avatar:
         embed.set_thumbnail(url=staff.display_avatar.url)
     return embed
@@ -1133,5 +1133,5 @@ def build_evaluation_log_embed(
     embed.add_field(name="Verdict", value=f"**{verdict}**", inline=True)
     embed.add_field(name="Scenario", value=f"`{eval_data['scenario']}`", inline=True)
     embed.add_field(name="Feedback Notes", value=eval_data['feedback_notes'][:1024], inline=False)
-    embed.set_footer(text=f"Echo Technologies HR System • Record #{eval_data['id']}")
+    embed.set_footer(text=f"RetailNetwork HR System • Record #{eval_data['id']}")
     return embed

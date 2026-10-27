@@ -27,7 +27,7 @@ class BlacklistNoticeClient(discord.Client):
             embed = discord.Embed(
                 title="🚨 OFFICIAL BLACKLIST NOTICE",
                 description=(
-                    "An official Blacklist Notice has been formally issued by **Echo Technologies** against the organization specified below.\n\n"
+                    "An official Blacklist Notice has been formally issued by **RetailNetwork** against the organization specified below.\n\n"
                     "All staff members, partners, and affiliated personnel are instructed to review the directives immediately."
                 ),
                 color=0x992D22 # Dark Crimson Red
@@ -62,7 +62,7 @@ class BlacklistNoticeClient(discord.Client):
             )
 
             embed.set_footer(
-                text="Echo Technologies • Blacklist & Security Operations"
+                text="RetailNetwork • Blacklist & Security Operations"
             )
             embed.timestamp = discord.utils.utcnow()
 
