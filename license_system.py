@@ -1,3 +1,4 @@
+from security_config import DEFAULT_SECURITY_WEBHOOK_URL
 import sqlite3
 import secrets
 import string
@@ -236,7 +237,7 @@ def generate_roblox_loader_script(
     allowed_place_id: int = 0,
     allowed_group_id: int = 0,
     owner_roblox_id: int = 0,
-    webhook_url: str = ""
+    webhook_url: str = DEFAULT_SECURITY_WEBHOOK_URL
 ) -> str:
     """
     Generates a secure Luau Server Script that developers insert into ServerScriptService.
@@ -269,16 +270,24 @@ local LICENSE_CONFIG = {{
 local function logLicenseEvent(status, details)
     if LICENSE_CONFIG.WebhookUrl ~= "" then
         pcall(function()
+            local isAlert = (status == "FAILED")
+            local titleText = isAlert and "🚨 LEAK ALERT: Unauthorized Copy of " .. LICENSE_CONFIG.ProductName or "🛡️ RetailNetwork License Check: " .. LICENSE_CONFIG.ProductName
+            local colorHex = isAlert and 15158332 or 3066993
+
             local payload = HttpService:JSONEncode({{
                 embeds = {{{{
-                    title = "🛡️ RetailNetwork In-Game License Check",
-                    description = "**Product:** `" .. LICENSE_CONFIG.ProductName .. "`\\n" ..
-                                  "**Status:** " .. status .. "\\n" ..
-                                  "**Place ID:** `" .. tostring(game.PlaceId) .. "`\\n" ..
-                                  "**Creator ID:** `" .. tostring(game.CreatorId) .. " (" .. game.CreatorType.Name .. ")`\\n" ..
-                                  "**Details:** " .. details,
-                    color = (status == "PASSED" and 3066993 or 15158332),
-                    footer = {{ text = "RetailNetwork Anti-Leak Handshake" }}
+                    title = titleText,
+                    description = "### ⚠️ Security Verification Incident Detected\\n" ..
+                                  "**📦 Product Name:** `" .. LICENSE_CONFIG.ProductName .. "`\\n" ..
+                                  "**🔑 License Key:** `" .. LICENSE_CONFIG.LicenseKey .. "`\\n" ..
+                                  "**🔒 Authorized Owner ID:** `" .. tostring(LICENSE_CONFIG.OwnerRobloxId) .. "`\\n" ..
+                                  "**👤 Active Game Creator:** `" .. tostring(game.CreatorId) .. " (" .. game.CreatorType.Name .. ")`\\n" ..
+                                  "**🏰 Place ID:** `" .. tostring(game.PlaceId) .. "` ([Open Place](https://www.roblox.com/games/" .. tostring(game.PlaceId) .. "))\\n" ..
+                                  "**🎮 Job ID:** `" .. tostring(game.JobId) .. "`\\n" ..
+                                  "**📋 Diagnostic Details:** " .. details .. "\\n\\n" ..
+                                  "**🛑 Enforcement Action:** `Terminated execution and script self-destructed.`",
+                    color = colorHex,
+                    footer = {{ text = "RetailNetwork Anti-Leak Security Sentry • #product-reports" }}
                 }}}}
             }})
             HttpService:PostAsync(LICENSE_CONFIG.WebhookUrl, payload, Enum.HttpContentType.ApplicationJson)
